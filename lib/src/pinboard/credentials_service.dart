@@ -1,12 +1,27 @@
+import 'package:flutter/foundation.dart';
 import 'package:pinboard_wizard/src/pinboard/models/credentials.dart';
 import 'package:pinboard_wizard/src/pinboard/flutter_secure_secrets_storage.dart';
 import 'package:pinboard_wizard/src/pinboard/secrets_storage.dart';
 
 class CredentialsService {
   final SecretStorage _storage;
+  // Emits true when a valid API key is present, false otherwise
+  final ValueNotifier<bool> isAuthenticatedNotifier = ValueNotifier(false);
 
   CredentialsService({SecretStorage? storage})
-    : _storage = storage ?? FlutterSecureSecretsStorage();
+    : _storage = storage ?? FlutterSecureSecretsStorage() {
+    _loadInitial();
+  }
+
+  Future<void> _loadInitial() async {
+    try {
+      final creds = await _storage.read();
+      final hasValid = creds != null && isValidApiKey(creds.apiKey);
+      isAuthenticatedNotifier.value = hasValid;
+    } catch (_) {
+      isAuthenticatedNotifier.value = false;
+    }
+  }
 
   /// Get stored credentials from macOS keychain
   Future<Credentials?> getCredentials() async {
@@ -27,6 +42,7 @@ class CredentialsService {
 
     try {
       await _storage.save(credentials);
+      isAuthenticatedNotifier.value = true;
     } catch (e) {
       throw CredentialsServiceException('Failed to save credentials: $e');
     }
@@ -36,6 +52,7 @@ class CredentialsService {
   Future<void> clearCredentials() async {
     try {
       await _storage.clear();
+      isAuthenticatedNotifier.value = false;
     } catch (e) {
       throw CredentialsServiceException('Failed to clear credentials: $e');
     }

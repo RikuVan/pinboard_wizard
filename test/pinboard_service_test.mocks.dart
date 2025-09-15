@@ -22,7 +22,7 @@ import 'package:pinboard_wizard/src/pinboard/models/update_response.dart'
 import 'package:pinboard_wizard/src/pinboard/models/user_secret_response.dart'
     as _i7;
 import 'package:pinboard_wizard/src/pinboard/pinboard_client.dart' as _i10;
-import 'package:pinboard_wizard/src/services/credentials_service.dart' as _i12;
+import 'package:pinboard_wizard/src/pinboard/credentials_service.dart' as _i12;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values

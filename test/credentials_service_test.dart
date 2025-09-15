@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pinboard_wizard/src/services/credentials_service.dart';
+import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/models/credentials.dart';
 import 'package:pinboard_wizard/src/pinboard/in_memory_secrets_storage.dart';
 
@@ -300,6 +300,53 @@ void main() {
         expect(await credentialsService.getCredentials(), isNull);
         expect(await credentialsService.isAuthenticated(), isFalse);
       });
+    });
+  });
+
+  group('isAuthenticatedNotifier', () {
+    test('should be false initially when no credentials stored', () async {
+      final storage = InMemorySecretsStorage();
+      final service = CredentialsService(storage: storage);
+
+      // Allow async initial load to complete
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      expect(service.isAuthenticatedNotifier.value, isFalse);
+    });
+
+    test(
+      'should be true when storage has credentials at construction',
+      () async {
+        const apiKey = 'user:1234567890abcdef';
+        final storage = InMemorySecretsStorage();
+        await storage.save(Credentials(apiKey: apiKey));
+
+        final service = CredentialsService(storage: storage);
+
+        await Future.delayed(const Duration(milliseconds: 10));
+
+        expect(service.isAuthenticatedNotifier.value, isTrue);
+      },
+    );
+
+    test('should become true after saveCredentials', () async {
+      final storage = InMemorySecretsStorage();
+      final service = CredentialsService(storage: storage);
+
+      await service.saveCredentials('user:aaaaaaaaaaaaaaaa');
+
+      expect(service.isAuthenticatedNotifier.value, isTrue);
+    });
+
+    test('should become false after clearCredentials', () async {
+      final storage = InMemorySecretsStorage();
+      final service = CredentialsService(storage: storage);
+
+      await service.saveCredentials('user:aaaaaaaaaaaaaaaa');
+      expect(service.isAuthenticatedNotifier.value, isTrue);
+
+      await service.clearCredentials();
+      expect(service.isAuthenticatedNotifier.value, isFalse);
     });
   });
 

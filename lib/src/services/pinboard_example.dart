@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:pinboard_wizard/src/pinboard/pinboard_client.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/pinboard/flutter_secure_secrets_storage.dart';
-import 'package:pinboard_wizard/src/services/pinboard_service.dart';
-import 'package:pinboard_wizard/src/services/credentials_service.dart';
+import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
+import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 
 /// Example showing how to use the Pinboard client and service
@@ -231,11 +232,7 @@ class PinboardExample {
   Future<void> getLastUpdateTime() async {
     try {
       final lastUpdate = await _pinboardService.getLastUpdateTime();
-      if (lastUpdate != null) {
-        debugPrint('Last update: $lastUpdate');
-      } else {
-        debugPrint('No update time available');
-      }
+      debugPrint('Last update: $lastUpdate');
     } catch (e) {
       debugPrint('Failed to get last update time: $e');
     }
@@ -329,23 +326,26 @@ class _PinboardWidgetState extends State<PinboardWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
+    return MacosScaffold(
+      toolBar: ToolBar(
         title: const Text('Pinboard Bookmarks'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
+          ToolBarIconButton(
+            label: 'Refresh',
+            icon: const MacosIcon(CupertinoIcons.refresh),
             onPressed: _loadBookmarks,
+            showLabel: false,
+            tooltipMessage: 'Refresh',
           ),
         ],
       ),
-      body: _buildBody(),
+      children: [ContentArea(builder: (context, _) => _buildBody())],
     );
   }
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: ProgressCircle());
     }
 
     if (_error != null) {
@@ -353,11 +353,16 @@ class _PinboardWidgetState extends State<PinboardWidget> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error, size: 64, color: Colors.red),
+            const MacosIcon(
+              CupertinoIcons.exclamationmark_triangle,
+              size: 64,
+              color: MacosColors.systemRedColor,
+            ),
             const SizedBox(height: 16),
             Text('Error: $_error'),
             const SizedBox(height: 16),
-            ElevatedButton(
+            PushButton(
+              controlSize: ControlSize.large,
               onPressed: _loadBookmarks,
               child: const Text('Retry'),
             ),
@@ -371,11 +376,12 @@ class _PinboardWidgetState extends State<PinboardWidget> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.bookmark_border, size: 64),
+            const MacosIcon(CupertinoIcons.bookmark, size: 64),
             const SizedBox(height: 16),
             const Text('No bookmarks found'),
             const SizedBox(height: 16),
-            ElevatedButton(
+            PushButton(
+              controlSize: ControlSize.large,
               onPressed: _loadBookmarks,
               child: const Text('Load Bookmarks'),
             ),

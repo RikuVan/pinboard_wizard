@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:pinboard_wizard/src/services/credentials_service.dart';
+import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 
 /// Example showing how to use CredentialsService in your Flutter app
 class CredentialsExample {
@@ -148,22 +149,25 @@ class _LoginWidgetState extends State<LoginWidget> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Pinboard API Key'),
+          ),
+          const SizedBox(height: 6),
+          MacosTextField(
             controller: _apiKeyController,
-            decoration: const InputDecoration(
-              labelText: 'Pinboard API Key',
-              hintText: 'username:1234567890abcdef',
-              border: OutlineInputBorder(),
-            ),
+            placeholder: 'username:1234567890abcdef',
             obscureText: true,
+            clearButtonMode: OverlayVisibilityMode.editing,
           ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
+            child: PushButton(
+              controlSize: ControlSize.large,
               onPressed: _isLoading ? null : _handleLogin,
               child: _isLoading
-                  ? const CircularProgressIndicator()
+                  ? const ProgressCircle()
                   : const Text('Save to Keychain'),
             ),
           ),
@@ -183,7 +187,7 @@ class ExampleAppIntegration {
 
     if (isAuthenticated) {
       // User is logged in, proceed to main app
-      final credentials = await credentialsService.getCredentials();
+      await credentialsService.getCredentials();
       debugPrint('Welcome back! API key loaded from keychain.');
     } else {
       // Show login screen

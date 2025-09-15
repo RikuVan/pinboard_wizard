@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:pinboard_wizard/src/services/pinboard_service.dart';
+import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_client.dart';
-import 'package:pinboard_wizard/src/services/credentials_service.dart';
+import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/in_memory_secrets_storage.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:pinboard_wizard/src/pinboard/models/posts_response.dart';
@@ -21,21 +21,13 @@ void main() {
     late MockPinboardClient mockClient;
     late MockCredentialsService mockCredentialsService;
     late InMemorySecretsStorage storage;
-    late PinboardService service;
 
     setUp(() {
       mockClient = MockPinboardClient();
       mockCredentialsService = MockCredentialsService();
       storage = InMemorySecretsStorage();
 
-      // Create service with mocked dependencies
-      service = PinboardService(
-        secretStorage: storage,
-        credentialsService: mockCredentialsService,
-      );
-
-      // Replace the internal client with our mock
-      // Since we can't directly inject it, we'll test the public interface
+      // Using TestPinboardService wrapper for injecting mocks
     });
 
     tearDown(() {

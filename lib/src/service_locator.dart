@@ -1,0 +1,18 @@
+import 'package:get_it/get_it.dart';
+import 'package:pinboard_wizard/src/pinboard/flutter_secure_secrets_storage.dart';
+import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
+import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
+import 'package:pinboard_wizard/src/pinboard/secrets_storage.dart';
+
+final locator = GetIt.instance;
+
+Future<void> setup() async {
+  locator
+    ..registerLazySingleton<PinboardService>(
+      () => PinboardService(secretStorage: locator.get<SecretStorage>()),
+    )
+    ..registerLazySingleton<CredentialsService>(
+      () => CredentialsService(storage: locator.get<SecretStorage>()),
+    )
+    ..registerLazySingleton<SecretStorage>(() => FlutterSecureSecretsStorage());
+}

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pinboard_wizard/src/pinboard/models/credentials.dart';
 import 'package:pinboard_wizard/src/pinboard/in_memory_secrets_storage.dart';
-import 'package:pinboard_wizard/src/services/credentials_service.dart';
+import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 
 /// Test helpers for creating test instances and mock data
 class TestHelpers {

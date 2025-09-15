@@ -1,16 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:pinboard_wizard/theme.dart';
+import 'package:pinboard_wizard/src/service_locator.dart';
+import 'package:pinboard_wizard/src/theme.dart';
+import 'package:pinboard_wizard/src/auth/auth_gate.dart';
+import 'package:pinboard_wizard/src/pages/bookmarks_page.dart';
+import 'package:pinboard_wizard/src/pages/settings_page.dart';
+import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
   const config = MacosWindowUtilsConfig();
   await config.apply();
+  await setup();
   runApp(const PinboardWizard());
 }
 
-class PinboardWizard extends StatelessWidget {
+class PinboardWizard extends StatefulWidget {
   const PinboardWizard({super.key});
+
+  @override
+  State<PinboardWizard> createState() => _PinboardWizardState();
+}
+
+class _PinboardWizardState extends State<PinboardWizard> {
+  int pageIndex = 0;
+  CredentialsService? _credentialsService;
+
+  @override
+  void initState() {
+    super.initState();
+    _credentialsService = locator.get<CredentialsService>();
+    // Ensure initial selection reflects auth state
+    if (!_credentialsService!.isAuthenticatedNotifier.value) {
+      pageIndex = 3;
+    }
+    _credentialsService!.isAuthenticatedNotifier.addListener(() {
+      final authed = _credentialsService!.isAuthenticatedNotifier.value;
+      if (!authed) {
+        setState(() => pageIndex = 3);
+      } else if (pageIndex == 3) {
+        setState(() => pageIndex = 1);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,13 +61,28 @@ class PinboardWizard extends StatelessWidget {
                 minWidth: 200,
                 builder: (context, scrollController) {
                   return SidebarItems(
-                    items: [SidebarItem(label: Text('Test'))],
-                    currentIndex: 0,
+                    currentIndex: pageIndex,
+                    items: [
+                      SidebarItem(label: Text('Pinned')),
+                      SidebarItem(label: Text('Bookmarks')),
+                      SidebarItem(label: Text('Notes')),
+                      SidebarItem(label: Text('Settings')),
+                    ],
                     onChanged: (i) {
-                      return;
+                      setState(() => pageIndex = i);
                     },
                   );
                 },
+              ),
+              child: ContentArea(
+                builder: (context, _) => AuthGate(
+                  child: [
+                    const Text("1"),
+                    const BookmarksPage(),
+                    const Text("3"),
+                    const SettingsPage(),
+                  ][pageIndex],
+                ),
               ),
             ),
           ),
@@ -48,7 +95,7 @@ class PinboardWizard extends StatelessWidget {
 List<PlatformMenuItem> menuBarItems() {
   return const [
     PlatformMenu(
-      label: 'macos_ui Widget Gallery',
+      label: 'Flutter Wizard',
       menus: [
         PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.about),
         PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.quit),

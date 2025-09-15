@@ -6,13 +6,7 @@ import 'package:pinboard_wizard/src/pinboard/secrets_storage.dart';
 class FlutterSecureSecretsStorage implements SecretStorage {
   static const String _credentialsKey = 'pinboard_credentials';
 
-  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
-    mOptions: MacOsOptions(
-      groupId: 'com.pinboard.wizard',
-      accountName: 'PinboardWizardCredentials',
-      accessibility: KeychainAccessibility.first_unlock_this_device,
-    ),
-  );
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   @override
   Future<Credentials?> read() async {

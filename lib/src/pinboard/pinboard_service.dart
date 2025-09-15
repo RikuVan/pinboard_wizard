@@ -1,7 +1,7 @@
 import 'package:pinboard_wizard/src/pinboard/pinboard_client.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:pinboard_wizard/src/pinboard/secrets_storage.dart';
-import 'package:pinboard_wizard/src/services/credentials_service.dart';
+import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 
 class PinboardService {
   final PinboardClient _client;

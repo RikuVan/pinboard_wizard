@@ -83,10 +83,15 @@ class PinboardClient {
     final requiredParams = _addRequiredParams(credentials.apiKey, params);
     final uri = _buildUrl(endpoint).replace(queryParameters: requiredParams);
 
+    print(uri);
+
     try {
       final response = await _httpClient.get(uri);
+      print(response.statusCode);
+      print(response.body.toString());
       return _handleResponse(response);
     } catch (e) {
+      print(e.toString());
       if (e is PinboardException) rethrow;
       throw PinboardException('Request failed: $e');
     }
