@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:pinboard_wizard/src/pinboard/models/credentials.dart';
+import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:pinboard_wizard/src/pinboard/models/posts_response.dart';
 import 'package:pinboard_wizard/src/pinboard/models/api_token_response.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post_dates_response.dart';
@@ -69,10 +70,7 @@ class PinboardClient {
     return allParams;
   }
 
-  Future<Map<String, dynamic>> _get(
-    String endpoint, [
-    Map<String, String>? params,
-  ]) async {
+  Future<dynamic> _get(String endpoint, [Map<String, String>? params]) async {
     final credentials = await _getCredentials();
     if (credentials == null) {
       throw PinboardAuthException(
@@ -97,10 +95,7 @@ class PinboardClient {
     }
   }
 
-  Future<Map<String, dynamic>> _post(
-    String endpoint, [
-    Map<String, String>? params,
-  ]) async {
+  Future<dynamic> _post(String endpoint, [Map<String, String>? params]) async {
     final credentials = await _getCredentials();
     if (credentials == null) {
       throw PinboardAuthException(
@@ -120,7 +115,7 @@ class PinboardClient {
     }
   }
 
-  Map<String, dynamic> _handleResponse(http.Response response) {
+  dynamic _handleResponse(http.Response response) {
     if (response.statusCode == 401) {
       throw PinboardAuthException(
         'Authentication failed. Please check your API token.',
@@ -146,7 +141,7 @@ class PinboardClient {
     }
 
     try {
-      return json.decode(response.body) as Map<String, dynamic>;
+      return json.decode(response.body);
     } catch (e) {
       throw PinboardException('Failed to parse response as JSON: $e');
     }
@@ -166,7 +161,7 @@ class PinboardClient {
 
   Future<ApiTokenResponse> getUserApiToken() async {
     final response = await _get('user/api_token');
-    return ApiTokenResponse.fromJson(response);
+    return ApiTokenResponse.fromJson(response as Map<String, dynamic>);
   }
 
   Future<PostsResponse> getPosts({
@@ -187,6 +182,19 @@ class PinboardClient {
     if (meta != null) params['meta'] = meta.toString();
 
     final response = await _get('posts/all', params);
+
+    // Handle different response formats - posts/all returns array directly
+    if (response is List) {
+      final posts = (response as List<dynamic>)
+          .map((e) => Post.fromJson(e as Map<String, dynamic>))
+          .toList();
+      return PostsResponse(
+        date: DateTime.now(),
+        user: '', // Not provided by posts/all
+        posts: posts,
+      );
+    }
+
     return PostsResponse.fromJson(response);
   }
 
@@ -197,7 +205,7 @@ class PinboardClient {
     if (count != null) params['count'] = count.toString();
 
     final response = await _get('posts/recent', params);
-    return PostsResponse.fromJson(response);
+    return PostsResponse.fromJson(response as Map<String, dynamic>);
   }
 
   Future<PostDatesResponse> getPostDates({String? tag}) async {
@@ -205,7 +213,7 @@ class PinboardClient {
     if (tag != null) params['tag'] = tag;
 
     final response = await _get('posts/dates', params);
-    return PostDatesResponse.fromJson(response);
+    return PostDatesResponse.fromJson(response as Map<String, dynamic>);
   }
 
   Future<PostsResponse> getPost({
@@ -222,7 +230,7 @@ class PinboardClient {
     if (meta != null) params['meta'] = meta;
 
     final response = await _get('posts/get', params);
-    return PostsResponse.fromJson(response);
+    return PostsResponse.fromJson(response as Map<String, dynamic>);
   }
 
   Future<AddPostResponse> addPost({
@@ -245,22 +253,22 @@ class PinboardClient {
     if (toread != null) params['toread'] = toread ? 'yes' : 'no';
 
     final response = await _post('posts/add', params);
-    return AddPostResponse.fromJson(response);
+    return AddPostResponse.fromJson(response as Map<String, dynamic>);
   }
 
   Future<AddPostResponse> deletePost(String url) async {
     final response = await _post('posts/delete', {'url': url});
-    return AddPostResponse.fromJson(response);
+    return AddPostResponse.fromJson(response as Map<String, dynamic>);
   }
 
   Future<TagsResponse> getTags() async {
     final response = await _get('tags/get');
-    return TagsResponse.fromJson(response);
+    return TagsResponse.fromJson(response as Map<String, dynamic>);
   }
 
   Future<AddPostResponse> deleteTag(String tag) async {
     final response = await _post('tags/delete', {'tag': tag});
-    return AddPostResponse.fromJson(response);
+    return AddPostResponse.fromJson(response as Map<String, dynamic>);
   }
 
   Future<AddPostResponse> renameTag({
@@ -268,22 +276,22 @@ class PinboardClient {
     required String newTag,
   }) async {
     final response = await _post('tags/rename', {'old': oldTag, 'new': newTag});
-    return AddPostResponse.fromJson(response);
+    return AddPostResponse.fromJson(response as Map<String, dynamic>);
   }
 
   Future<UserSecretResponse> getUserSecret() async {
     final response = await _get('user/secret');
-    return UserSecretResponse.fromJson(response);
+    return UserSecretResponse.fromJson(response as Map<String, dynamic>);
   }
 
   Future<SuggestResponse> getSuggestedTags(String url) async {
     final response = await _get('posts/suggest', {'url': url});
-    return SuggestResponse.fromJson(response);
+    return SuggestResponse.fromJson(response as Map<String, dynamic>);
   }
 
   Future<Map<String, dynamic>> getNotes() async {
     final response = await _get('notes/list');
-    return response;
+    return response as Map<String, dynamic>;
   }
 
   Future<Map<String, dynamic>> getNote(String noteId) async {
@@ -293,7 +301,7 @@ class PinboardClient {
 
   Future<UpdateResponse> getLastUpdate() async {
     final response = await _get('posts/update');
-    return UpdateResponse.fromJson(response);
+    return UpdateResponse.fromJson(response as Map<String, dynamic>);
   }
 
   Future<bool> isAuthenticated() async {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/common/widgets/bookmark_tile.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
 import 'package:pinboard_wizard/src/service_locator.dart';
@@ -14,40 +14,109 @@ class BookmarksPage extends StatefulWidget {
 
 class _BookmarksPageState extends State<BookmarksPage> {
   late final PinboardService _pinboardService;
+  late final ScrollController _scrollController;
 
   bool _isLoading = true;
+  bool _isLoadingMore = false;
   String? _errorMessage;
-  List<Post> _bookmarks = const [];
+  List<Post> _bookmarks = [];
+
+  static const int _pageSize = 50;
+  int _currentOffset = 0;
+  bool _hasMoreData = true;
 
   @override
   void initState() {
     super.initState();
     _pinboardService = locator.get<PinboardService>();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
     _loadBookmarks();
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      if (!_isLoadingMore && _hasMoreData) {
+        _loadMoreBookmarks();
+      }
+    }
   }
 
   Future<void> _loadBookmarks() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _bookmarks = [];
+      _currentOffset = 0;
+      _hasMoreData = true;
     });
 
     try {
-      final results = await _pinboardService.getRecentBookmarks(count: 50);
+      final results = await _pinboardService.getAllBookmarks(
+        start: 0,
+        results: _pageSize,
+      );
       setState(() {
         _bookmarks = results;
         _isLoading = false;
+        _currentOffset = results.length;
+        _hasMoreData = results.length == _pageSize;
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
         _errorMessage = 'Error loading bookmarks: $e';
       });
+    }
+  }
+
+  Future<void> _loadMoreBookmarks() async {
+    if (_isLoadingMore || !_hasMoreData) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      final results = await _pinboardService.getAllBookmarks(
+        start: _currentOffset,
+        results: _pageSize,
+      );
+
+      setState(() {
+        _bookmarks.addAll(results);
+        _currentOffset += results.length;
+        _hasMoreData = results.length == _pageSize;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingMore = false;
+      });
+      // Show error but don't clear existing bookmarks
+      if (mounted) {
+        showMacosAlertDialog(
+          context: context,
+          builder: (_) => MacosAlertDialog(
+            appIcon: const FlutterLogo(size: 64),
+            title: const Text('Error'),
+            message: Text('Failed to load more bookmarks: $e'),
+            primaryButton: PushButton(
+              controlSize: ControlSize.large,
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -101,40 +170,30 @@ class _BookmarksPageState extends State<BookmarksPage> {
     }
 
     return ListView.separated(
-      itemCount: _bookmarks.length,
+      controller: _scrollController,
+      itemCount: _bookmarks.length + (_hasMoreData ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: 1),
       itemBuilder: (context, index) {
+        if (index == _bookmarks.length) {
+          // Show loading indicator at the end
+          return Container(
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: _isLoadingMore
+                  ? const ProgressCircle()
+                  : const Text(
+                      'No more bookmarks',
+                      style: TextStyle(
+                        color: MacosColors.secondaryLabelColor,
+                        fontSize: 13,
+                      ),
+                    ),
+            ),
+          );
+        }
+
         final post = _bookmarks[index];
-        return MacosListTile(
-          leading: const MacosIcon(CupertinoIcons.bookmark),
-          title: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  post.description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (post.toread)
-                    const MacosIcon(CupertinoIcons.time, size: 14),
-                  if (!post.shared) const SizedBox(width: 8),
-                  if (!post.shared)
-                    const MacosIcon(CupertinoIcons.lock, size: 14),
-                ],
-              ),
-            ],
-          ),
-          subtitle: Text(
-            post.href,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          onClick: () {},
-        );
+        return BookmarkTile(post: post);
       },
     );
   }
