@@ -3,7 +3,7 @@ import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/service_locator.dart';
 import 'package:pinboard_wizard/src/theme.dart';
 import 'package:pinboard_wizard/src/auth/auth_gate.dart';
-import 'package:pinboard_wizard/src/pages/bookmarks_page.dart';
+import 'package:pinboard_wizard/src/pages/bookmarks/bookmarks_page.dart';
 import 'package:pinboard_wizard/src/pages/settings_page.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:provider/provider.dart';

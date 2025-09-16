@@ -46,7 +46,7 @@ class Post extends Equatable {
   }
 
   bool hasTag(String tag) {
-    return tagList.contains(tag.toLowerCase());
+    return tagList.any((t) => t.toLowerCase() == tag.toLowerCase());
   }
 
   String get domain {
