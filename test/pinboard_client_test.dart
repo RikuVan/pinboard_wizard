@@ -26,10 +26,7 @@ void main() {
     setUp(() {
       mockHttpClient = MockClient();
       storage = InMemorySecretsStorage();
-      client = PinboardClient(
-        secretStorage: storage,
-        httpClient: mockHttpClient,
-      );
+      client = PinboardClient(secretStorage: storage, httpClient: mockHttpClient);
     });
 
     tearDown(() {
@@ -38,18 +35,15 @@ void main() {
 
     group('Authentication', () {
       test('throws PinboardAuthException when no credentials stored', () async {
-        expect(
-          () => client.getUserApiToken(),
-          throwsA(isA<PinboardAuthException>()),
-        );
+        expect(() => client.getUserApiToken(), throwsA(isA<PinboardAuthException>()));
       });
 
       test('testAuthentication returns true when API call succeeds', () async {
         await storage.save(testCredentials);
 
-        when(mockHttpClient.get(any)).thenAnswer(
-          (_) async => http.Response(json.encode({'result': testApiKey}), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode({'result': testApiKey}), 200));
 
         final result = await client.testAuthentication();
         expect(result, isTrue);
@@ -58,9 +52,7 @@ void main() {
       test('testAuthentication returns false on auth error', () async {
         await storage.save(testCredentials);
 
-        when(
-          mockHttpClient.get(any),
-        ).thenAnswer((_) async => http.Response('Unauthorized', 401));
+        when(mockHttpClient.get(any)).thenAnswer((_) async => http.Response('Unauthorized', 401));
 
         final result = await client.testAuthentication();
         expect(result, isFalse);
@@ -69,14 +61,9 @@ void main() {
       test('testAuthentication rethrows other errors', () async {
         await storage.save(testCredentials);
 
-        when(
-          mockHttpClient.get(any),
-        ).thenAnswer((_) async => http.Response('Server Error', 500));
+        when(mockHttpClient.get(any)).thenAnswer((_) async => http.Response('Server Error', 500));
 
-        expect(
-          () => client.testAuthentication(),
-          throwsA(isA<PinboardException>()),
-        );
+        expect(() => client.testAuthentication(), throwsA(isA<PinboardException>()));
       });
     });
 
@@ -84,32 +71,27 @@ void main() {
       test('adds required auth_token and format parameters', () async {
         await storage.save(testCredentials);
 
-        when(mockHttpClient.get(any)).thenAnswer(
-          (_) async => http.Response(json.encode({'result': testApiKey}), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode({'result': testApiKey}), 200));
 
         await client.getUserApiToken();
 
-        final capturedRequest =
-            verify(mockHttpClient.get(captureAny)).captured.single as Uri;
-        expect(
-          capturedRequest.queryParameters['auth_token'],
-          equals(testApiKey),
-        );
+        final capturedRequest = verify(mockHttpClient.get(captureAny)).captured.single as Uri;
+        expect(capturedRequest.queryParameters['auth_token'], equals(testApiKey));
         expect(capturedRequest.queryParameters['format'], equals('json'));
       });
 
       test('builds correct URL for endpoints', () async {
         await storage.save(testCredentials);
 
-        when(mockHttpClient.get(any)).thenAnswer(
-          (_) async => http.Response(json.encode({'result': testApiKey}), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode({'result': testApiKey}), 200));
 
         await client.getUserApiToken();
 
-        final capturedRequest =
-            verify(mockHttpClient.get(captureAny)).captured.single as Uri;
+        final capturedRequest = verify(mockHttpClient.get(captureAny)).captured.single as Uri;
         expect(capturedRequest.scheme, equals('https'));
         expect(capturedRequest.host, equals('api.pinboard.in'));
         expect(capturedRequest.path, equals('/v1/user/api_token'));
@@ -120,57 +102,36 @@ void main() {
       test('handles 401 unauthorized responses', () async {
         await storage.save(testCredentials);
 
-        when(
-          mockHttpClient.get(any),
-        ).thenAnswer((_) async => http.Response('Unauthorized', 401));
+        when(mockHttpClient.get(any)).thenAnswer((_) async => http.Response('Unauthorized', 401));
 
-        expect(
-          () => client.getUserApiToken(),
-          throwsA(isA<PinboardAuthException>()),
-        );
+        expect(() => client.getUserApiToken(), throwsA(isA<PinboardAuthException>()));
       });
 
       test('handles 429 rate limit responses', () async {
         await storage.save(testCredentials);
 
-        when(
-          mockHttpClient.get(any),
-        ).thenAnswer((_) async => http.Response('Rate limited', 429));
+        when(mockHttpClient.get(any)).thenAnswer((_) async => http.Response('Rate limited', 429));
 
         expect(
           () => client.getUserApiToken(),
-          throwsA(
-            predicate(
-              (e) => e is PinboardException && e.message.contains('Rate limit'),
-            ),
-          ),
+          throwsA(predicate((e) => e is PinboardException && e.message.contains('Rate limit'))),
         );
       });
 
       test('handles other HTTP errors', () async {
         await storage.save(testCredentials);
 
-        when(
-          mockHttpClient.get(any),
-        ).thenAnswer((_) async => http.Response('Server Error', 500));
+        when(mockHttpClient.get(any)).thenAnswer((_) async => http.Response('Server Error', 500));
 
-        expect(
-          () => client.getUserApiToken(),
-          throwsA(isA<PinboardException>()),
-        );
+        expect(() => client.getUserApiToken(), throwsA(isA<PinboardException>()));
       });
 
       test('handles invalid JSON responses', () async {
         await storage.save(testCredentials);
 
-        when(
-          mockHttpClient.get(any),
-        ).thenAnswer((_) async => http.Response('Invalid JSON{', 200));
+        when(mockHttpClient.get(any)).thenAnswer((_) async => http.Response('Invalid JSON{', 200));
 
-        expect(
-          () => client.getUserApiToken(),
-          throwsA(isA<PinboardException>()),
-        );
+        expect(() => client.getUserApiToken(), throwsA(isA<PinboardException>()));
       });
     });
 
@@ -196,9 +157,9 @@ void main() {
           ],
         };
 
-        when(mockHttpClient.get(any)).thenAnswer(
-          (_) async => http.Response(json.encode(mockResponse), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode(mockResponse), 200));
 
         final result = await client.getPosts(
           tag: 'test',
@@ -215,8 +176,7 @@ void main() {
         expect(result.posts.first.shared, isTrue);
         expect(result.posts.first.toread, isFalse);
 
-        final capturedRequest =
-            verify(mockHttpClient.get(captureAny)).captured.single as Uri;
+        final capturedRequest = verify(mockHttpClient.get(captureAny)).captured.single as Uri;
         expect(capturedRequest.queryParameters['tag'], equals('test'));
         expect(capturedRequest.queryParameters['start'], equals('0'));
         expect(capturedRequest.queryParameters['results'], equals('10'));
@@ -228,20 +188,15 @@ void main() {
       test('getRecentPosts with parameters', () async {
         await storage.save(testCredentials);
 
-        final mockResponse = {
-          'date': '2024-01-01T12:00:00Z',
-          'user': 'testuser',
-          'posts': [],
-        };
+        final mockResponse = {'date': '2024-01-01T12:00:00Z', 'user': 'testuser', 'posts': []};
 
-        when(mockHttpClient.get(any)).thenAnswer(
-          (_) async => http.Response(json.encode(mockResponse), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode(mockResponse), 200));
 
         await client.getRecentPosts(tag: 'recent', count: 5);
 
-        final capturedRequest =
-            verify(mockHttpClient.get(captureAny)).captured.single as Uri;
+        final capturedRequest = verify(mockHttpClient.get(captureAny)).captured.single as Uri;
         expect(capturedRequest.path, equals('/v1/posts/recent'));
         expect(capturedRequest.queryParameters['tag'], equals('recent'));
         expect(capturedRequest.queryParameters['count'], equals('5'));
@@ -250,15 +205,11 @@ void main() {
       test('getPost with all parameters', () async {
         await storage.save(testCredentials);
 
-        final mockResponse = {
-          'date': '2024-01-01T12:00:00Z',
-          'user': 'testuser',
-          'posts': [],
-        };
+        final mockResponse = {'date': '2024-01-01T12:00:00Z', 'user': 'testuser', 'posts': []};
 
-        when(mockHttpClient.get(any)).thenAnswer(
-          (_) async => http.Response(json.encode(mockResponse), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode(mockResponse), 200));
 
         await client.getPost(
           tag: 'test',
@@ -267,24 +218,20 @@ void main() {
           meta: 'yes',
         );
 
-        final capturedRequest =
-            verify(mockHttpClient.get(captureAny)).captured.single as Uri;
+        final capturedRequest = verify(mockHttpClient.get(captureAny)).captured.single as Uri;
         expect(capturedRequest.path, equals('/v1/posts/get'));
         expect(capturedRequest.queryParameters['tag'], equals('test'));
         expect(capturedRequest.queryParameters['dt'], equals('2024-01-01'));
-        expect(
-          capturedRequest.queryParameters['url'],
-          equals('https://example.com'),
-        );
+        expect(capturedRequest.queryParameters['url'], equals('https://example.com'));
         expect(capturedRequest.queryParameters['meta'], equals('yes'));
       });
 
-      test('addPost creates POST request with correct parameters', () async {
+      test('addPost creates GET request with correct parameters', () async {
         await storage.save(testCredentials);
 
-        when(mockHttpClient.post(any, body: anyNamed('body'))).thenAnswer(
-          (_) async => http.Response(json.encode({'result_code': 'done'}), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode({'result_code': 'done'}), 200));
 
         final result = await client.addPost(
           url: 'https://example.com',
@@ -300,35 +247,27 @@ void main() {
         expect(result, isA<AddPostResponse>());
         expect(result.wasSuccessful, isTrue);
 
-        final captured =
-            verify(
-                  mockHttpClient.post(any, body: captureAnyNamed('body')),
-                ).captured.single
-                as Map<String, String>;
-        expect(captured['url'], equals('https://example.com'));
-        expect(captured['description'], equals('Test Post'));
-        expect(captured['extended'], equals('Test description'));
-        expect(captured['tags'], equals('test example'));
-        expect(captured['replace'], equals('yes'));
-        expect(captured['shared'], equals('no'));
-        expect(captured['toread'], equals('yes'));
+        final capturedUri = verify(mockHttpClient.get(captureAny)).captured.single as Uri;
+        expect(capturedUri.queryParameters['url'], equals('https://example.com'));
+        expect(capturedUri.queryParameters['description'], equals('Test Post'));
+        expect(capturedUri.queryParameters['extended'], equals('Test description'));
+        expect(capturedUri.queryParameters['tags'], equals('test example'));
+        expect(capturedUri.queryParameters['replace'], equals('yes'));
+        expect(capturedUri.queryParameters['shared'], equals('no'));
+        expect(capturedUri.queryParameters['toread'], equals('yes'));
       });
 
-      test('deletePost creates POST request', () async {
+      test('deletePost creates GET request', () async {
         await storage.save(testCredentials);
 
-        when(mockHttpClient.post(any, body: anyNamed('body'))).thenAnswer(
-          (_) async => http.Response(json.encode({'result_code': 'done'}), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode({'result_code': 'done'}), 200));
 
         await client.deletePost('https://example.com');
 
-        final captured =
-            verify(
-                  mockHttpClient.post(any, body: captureAnyNamed('body')),
-                ).captured.single
-                as Map<String, String>;
-        expect(captured['url'], equals('https://example.com'));
+        final capturedUri = verify(mockHttpClient.get(captureAny)).captured.single as Uri;
+        expect(capturedUri.queryParameters['url'], equals('https://example.com'));
       });
     });
 
@@ -340,9 +279,9 @@ void main() {
           'tags': {'flutter': 5, 'dart': 3, 'programming': 10},
         };
 
-        when(mockHttpClient.get(any)).thenAnswer(
-          (_) async => http.Response(json.encode(mockResponse), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode(mockResponse), 200));
 
         final result = await client.getTags();
 
@@ -354,39 +293,31 @@ void main() {
         expect(result.totalBookmarks, equals(18));
       });
 
-      test('deleteTag creates POST request', () async {
+      test('deleteTag creates GET request', () async {
         await storage.save(testCredentials);
 
-        when(mockHttpClient.post(any, body: anyNamed('body'))).thenAnswer(
-          (_) async => http.Response(json.encode({'result_code': 'done'}), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode({'result_code': 'done'}), 200));
 
         await client.deleteTag('oldtag');
 
-        final captured =
-            verify(
-                  mockHttpClient.post(any, body: captureAnyNamed('body')),
-                ).captured.single
-                as Map<String, String>;
-        expect(captured['tag'], equals('oldtag'));
+        final capturedUri = verify(mockHttpClient.get(captureAny)).captured.single as Uri;
+        expect(capturedUri.queryParameters['tag'], equals('oldtag'));
       });
 
-      test('renameTag creates POST request with correct parameters', () async {
+      test('renameTag creates GET request with correct parameters', () async {
         await storage.save(testCredentials);
 
-        when(mockHttpClient.post(any, body: anyNamed('body'))).thenAnswer(
-          (_) async => http.Response(json.encode({'result_code': 'done'}), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode({'result_code': 'done'}), 200));
 
         await client.renameTag(oldTag: 'oldtag', newTag: 'newtag');
 
-        final captured =
-            verify(
-                  mockHttpClient.post(any, body: captureAnyNamed('body')),
-                ).captured.single
-                as Map<String, String>;
-        expect(captured['old'], equals('oldtag'));
-        expect(captured['new'], equals('newtag'));
+        final capturedUri = verify(mockHttpClient.get(captureAny)).captured.single as Uri;
+        expect(capturedUri.queryParameters['old'], equals('oldtag'));
+        expect(capturedUri.queryParameters['new'], equals('newtag'));
       });
     });
 
@@ -394,9 +325,9 @@ void main() {
       test('getUserApiToken returns ApiTokenResponse', () async {
         await storage.save(testCredentials);
 
-        when(mockHttpClient.get(any)).thenAnswer(
-          (_) async => http.Response(json.encode({'result': testApiKey}), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode({'result': testApiKey}), 200));
 
         final result = await client.getUserApiToken();
 
@@ -408,9 +339,9 @@ void main() {
         await storage.save(testCredentials);
 
         const secretKey = 'secret123';
-        when(mockHttpClient.get(any)).thenAnswer(
-          (_) async => http.Response(json.encode({'result': secretKey}), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode({'result': secretKey}), 200));
 
         final result = await client.getUserSecret();
         expect(result.secret, equals(secretKey));
@@ -426,27 +357,23 @@ void main() {
           'recommended': ['tag3', 'tag4'],
         };
 
-        when(mockHttpClient.get(any)).thenAnswer(
-          (_) async => http.Response(json.encode(mockResponse), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode(mockResponse), 200));
 
         final result = await client.getSuggestedTags('https://example.com');
         expect(result.popular, equals(['tag1', 'tag2']));
         expect(result.recommended, equals(['tag3', 'tag4']));
-        expect(
-          result.allSuggestions,
-          containsAll(['tag1', 'tag2', 'tag3', 'tag4']),
-        );
+        expect(result.allSuggestions, containsAll(['tag1', 'tag2', 'tag3', 'tag4']));
       });
 
       test('getLastUpdate returns UpdateResponse', () async {
         await storage.save(testCredentials);
 
         final updateTime = '2024-01-01T12:00:00Z';
-        when(mockHttpClient.get(any)).thenAnswer(
-          (_) async =>
-              http.Response(json.encode({'update_time': updateTime}), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode({'update_time': updateTime}), 200));
 
         final result = await client.getLastUpdate();
         expect(result.updateTime, equals(DateTime.parse(updateTime)));
@@ -459,34 +386,29 @@ void main() {
           'dates': {'2024-01-01': 5, '2024-01-02': 3},
         };
 
-        when(mockHttpClient.get(any)).thenAnswer(
-          (_) async => http.Response(json.encode(mockResponse), 200),
-        );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode(mockResponse), 200));
 
         await client.getPostDates(tag: 'test');
 
-        final capturedRequest =
-            verify(mockHttpClient.get(captureAny)).captured.single as Uri;
+        final capturedRequest = verify(mockHttpClient.get(captureAny)).captured.single as Uri;
         expect(capturedRequest.path, equals('/v1/posts/dates'));
         expect(capturedRequest.queryParameters['tag'], equals('test'));
       });
     });
 
     group('Integration', () {
-      test(
-        'isAuthenticated returns true when credentials exist and auth succeeds',
-        () async {
-          await storage.save(testCredentials);
+      test('isAuthenticated returns true when credentials exist and auth succeeds', () async {
+        await storage.save(testCredentials);
 
-          when(mockHttpClient.get(any)).thenAnswer(
-            (_) async =>
-                http.Response(json.encode({'result': testApiKey}), 200),
-          );
+        when(
+          mockHttpClient.get(any),
+        ).thenAnswer((_) async => http.Response(json.encode({'result': testApiKey}), 200));
 
-          final result = await client.isAuthenticated();
-          expect(result, isTrue);
-        },
-      );
+        final result = await client.isAuthenticated();
+        expect(result, isTrue);
+      });
 
       test('isAuthenticated returns false when no credentials', () async {
         final result = await client.isAuthenticated();
@@ -496,9 +418,7 @@ void main() {
       test('isAuthenticated returns false when auth fails', () async {
         await storage.save(testCredentials);
 
-        when(
-          mockHttpClient.get(any),
-        ).thenAnswer((_) async => http.Response('Unauthorized', 401));
+        when(mockHttpClient.get(any)).thenAnswer((_) async => http.Response('Unauthorized', 401));
 
         final result = await client.isAuthenticated();
         expect(result, isFalse);
@@ -521,11 +441,7 @@ void main() {
     });
 
     test('creates exception with status code and response', () {
-      const exception = PinboardException(
-        'Test error',
-        statusCode: 404,
-        response: 'Not found',
-      );
+      const exception = PinboardException('Test error', statusCode: 404, response: 'Not found');
       expect(exception.statusCode, equals(404));
       expect(exception.response, equals('Not found'));
     });

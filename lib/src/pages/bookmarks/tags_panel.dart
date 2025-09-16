@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_cubit.dart';
@@ -14,17 +15,14 @@ class TagsPanel extends StatelessWidget {
         return Container(
           decoration: BoxDecoration(
             color: MacosTheme.of(context).canvasColor,
-            border: Border(
-              left: BorderSide(color: MacosColors.separatorColor, width: 0.5),
-            ),
+            border: Border(left: BorderSide(color: MacosColors.separatorColor, width: 0.5)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context, state),
               Expanded(child: _buildTagsList(context, state)),
-              if (state.hasTagsSelected)
-                _buildSelectedTagsFooter(context, state),
+              if (state.hasTagsSelected) _buildSelectedTagsFooter(context, state),
             ],
           ),
         );
@@ -36,9 +34,7 @@ class TagsPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: MacosColors.separatorColor, width: 0.5),
-        ),
+        border: Border(bottom: BorderSide(color: MacosColors.separatorColor, width: 0.5)),
       ),
       child: Row(
         children: [
@@ -55,9 +51,8 @@ class TagsPanel extends StatelessWidget {
           const Spacer(),
           if (state.hasTagsSelected)
             MacosIconButton(
-              icon: const MacosIcon(Icons.clear, size: 16),
-              onPressed: () =>
-                  context.read<BookmarksCubit>().clearSelectedTags(),
+              icon: const MacosIcon(CupertinoIcons.clear, size: 16),
+              onPressed: () => context.read<BookmarksCubit>().clearSelectedTags(),
               backgroundColor: Colors.transparent,
               padding: EdgeInsets.zero,
             ),
@@ -82,10 +77,7 @@ class TagsPanel extends StatelessWidget {
           padding: EdgeInsets.all(16),
           child: Text(
             'No tags available',
-            style: TextStyle(
-              color: MacosColors.secondaryLabelColor,
-              fontSize: 13,
-            ),
+            style: TextStyle(color: MacosColors.secondaryLabelColor, fontSize: 13),
           ),
         ),
       );
@@ -110,9 +102,7 @@ class TagsPanel extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.read<BookmarksCubit>().toggleTag(tag),
       child: Container(
-        constraints: BoxConstraints(
-          maxWidth: 200,
-        ), // Prevent tags from getting too wide
+        constraints: BoxConstraints(maxWidth: 200), // Prevent tags from getting too wide
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: isSelected
@@ -122,9 +112,7 @@ class TagsPanel extends StatelessWidget {
                     : MacosColors.controlBackgroundColor),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected
-                ? MacosColors.controlAccentColor
-                : MacosColors.separatorColor,
+            color: isSelected ? MacosColors.controlAccentColor : MacosColors.separatorColor,
             width: 0.5,
           ),
         ),
@@ -149,7 +137,7 @@ class TagsPanel extends StatelessWidget {
             ),
             if (isSelected) ...[
               const SizedBox(width: 4),
-              Icon(Icons.check, size: 12, color: Colors.white),
+              Icon(CupertinoIcons.checkmark, size: 12, color: Colors.white),
             ],
           ],
         ),
@@ -161,9 +149,7 @@ class TagsPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: MacosColors.separatorColor, width: 0.5),
-        ),
+        border: Border(top: BorderSide(color: MacosColors.separatorColor, width: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,13 +203,8 @@ class TagsPanel extends StatelessWidget {
                     ),
                     const SizedBox(width: 3),
                     GestureDetector(
-                      onTap: () =>
-                          context.read<BookmarksCubit>().removeTag(tag),
-                      child: const Icon(
-                        Icons.close,
-                        size: 10,
-                        color: Colors.white,
-                      ),
+                      onTap: () => context.read<BookmarksCubit>().removeTag(tag),
+                      child: const Icon(CupertinoIcons.clear, size: 10, color: Colors.white),
                     ),
                   ],
                 ),

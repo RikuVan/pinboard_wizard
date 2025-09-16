@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/common/widgets/bookmark_tile.dart';
+import 'package:pinboard_wizard/src/pages/bookmarks/add_bookmark_dialog.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_cubit.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_state.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/resizable_split_view.dart';
@@ -27,9 +29,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
     super.initState();
     _scrollController = ScrollController();
     _searchController = TextEditingController();
-    _bookmarksCubit = BookmarksCubit(
-      pinboardService: locator.get<PinboardService>(),
-    );
+    _bookmarksCubit = BookmarksCubit(pinboardService: locator.get<PinboardService>());
 
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChanged);
@@ -48,8 +48,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       if (_bookmarksCubit.shouldLoadMore()) {
         _bookmarksCubit.loadMoreBookmarks();
       }
@@ -96,9 +95,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
                   initialRatio: 0.75,
                   minLeftWidth: 400,
                   minRightWidth: 250,
-                  left: Column(
-                    children: [Expanded(child: _buildBookmarksList(state))],
-                  ),
+                  left: Column(children: [Expanded(child: _buildBookmarksList(state))]),
                   right: const TagsPanel(),
                 ),
               ),
@@ -119,10 +116,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: Text(
-                errorMessage ?? 'An error occurred',
-                textAlign: TextAlign.center,
-              ),
+              child: Text(errorMessage ?? 'An error occurred', textAlign: TextAlign.center),
             ),
             const SizedBox(height: 12),
             PushButton(
@@ -161,12 +155,24 @@ class _BookmarksPageState extends State<BookmarksPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: MacosTheme.of(context).canvasColor,
-        border: Border(
-          bottom: BorderSide(color: MacosColors.separatorColor, width: 0.5),
-        ),
+        border: Border(bottom: BorderSide(color: MacosColors.separatorColor, width: 0.5)),
       ),
       child: Row(
         children: [
+          PushButton(
+            controlSize: ControlSize.regular,
+            onPressed: _showAddBookmarkDialog,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                MacosIcon(CupertinoIcons.add, size: 16, color: Colors.white),
+                const SizedBox(width: 4),
+                Text('Add'),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: MacosSearchField(
               controller: _searchController,
@@ -230,10 +236,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
       return const Center(
         child: Text(
           'No bookmarks found',
-          style: TextStyle(
-            color: MacosColors.secondaryLabelColor,
-            fontSize: 13,
-          ),
+          style: TextStyle(color: MacosColors.secondaryLabelColor, fontSize: 13),
         ),
       );
     }
@@ -245,9 +248,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
           (!state.isSearching && !state.searchAll && state.hasMoreData ? 1 : 0),
       separatorBuilder: (context, index) => const SizedBox(height: 1),
       itemBuilder: (context, index) {
-        if (!state.isSearching &&
-            !state.searchAll &&
-            index == displayBookmarks.length) {
+        if (!state.isSearching && !state.searchAll && index == displayBookmarks.length) {
           // Show loading indicator at the end only when not searching and not in "search all" mode
           return Container(
             padding: const EdgeInsets.all(16),
@@ -256,10 +257,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
                   ? const ProgressCircle()
                   : const Text(
                       'No more bookmarks',
-                      style: TextStyle(
-                        color: MacosColors.secondaryLabelColor,
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: MacosColors.secondaryLabelColor, fontSize: 13),
                     ),
             ),
           );
@@ -275,9 +273,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
     return Container(
       decoration: BoxDecoration(
         color: MacosTheme.of(context).canvasColor,
-        border: Border(
-          top: BorderSide(color: MacosColors.separatorColor, width: 0.5),
-        ),
+        border: Border(top: BorderSide(color: MacosColors.separatorColor, width: 0.5)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
@@ -323,5 +319,59 @@ class _BookmarksPageState extends State<BookmarksPage> {
         ),
       ),
     );
+  }
+
+  void _showAddBookmarkDialog() async {
+    final result = await showMacosSheet<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => const AddBookmarkDialog(),
+    );
+
+    if (result != null) {
+      final success = await _addBookmark(result);
+      if (success && mounted) {
+        // Optionally show success message or just let the refresh handle it
+      }
+    }
+  }
+
+  Future<bool> _addBookmark(Map<String, dynamic> bookmarkData) async {
+    try {
+      await _bookmarksCubit.addBookmark(
+        url: bookmarkData['url'] as String,
+        title: bookmarkData['title'] as String,
+        description: bookmarkData['description'] as String?,
+        tags: bookmarkData['tags'] as List<String>?,
+        shared: bookmarkData['shared'] as bool,
+        toRead: bookmarkData['toRead'] as bool,
+        replace: bookmarkData['replace'] as bool,
+      );
+      return true;
+    } catch (e) {
+      if (mounted) {
+        showMacosAlertDialog(
+          context: context,
+          builder: (_) => MacosAlertDialog(
+            appIcon: SizedBox(
+              width: 64,
+              height: 64,
+              child: Icon(
+                CupertinoIcons.exclamationmark_triangle_fill,
+                size: 64,
+                color: MacosColors.systemOrangeColor,
+              ),
+            ),
+            title: const Text('Error'),
+            message: Text('Failed to add bookmark: $e'),
+            primaryButton: PushButton(
+              controlSize: ControlSize.large,
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+        );
+      }
+      return false;
+    }
   }
 }

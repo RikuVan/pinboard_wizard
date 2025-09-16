@@ -7,12 +7,9 @@ class PinboardService {
   final PinboardClient _client;
   final CredentialsService _credentialsService;
 
-  PinboardService({
-    required SecretStorage secretStorage,
-    CredentialsService? credentialsService,
-  }) : _client = PinboardClient(secretStorage: secretStorage),
-       _credentialsService =
-           credentialsService ?? CredentialsService(storage: secretStorage);
+  PinboardService({required SecretStorage secretStorage, CredentialsService? credentialsService})
+    : _client = PinboardClient(secretStorage: secretStorage),
+      _credentialsService = credentialsService ?? CredentialsService(storage: secretStorage);
 
   Future<bool> isAuthenticated() async {
     return await _client.isAuthenticated();
@@ -67,9 +64,7 @@ class PinboardService {
     final queryLower = query.toLowerCase();
 
     return allBookmarks.where((bookmark) {
-      final titleMatch = bookmark.description.toLowerCase().contains(
-        queryLower,
-      );
+      final titleMatch = bookmark.description.toLowerCase().contains(queryLower);
       final descMatch = bookmark.extended.toLowerCase().contains(queryLower);
       final tagMatch = bookmark.tags.toLowerCase().contains(queryLower);
       final urlMatch = bookmark.href.toLowerCase().contains(queryLower);
@@ -185,10 +180,7 @@ class PinboardService {
     return sortedTags;
   }
 
-  Future<void> renameTag({
-    required String oldTag,
-    required String newTag,
-  }) async {
+  Future<void> renameTag({required String oldTag, required String newTag}) async {
     try {
       await _client.renameTag(oldTag: oldTag, newTag: newTag);
     } on PinboardException {
@@ -260,6 +252,39 @@ class PinboardService {
     } catch (e) {
       return null;
     }
+  }
+
+  /// Debug method to test authentication and diagnose issues
+  Future<void> debugAuthentication() async {
+    print('=== PINBOARD SERVICE DEBUG ===');
+
+    // First check credentials
+    await _credentialsService.debugCredentials();
+
+    print('\n--- Testing API Connection ---');
+    try {
+      final isAuth = await isAuthenticated();
+      print('isAuthenticated(): ${isAuth ? "✅ True" : "❌ False"}');
+
+      if (isAuth) {
+        print('--- Testing API Token Endpoint ---');
+        final tokenResponse = await _client.getUserApiToken();
+        print('✅ API Token test successful: ${tokenResponse.result}');
+
+        print('--- Testing Simple GET Request ---');
+        final updateTime = await getLastUpdateTime();
+        print('✅ Last update time: $updateTime');
+      } else {
+        print('❌ Authentication failed - cannot proceed with API tests');
+      }
+    } catch (e) {
+      print('❌ Authentication test failed: $e');
+      if (e is PinboardAuthException) {
+        print('   This is an authentication error - check your API token');
+      }
+    }
+
+    print('=== END PINBOARD SERVICE DEBUG ===');
   }
 
   void dispose() {

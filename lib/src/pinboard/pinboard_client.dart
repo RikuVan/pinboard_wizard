@@ -24,11 +24,8 @@ class PinboardException implements Exception {
 }
 
 class PinboardAuthException extends PinboardException {
-  const PinboardAuthException(
-    String message, {
-    int? statusCode,
-    String? response,
-  }) : super(message, statusCode: statusCode, response: response);
+  const PinboardAuthException(String message, {int? statusCode, String? response})
+    : super(message, statusCode: statusCode, response: response);
 }
 
 class PinboardClient {
@@ -37,11 +34,9 @@ class PinboardClient {
   final SecretStorage _secretStorage;
   final http.Client _httpClient;
 
-  PinboardClient({
-    required SecretStorage secretStorage,
-    http.Client? httpClient,
-  }) : _secretStorage = secretStorage,
-       _httpClient = httpClient ?? http.Client();
+  PinboardClient({required SecretStorage secretStorage, http.Client? httpClient})
+    : _secretStorage = secretStorage,
+      _httpClient = httpClient ?? http.Client();
   Future<Credentials?> _getCredentials() async {
     try {
       return await _secretStorage.read();
@@ -54,14 +49,8 @@ class PinboardClient {
     return Uri.parse('$_baseUrl/$endpoint');
   }
 
-  Map<String, String> _addRequiredParams(
-    String authToken, [
-    Map<String, String>? params,
-  ]) {
-    final allParams = <String, String>{
-      'auth_token': authToken,
-      'format': 'json',
-    };
+  Map<String, String> _addRequiredParams(String authToken, [Map<String, String>? params]) {
+    final allParams = <String, String>{'auth_token': authToken, 'format': 'json'};
 
     if (params != null) {
       allParams.addAll(params);
@@ -73,41 +62,14 @@ class PinboardClient {
   Future<dynamic> _get(String endpoint, [Map<String, String>? params]) async {
     final credentials = await _getCredentials();
     if (credentials == null) {
-      throw PinboardAuthException(
-        'No credentials found. Please authenticate first.',
-      );
+      throw PinboardAuthException('No credentials found. Please authenticate first.');
     }
 
     final requiredParams = _addRequiredParams(credentials.apiKey, params);
     final uri = _buildUrl(endpoint).replace(queryParameters: requiredParams);
 
-    print(uri);
-
     try {
       final response = await _httpClient.get(uri);
-      print(response.statusCode);
-      print(response.body.toString());
-      return _handleResponse(response);
-    } catch (e) {
-      print(e.toString());
-      if (e is PinboardException) rethrow;
-      throw PinboardException('Request failed: $e');
-    }
-  }
-
-  Future<dynamic> _post(String endpoint, [Map<String, String>? params]) async {
-    final credentials = await _getCredentials();
-    if (credentials == null) {
-      throw PinboardAuthException(
-        'No credentials found. Please authenticate first.',
-      );
-    }
-
-    final requiredParams = _addRequiredParams(credentials.apiKey, params);
-    final uri = _buildUrl(endpoint);
-
-    try {
-      final response = await _httpClient.post(uri, body: requiredParams);
       return _handleResponse(response);
     } catch (e) {
       if (e is PinboardException) rethrow;
@@ -216,12 +178,7 @@ class PinboardClient {
     return PostDatesResponse.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<PostsResponse> getPost({
-    String? tag,
-    DateTime? dt,
-    String? url,
-    String? meta,
-  }) async {
+  Future<PostsResponse> getPost({String? tag, DateTime? dt, String? url, String? meta}) async {
     final params = <String, String>{};
 
     if (tag != null) params['tag'] = tag;
@@ -252,12 +209,12 @@ class PinboardClient {
     if (shared != null) params['shared'] = shared ? 'yes' : 'no';
     if (toread != null) params['toread'] = toread ? 'yes' : 'no';
 
-    final response = await _post('posts/add', params);
+    final response = await _get('posts/add', params);
     return AddPostResponse.fromJson(response as Map<String, dynamic>);
   }
 
   Future<AddPostResponse> deletePost(String url) async {
-    final response = await _post('posts/delete', {'url': url});
+    final response = await _get('posts/delete', {'url': url});
     return AddPostResponse.fromJson(response as Map<String, dynamic>);
   }
 
@@ -267,15 +224,12 @@ class PinboardClient {
   }
 
   Future<AddPostResponse> deleteTag(String tag) async {
-    final response = await _post('tags/delete', {'tag': tag});
+    final response = await _get('tags/delete', {'tag': tag});
     return AddPostResponse.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<AddPostResponse> renameTag({
-    required String oldTag,
-    required String newTag,
-  }) async {
-    final response = await _post('tags/rename', {'old': oldTag, 'new': newTag});
+  Future<AddPostResponse> renameTag({required String oldTag, required String newTag}) async {
+    final response = await _get('tags/rename', {'old': oldTag, 'new': newTag});
     return AddPostResponse.fromJson(response as Map<String, dynamic>);
   }
 

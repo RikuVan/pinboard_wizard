@@ -94,6 +94,36 @@ class CredentialsService {
       return false;
     }
   }
+
+  /// Debug method to verify credentials and API key format
+  Future<void> debugCredentials() async {
+    print('=== CREDENTIALS DEBUG ===');
+    try {
+      final credentials = await getCredentials();
+      if (credentials == null) {
+        print('❌ No credentials found in storage');
+        return;
+      }
+
+      print('✅ Credentials found');
+      print('API Key format: ${isValidApiKey(credentials.apiKey) ? "✅ Valid" : "❌ Invalid"}');
+      print(
+        'Username extracted: ${getUsernameFromApiKey(credentials.apiKey) ?? "❌ Failed to extract"}',
+      );
+      print('API Key length: ${credentials.apiKey.length}');
+      print('Contains colon: ${credentials.apiKey.contains(":") ? "✅ Yes" : "❌ No"}');
+
+      // Show first and last few characters for verification without exposing full key
+      if (credentials.apiKey.length > 10) {
+        final start = credentials.apiKey.substring(0, 5);
+        final end = credentials.apiKey.substring(credentials.apiKey.length - 5);
+        print('API Key preview: $start...$end');
+      }
+    } catch (e) {
+      print('❌ Error accessing credentials: $e');
+    }
+    print('=== END CREDENTIALS DEBUG ===');
+  }
 }
 
 class CredentialsServiceException implements Exception {

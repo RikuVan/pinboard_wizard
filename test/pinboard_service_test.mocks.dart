@@ -3,14 +3,16 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i11;
+import 'dart:async' as _i12;
 
+import 'package:flutter/foundation.dart' as _i10;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:pinboard_wizard/src/pinboard/credentials_service.dart' as _i13;
 import 'package:pinboard_wizard/src/pinboard/models/add_post_response.dart'
     as _i5;
 import 'package:pinboard_wizard/src/pinboard/models/api_token_response.dart'
     as _i2;
-import 'package:pinboard_wizard/src/pinboard/models/credentials.dart' as _i13;
+import 'package:pinboard_wizard/src/pinboard/models/credentials.dart' as _i14;
 import 'package:pinboard_wizard/src/pinboard/models/post_dates_response.dart'
     as _i4;
 import 'package:pinboard_wizard/src/pinboard/models/posts_response.dart' as _i3;
@@ -21,8 +23,7 @@ import 'package:pinboard_wizard/src/pinboard/models/update_response.dart'
     as _i9;
 import 'package:pinboard_wizard/src/pinboard/models/user_secret_response.dart'
     as _i7;
-import 'package:pinboard_wizard/src/pinboard/pinboard_client.dart' as _i10;
-import 'package:pinboard_wizard/src/pinboard/credentials_service.dart' as _i12;
+import 'package:pinboard_wizard/src/pinboard/pinboard_client.dart' as _i11;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -85,37 +86,43 @@ class _FakeUpdateResponse_7 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
+class _FakeValueNotifier_8<T> extends _i1.SmartFake
+    implements _i10.ValueNotifier<T> {
+  _FakeValueNotifier_8(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [PinboardClient].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockPinboardClient extends _i1.Mock implements _i10.PinboardClient {
+class MockPinboardClient extends _i1.Mock implements _i11.PinboardClient {
   MockPinboardClient() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i11.Future<bool> testAuthentication() =>
+  _i12.Future<bool> testAuthentication() =>
       (super.noSuchMethod(
             Invocation.method(#testAuthentication, []),
-            returnValue: _i11.Future<bool>.value(false),
+            returnValue: _i12.Future<bool>.value(false),
           )
-          as _i11.Future<bool>);
+          as _i12.Future<bool>);
 
   @override
-  _i11.Future<_i2.ApiTokenResponse> getUserApiToken() =>
+  _i12.Future<_i2.ApiTokenResponse> getUserApiToken() =>
       (super.noSuchMethod(
             Invocation.method(#getUserApiToken, []),
-            returnValue: _i11.Future<_i2.ApiTokenResponse>.value(
+            returnValue: _i12.Future<_i2.ApiTokenResponse>.value(
               _FakeApiTokenResponse_0(
                 this,
                 Invocation.method(#getUserApiToken, []),
               ),
             ),
           )
-          as _i11.Future<_i2.ApiTokenResponse>);
+          as _i12.Future<_i2.ApiTokenResponse>);
 
   @override
-  _i11.Future<_i3.PostsResponse> getPosts({
+  _i12.Future<_i3.PostsResponse> getPosts({
     String? tag,
     int? start,
     int? results,
@@ -132,7 +139,7 @@ class MockPinboardClient extends _i1.Mock implements _i10.PinboardClient {
               #todt: todt,
               #meta: meta,
             }),
-            returnValue: _i11.Future<_i3.PostsResponse>.value(
+            returnValue: _i12.Future<_i3.PostsResponse>.value(
               _FakePostsResponse_1(
                 this,
                 Invocation.method(#getPosts, [], {
@@ -146,13 +153,13 @@ class MockPinboardClient extends _i1.Mock implements _i10.PinboardClient {
               ),
             ),
           )
-          as _i11.Future<_i3.PostsResponse>);
+          as _i12.Future<_i3.PostsResponse>);
 
   @override
-  _i11.Future<_i3.PostsResponse> getRecentPosts({String? tag, int? count}) =>
+  _i12.Future<_i3.PostsResponse> getRecentPosts({String? tag, int? count}) =>
       (super.noSuchMethod(
             Invocation.method(#getRecentPosts, [], {#tag: tag, #count: count}),
-            returnValue: _i11.Future<_i3.PostsResponse>.value(
+            returnValue: _i12.Future<_i3.PostsResponse>.value(
               _FakePostsResponse_1(
                 this,
                 Invocation.method(#getRecentPosts, [], {
@@ -162,23 +169,23 @@ class MockPinboardClient extends _i1.Mock implements _i10.PinboardClient {
               ),
             ),
           )
-          as _i11.Future<_i3.PostsResponse>);
+          as _i12.Future<_i3.PostsResponse>);
 
   @override
-  _i11.Future<_i4.PostDatesResponse> getPostDates({String? tag}) =>
+  _i12.Future<_i4.PostDatesResponse> getPostDates({String? tag}) =>
       (super.noSuchMethod(
             Invocation.method(#getPostDates, [], {#tag: tag}),
-            returnValue: _i11.Future<_i4.PostDatesResponse>.value(
+            returnValue: _i12.Future<_i4.PostDatesResponse>.value(
               _FakePostDatesResponse_2(
                 this,
                 Invocation.method(#getPostDates, [], {#tag: tag}),
               ),
             ),
           )
-          as _i11.Future<_i4.PostDatesResponse>);
+          as _i12.Future<_i4.PostDatesResponse>);
 
   @override
-  _i11.Future<_i3.PostsResponse> getPost({
+  _i12.Future<_i3.PostsResponse> getPost({
     String? tag,
     DateTime? dt,
     String? url,
@@ -191,7 +198,7 @@ class MockPinboardClient extends _i1.Mock implements _i10.PinboardClient {
               #url: url,
               #meta: meta,
             }),
-            returnValue: _i11.Future<_i3.PostsResponse>.value(
+            returnValue: _i12.Future<_i3.PostsResponse>.value(
               _FakePostsResponse_1(
                 this,
                 Invocation.method(#getPost, [], {
@@ -203,10 +210,10 @@ class MockPinboardClient extends _i1.Mock implements _i10.PinboardClient {
               ),
             ),
           )
-          as _i11.Future<_i3.PostsResponse>);
+          as _i12.Future<_i3.PostsResponse>);
 
   @override
-  _i11.Future<_i5.AddPostResponse> addPost({
+  _i12.Future<_i5.AddPostResponse> addPost({
     required String? url,
     required String? description,
     String? extended,
@@ -227,7 +234,7 @@ class MockPinboardClient extends _i1.Mock implements _i10.PinboardClient {
               #shared: shared,
               #toread: toread,
             }),
-            returnValue: _i11.Future<_i5.AddPostResponse>.value(
+            returnValue: _i12.Future<_i5.AddPostResponse>.value(
               _FakeAddPostResponse_3(
                 this,
                 Invocation.method(#addPost, [], {
@@ -243,46 +250,46 @@ class MockPinboardClient extends _i1.Mock implements _i10.PinboardClient {
               ),
             ),
           )
-          as _i11.Future<_i5.AddPostResponse>);
+          as _i12.Future<_i5.AddPostResponse>);
 
   @override
-  _i11.Future<_i5.AddPostResponse> deletePost(String? url) =>
+  _i12.Future<_i5.AddPostResponse> deletePost(String? url) =>
       (super.noSuchMethod(
             Invocation.method(#deletePost, [url]),
-            returnValue: _i11.Future<_i5.AddPostResponse>.value(
+            returnValue: _i12.Future<_i5.AddPostResponse>.value(
               _FakeAddPostResponse_3(
                 this,
                 Invocation.method(#deletePost, [url]),
               ),
             ),
           )
-          as _i11.Future<_i5.AddPostResponse>);
+          as _i12.Future<_i5.AddPostResponse>);
 
   @override
-  _i11.Future<_i6.TagsResponse> getTags() =>
+  _i12.Future<_i6.TagsResponse> getTags() =>
       (super.noSuchMethod(
             Invocation.method(#getTags, []),
-            returnValue: _i11.Future<_i6.TagsResponse>.value(
+            returnValue: _i12.Future<_i6.TagsResponse>.value(
               _FakeTagsResponse_4(this, Invocation.method(#getTags, [])),
             ),
           )
-          as _i11.Future<_i6.TagsResponse>);
+          as _i12.Future<_i6.TagsResponse>);
 
   @override
-  _i11.Future<_i5.AddPostResponse> deleteTag(String? tag) =>
+  _i12.Future<_i5.AddPostResponse> deleteTag(String? tag) =>
       (super.noSuchMethod(
             Invocation.method(#deleteTag, [tag]),
-            returnValue: _i11.Future<_i5.AddPostResponse>.value(
+            returnValue: _i12.Future<_i5.AddPostResponse>.value(
               _FakeAddPostResponse_3(
                 this,
                 Invocation.method(#deleteTag, [tag]),
               ),
             ),
           )
-          as _i11.Future<_i5.AddPostResponse>);
+          as _i12.Future<_i5.AddPostResponse>);
 
   @override
-  _i11.Future<_i5.AddPostResponse> renameTag({
+  _i12.Future<_i5.AddPostResponse> renameTag({
     required String? oldTag,
     required String? newTag,
   }) =>
@@ -291,7 +298,7 @@ class MockPinboardClient extends _i1.Mock implements _i10.PinboardClient {
               #oldTag: oldTag,
               #newTag: newTag,
             }),
-            returnValue: _i11.Future<_i5.AddPostResponse>.value(
+            returnValue: _i12.Future<_i5.AddPostResponse>.value(
               _FakeAddPostResponse_3(
                 this,
                 Invocation.method(#renameTag, [], {
@@ -301,74 +308,74 @@ class MockPinboardClient extends _i1.Mock implements _i10.PinboardClient {
               ),
             ),
           )
-          as _i11.Future<_i5.AddPostResponse>);
+          as _i12.Future<_i5.AddPostResponse>);
 
   @override
-  _i11.Future<_i7.UserSecretResponse> getUserSecret() =>
+  _i12.Future<_i7.UserSecretResponse> getUserSecret() =>
       (super.noSuchMethod(
             Invocation.method(#getUserSecret, []),
-            returnValue: _i11.Future<_i7.UserSecretResponse>.value(
+            returnValue: _i12.Future<_i7.UserSecretResponse>.value(
               _FakeUserSecretResponse_5(
                 this,
                 Invocation.method(#getUserSecret, []),
               ),
             ),
           )
-          as _i11.Future<_i7.UserSecretResponse>);
+          as _i12.Future<_i7.UserSecretResponse>);
 
   @override
-  _i11.Future<_i8.SuggestResponse> getSuggestedTags(String? url) =>
+  _i12.Future<_i8.SuggestResponse> getSuggestedTags(String? url) =>
       (super.noSuchMethod(
             Invocation.method(#getSuggestedTags, [url]),
-            returnValue: _i11.Future<_i8.SuggestResponse>.value(
+            returnValue: _i12.Future<_i8.SuggestResponse>.value(
               _FakeSuggestResponse_6(
                 this,
                 Invocation.method(#getSuggestedTags, [url]),
               ),
             ),
           )
-          as _i11.Future<_i8.SuggestResponse>);
+          as _i12.Future<_i8.SuggestResponse>);
 
   @override
-  _i11.Future<Map<String, dynamic>> getNotes() =>
+  _i12.Future<Map<String, dynamic>> getNotes() =>
       (super.noSuchMethod(
             Invocation.method(#getNotes, []),
-            returnValue: _i11.Future<Map<String, dynamic>>.value(
+            returnValue: _i12.Future<Map<String, dynamic>>.value(
               <String, dynamic>{},
             ),
           )
-          as _i11.Future<Map<String, dynamic>>);
+          as _i12.Future<Map<String, dynamic>>);
 
   @override
-  _i11.Future<Map<String, dynamic>> getNote(String? noteId) =>
+  _i12.Future<Map<String, dynamic>> getNote(String? noteId) =>
       (super.noSuchMethod(
             Invocation.method(#getNote, [noteId]),
-            returnValue: _i11.Future<Map<String, dynamic>>.value(
+            returnValue: _i12.Future<Map<String, dynamic>>.value(
               <String, dynamic>{},
             ),
           )
-          as _i11.Future<Map<String, dynamic>>);
+          as _i12.Future<Map<String, dynamic>>);
 
   @override
-  _i11.Future<_i9.UpdateResponse> getLastUpdate() =>
+  _i12.Future<_i9.UpdateResponse> getLastUpdate() =>
       (super.noSuchMethod(
             Invocation.method(#getLastUpdate, []),
-            returnValue: _i11.Future<_i9.UpdateResponse>.value(
+            returnValue: _i12.Future<_i9.UpdateResponse>.value(
               _FakeUpdateResponse_7(
                 this,
                 Invocation.method(#getLastUpdate, []),
               ),
             ),
           )
-          as _i11.Future<_i9.UpdateResponse>);
+          as _i12.Future<_i9.UpdateResponse>);
 
   @override
-  _i11.Future<bool> isAuthenticated() =>
+  _i12.Future<bool> isAuthenticated() =>
       (super.noSuchMethod(
             Invocation.method(#isAuthenticated, []),
-            returnValue: _i11.Future<bool>.value(false),
+            returnValue: _i12.Future<bool>.value(false),
           )
-          as _i11.Future<bool>);
+          as _i12.Future<bool>);
 
   @override
   void dispose() => super.noSuchMethod(
@@ -381,44 +388,55 @@ class MockPinboardClient extends _i1.Mock implements _i10.PinboardClient {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockCredentialsService extends _i1.Mock
-    implements _i12.CredentialsService {
+    implements _i13.CredentialsService {
   MockCredentialsService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i11.Future<_i13.Credentials?> getCredentials() =>
+  _i10.ValueNotifier<bool> get isAuthenticatedNotifier =>
+      (super.noSuchMethod(
+            Invocation.getter(#isAuthenticatedNotifier),
+            returnValue: _FakeValueNotifier_8<bool>(
+              this,
+              Invocation.getter(#isAuthenticatedNotifier),
+            ),
+          )
+          as _i10.ValueNotifier<bool>);
+
+  @override
+  _i12.Future<_i14.Credentials?> getCredentials() =>
       (super.noSuchMethod(
             Invocation.method(#getCredentials, []),
-            returnValue: _i11.Future<_i13.Credentials?>.value(),
+            returnValue: _i12.Future<_i14.Credentials?>.value(),
           )
-          as _i11.Future<_i13.Credentials?>);
+          as _i12.Future<_i14.Credentials?>);
 
   @override
-  _i11.Future<void> saveCredentials(String? apiKey) =>
+  _i12.Future<void> saveCredentials(String? apiKey) =>
       (super.noSuchMethod(
             Invocation.method(#saveCredentials, [apiKey]),
-            returnValue: _i11.Future<void>.value(),
-            returnValueForMissingStub: _i11.Future<void>.value(),
+            returnValue: _i12.Future<void>.value(),
+            returnValueForMissingStub: _i12.Future<void>.value(),
           )
-          as _i11.Future<void>);
+          as _i12.Future<void>);
 
   @override
-  _i11.Future<void> clearCredentials() =>
+  _i12.Future<void> clearCredentials() =>
       (super.noSuchMethod(
             Invocation.method(#clearCredentials, []),
-            returnValue: _i11.Future<void>.value(),
-            returnValueForMissingStub: _i11.Future<void>.value(),
+            returnValue: _i12.Future<void>.value(),
+            returnValueForMissingStub: _i12.Future<void>.value(),
           )
-          as _i11.Future<void>);
+          as _i12.Future<void>);
 
   @override
-  _i11.Future<bool> hasCredentials() =>
+  _i12.Future<bool> hasCredentials() =>
       (super.noSuchMethod(
             Invocation.method(#hasCredentials, []),
-            returnValue: _i11.Future<bool>.value(false),
+            returnValue: _i12.Future<bool>.value(false),
           )
-          as _i11.Future<bool>);
+          as _i12.Future<bool>);
 
   @override
   bool isValidApiKey(String? apiKey) =>
@@ -429,10 +447,19 @@ class MockCredentialsService extends _i1.Mock
           as bool);
 
   @override
-  _i11.Future<bool> isAuthenticated() =>
+  _i12.Future<bool> isAuthenticated() =>
       (super.noSuchMethod(
             Invocation.method(#isAuthenticated, []),
-            returnValue: _i11.Future<bool>.value(false),
+            returnValue: _i12.Future<bool>.value(false),
           )
-          as _i11.Future<bool>);
+          as _i12.Future<bool>);
+
+  @override
+  _i12.Future<void> debugCredentials() =>
+      (super.noSuchMethod(
+            Invocation.method(#debugCredentials, []),
+            returnValue: _i12.Future<void>.value(),
+            returnValueForMissingStub: _i12.Future<void>.value(),
+          )
+          as _i12.Future<void>);
 }
