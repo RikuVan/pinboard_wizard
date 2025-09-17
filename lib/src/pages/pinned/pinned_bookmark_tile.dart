@@ -174,8 +174,7 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                                 tag,
                                 style: TextStyle(
                                   fontSize: 10,
-                                  color: MacosColors.tertiaryLabelColor
-                                      .resolveFrom(context),
+                                  color: MacosColors.systemPurpleColor,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
