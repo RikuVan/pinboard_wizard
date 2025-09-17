@@ -4,6 +4,7 @@ import 'package:pinboard_wizard/src/service_locator.dart';
 import 'package:pinboard_wizard/src/theme.dart';
 import 'package:pinboard_wizard/src/auth/auth_gate.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/bookmarks_page.dart';
+import 'package:pinboard_wizard/src/pages/pinned/pinned_page.dart';
 import 'package:pinboard_wizard/src/pages/settings_page.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:provider/provider.dart';
@@ -77,7 +78,7 @@ class _PinboardWizardState extends State<PinboardWizard> {
               child: ContentArea(
                 builder: (context, _) => AuthGate(
                   child: [
-                    const Text("1"),
+                    const PinnedPage(),
                     const BookmarksPage(),
                     const Text("3"),
                     const SettingsPage(),
