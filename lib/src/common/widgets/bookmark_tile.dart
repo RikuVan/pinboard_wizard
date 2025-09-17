@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
+import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class BookmarkTile extends StatelessWidget {
@@ -28,7 +29,7 @@ class BookmarkTile extends StatelessWidget {
         showMacosAlertDialog(
           context: context,
           builder: (_) => MacosAlertDialog(
-            appIcon: const FlutterLogo(size: 64),
+            appIcon: const AppLogo.dialog(),
             title: const Text('Error'),
             message: Text('Could not launch $url'),
             primaryButton: PushButton(
@@ -61,21 +62,19 @@ class BookmarkTile extends StatelessWidget {
         ),
         primaryButton: PushButton(
           controlSize: ControlSize.large,
-          child: const Text('Cancel'),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        secondaryButton: PushButton(
-          controlSize: ControlSize.large,
           onPressed: () {
             Navigator.of(context).pop();
             if (onDelete != null) {
               onDelete!();
             }
           },
-          child: Text(
-            'Delete',
-            style: TextStyle(color: MacosColors.systemRedColor),
-          ),
+          child: const Text('Delete'),
+        ),
+        secondaryButton: PushButton(
+          controlSize: ControlSize.large,
+          secondary: true,
+          child: const Text('Cancel'),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
     );

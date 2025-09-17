@@ -9,6 +9,7 @@ import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_cubit.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_state.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/resizable_split_view.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/tags_panel.dart';
+import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
 
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
@@ -336,7 +337,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
     showMacosAlertDialog(
       context: context,
       builder: (_) => MacosAlertDialog(
-        appIcon: const FlutterLogo(size: 64),
+        appIcon: const AppLogo.dialog(),
         title: const Text('Error'),
         message: Text(errorMessage),
         primaryButton: PushButton(

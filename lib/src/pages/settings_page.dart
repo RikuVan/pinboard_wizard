@@ -7,6 +7,7 @@ import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
 import 'package:pinboard_wizard/src/service_locator.dart';
 import 'package:pinboard_wizard/src/pinboard/in_memory_secrets_storage.dart';
 import 'package:pinboard_wizard/src/pinboard/models/credentials.dart';
+import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -131,7 +132,16 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Settings', style: MacosTheme.of(context).typography.largeTitle),
+          Row(
+            children: [
+              const AppLogo.medium(),
+              const SizedBox(width: 12),
+              Text(
+                'Pinboard Wizard Settings',
+                style: MacosTheme.of(context).typography.largeTitle,
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
           Row(
             children: [

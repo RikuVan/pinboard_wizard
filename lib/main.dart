@@ -95,7 +95,7 @@ class _PinboardWizardState extends State<PinboardWizard> {
 List<PlatformMenuItem> menuBarItems() {
   return const [
     PlatformMenu(
-      label: 'Flutter Wizard',
+      label: 'Pinboard Wizard',
       menus: [
         PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.about),
         PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.quit),
