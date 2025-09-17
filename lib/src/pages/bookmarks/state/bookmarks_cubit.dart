@@ -24,7 +24,10 @@ class BookmarksCubit extends Cubit<BookmarksState> {
     );
 
     try {
-      final results = await _pinboardService.getAllBookmarks(start: 0, results: _pageSize);
+      final results = await _pinboardService.getAllBookmarks(
+        start: 0,
+        results: _pageSize,
+      );
 
       emit(
         state.copyWith(
@@ -39,7 +42,10 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       _updateAvailableTags();
     } catch (e) {
       emit(
-        state.copyWith(status: BookmarksStatus.error, errorMessage: 'Error loading bookmarks: $e'),
+        state.copyWith(
+          status: BookmarksStatus.error,
+          errorMessage: 'Error loading bookmarks: $e',
+        ),
       );
     }
   }
@@ -58,7 +64,8 @@ class BookmarksCubit extends Cubit<BookmarksState> {
         results: _pageSize,
       );
 
-      final updatedBookmarks = List<Post>.from(state.bookmarks)..addAll(results);
+      final updatedBookmarks = List<Post>.from(state.bookmarks)
+        ..addAll(results);
 
       emit(
         state.copyWith(
@@ -136,7 +143,13 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       return;
     }
 
-    emit(state.copyWith(isSearching: true, searchQuery: query, status: BookmarksStatus.searching));
+    emit(
+      state.copyWith(
+        isSearching: true,
+        searchQuery: query,
+        status: BookmarksStatus.searching,
+      ),
+    );
 
     try {
       List<Post> searchResults;
@@ -153,7 +166,12 @@ class BookmarksCubit extends Cubit<BookmarksState> {
         searchResults = _filterBookmarks(state.bookmarks, query);
       }
 
-      emit(state.copyWith(status: BookmarksStatus.loaded, filteredBookmarks: searchResults));
+      emit(
+        state.copyWith(
+          status: BookmarksStatus.loaded,
+          filteredBookmarks: searchResults,
+        ),
+      );
     } catch (e) {
       emit(
         state.copyWith(
@@ -185,7 +203,9 @@ class BookmarksCubit extends Cubit<BookmarksState> {
   List<Post> _filterBookmarks(List<Post> bookmarks, String query) {
     final queryLower = query.toLowerCase();
     return bookmarks.where((bookmark) {
-      final titleMatch = bookmark.description.toLowerCase().contains(queryLower);
+      final titleMatch = bookmark.description.toLowerCase().contains(
+        queryLower,
+      );
       final descMatch = bookmark.extended.toLowerCase().contains(queryLower);
       final tagMatch = bookmark.tags.toLowerCase().contains(queryLower);
       final urlMatch = bookmark.href.toLowerCase().contains(queryLower);
@@ -195,7 +215,10 @@ class BookmarksCubit extends Cubit<BookmarksState> {
 
   /// Check if should load more bookmarks (for scroll listener)
   bool shouldLoadMore() {
-    return !state.isLoadingMore && state.hasMoreData && !state.searchAll && !state.isSearching;
+    return !state.isLoadingMore &&
+        state.hasMoreData &&
+        !state.searchAll &&
+        !state.isSearching;
   }
 
   /// Get secondary footer text
@@ -310,7 +333,44 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       await refresh();
     } catch (e) {
       emit(
-        state.copyWith(status: BookmarksStatus.error, errorMessage: 'Failed to add bookmark: $e'),
+        state.copyWith(
+          status: BookmarksStatus.error,
+          errorMessage: 'Failed to add bookmark: $e',
+        ),
+      );
+    }
+  }
+
+  /// Update an existing bookmark
+  Future<void> updateBookmark(Post bookmark) async {
+    try {
+      await _pinboardService.updateBookmark(bookmark);
+
+      // Refresh bookmarks to show the updated one
+      await refresh();
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: BookmarksStatus.error,
+          errorMessage: 'Failed to update bookmark: $e',
+        ),
+      );
+    }
+  }
+
+  /// Delete a bookmark
+  Future<void> deleteBookmark(String url) async {
+    try {
+      await _pinboardService.deleteBookmark(url);
+
+      // Refresh bookmarks to remove the deleted one
+      await refresh();
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: BookmarksStatus.error,
+          errorMessage: 'Failed to delete bookmark: $e',
+        ),
       );
     }
   }

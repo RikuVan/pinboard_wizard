@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pinboard_wizard/src/pinboard/models/credentials.dart';
+import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:pinboard_wizard/src/pinboard/in_memory_secrets_storage.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 
@@ -189,5 +190,291 @@ extension CredentialsServiceTestExt on CredentialsService {
   Future<CredentialsService> withCredentials(String apiKey) async {
     await saveCredentials(apiKey);
     return this;
+  }
+}
+
+/// Test data helpers for creating Post instances and related test data
+class PostTestData {
+  /// Create a basic test post
+  static Post createPost({
+    String? href,
+    String? description,
+    String? extended,
+    String? meta,
+    String? hash,
+    DateTime? time,
+    bool? shared,
+    bool? toread,
+    String? tags,
+  }) {
+    return Post(
+      href: href ?? 'https://example.com',
+      description: description ?? 'Test Bookmark',
+      extended: extended ?? 'Test description',
+      meta: meta ?? 'meta',
+      hash: hash ?? 'abcdef123456',
+      time: time ?? DateTime(2023, 1, 1),
+      shared: shared ?? true,
+      toread: toread ?? false,
+      tags: tags ?? 'test development',
+    );
+  }
+
+  /// Create a list of test posts with varying properties
+  static List<Post> createPostList({int count = 3}) {
+    return List.generate(count, (index) {
+      return Post(
+        href: 'https://example$index.com',
+        description: 'Test Bookmark $index',
+        extended: 'Extended description for bookmark $index',
+        meta: 'meta$index',
+        hash: 'hash$index${DateTime.now().millisecondsSinceEpoch}',
+        time: DateTime(2023, 1, index + 1),
+        shared: index % 2 == 0,
+        toread: index % 3 == 0,
+        tags: _createTagsForIndex(index),
+      );
+    });
+  }
+
+  /// Create posts with specific tags for testing tag functionality
+  static List<Post> createPostsWithTags() {
+    return [
+      createPost(
+        href: 'https://flutter.dev',
+        description: 'Flutter Documentation',
+        tags: 'flutter mobile development dart',
+      ),
+      createPost(
+        href: 'https://dart.dev',
+        description: 'Dart Language',
+        tags: 'dart programming language',
+      ),
+      createPost(
+        href: 'https://github.com',
+        description: 'GitHub',
+        tags: 'github git version-control',
+      ),
+      createPost(
+        href: 'https://stackoverflow.com',
+        description: 'Stack Overflow',
+        tags: 'programming help community',
+      ),
+      createPost(
+        href: 'https://docs.rs',
+        description: 'Rust Documentation',
+        tags: 'rust systems-programming',
+      ),
+    ];
+  }
+
+  /// Create posts for testing search functionality
+  static List<Post> createSearchTestPosts() {
+    return [
+      createPost(
+        href: 'https://flutter.dev',
+        description: 'Flutter Framework Documentation',
+        extended: 'Complete guide to Flutter mobile development',
+        tags: 'flutter mobile ui',
+      ),
+      createPost(
+        href: 'https://reactjs.org',
+        description: 'React JavaScript Library',
+        extended: 'A JavaScript library for building user interfaces',
+        tags: 'react javascript frontend',
+      ),
+      createPost(
+        href: 'https://vuejs.org',
+        description: 'Vue.js Progressive Framework',
+        extended: 'The progressive JavaScript framework',
+        tags: 'vue javascript spa',
+      ),
+      createPost(
+        href: 'https://angular.io',
+        description: 'Angular Platform',
+        extended: 'Platform for building mobile and desktop applications',
+        tags: 'angular typescript framework',
+      ),
+    ];
+  }
+
+  /// Create posts with read status for testing
+  static List<Post> createToReadPosts() {
+    return [
+      createPost(
+        description: 'Article to Read 1',
+        toread: true,
+        tags: 'article reading',
+      ),
+      createPost(
+        description: 'Article to Read 2',
+        toread: true,
+        tags: 'tutorial learning',
+      ),
+      createPost(description: 'Already Read', toread: false, tags: 'completed'),
+    ];
+  }
+
+  /// Create posts with sharing status for testing
+  static List<Post> createPrivatePosts() {
+    return [
+      createPost(
+        description: 'Private Bookmark 1',
+        shared: false,
+        tags: 'private personal',
+      ),
+      createPost(
+        description: 'Public Bookmark',
+        shared: true,
+        tags: 'public shared',
+      ),
+      createPost(
+        description: 'Private Bookmark 2',
+        shared: false,
+        tags: 'secret internal',
+      ),
+    ];
+  }
+
+  /// Create a large list for pagination testing
+  static List<Post> createLargePostList({int count = 100}) {
+    return List.generate(count, (index) {
+      return Post(
+        href: 'https://example$index.com',
+        description: 'Bookmark $index',
+        extended: 'Description for bookmark number $index',
+        meta: 'meta$index',
+        hash: 'hash${index.toString().padLeft(6, '0')}',
+        time: DateTime(2023, 1, 1).add(Duration(days: index)),
+        shared: index % 2 == 0,
+        toread: index % 5 == 0,
+        tags: 'tag${index % 10} category${index % 3}',
+      );
+    });
+  }
+
+  /// Create posts with duplicate tags for testing tag deduplication
+  static List<Post> createPostsWithDuplicateTags() {
+    return [
+      createPost(tags: 'flutter dart mobile'),
+      createPost(tags: 'dart programming language'),
+      createPost(tags: 'flutter ui development'),
+      createPost(tags: 'mobile flutter ios android'),
+      createPost(tags: 'programming dart algorithms'),
+    ];
+  }
+
+  /// Create posts with empty or whitespace tags
+  static List<Post> createPostsWithEmptyTags() {
+    return [
+      createPost(tags: ''),
+      createPost(tags: '   '),
+      createPost(tags: 'tag1  tag2   tag3'),
+      createPost(tags: ' flutter  dart  '),
+    ];
+  }
+
+  /// Helper method to create tags for a given index
+  static String _createTagsForIndex(int index) {
+    final baseTags = [
+      'development programming',
+      'tutorial learning',
+      'documentation reference',
+      'tools utilities',
+      'framework library',
+    ];
+    return baseTags[index % baseTags.length];
+  }
+
+  /// Create posts for testing URL domain extraction
+  static List<Post> createPostsWithVariousUrls() {
+    return [
+      createPost(
+        href: 'https://github.com/user/repo',
+        description: 'GitHub Repo',
+      ),
+      createPost(
+        href: 'https://stackoverflow.com/questions/123',
+        description: 'SO Question',
+      ),
+      createPost(
+        href: 'https://medium.com/@author/article',
+        description: 'Medium Article',
+      ),
+      createPost(href: 'https://dev.to/user/post', description: 'Dev.to Post'),
+      createPost(
+        href: 'https://blog.example.com/post',
+        description: 'Blog Post',
+      ),
+      createPost(href: 'invalid-url', description: 'Invalid URL'),
+    ];
+  }
+
+  /// Create posts with specific dates for date-based testing
+  static List<Post> createPostsWithDates() {
+    return [
+      createPost(time: DateTime(2023, 1, 1), description: 'New Year Post'),
+      createPost(time: DateTime(2023, 6, 15), description: 'Mid Year Post'),
+      createPost(time: DateTime(2023, 12, 31), description: 'End Year Post'),
+      createPost(time: DateTime(2024, 1, 1), description: 'Next Year Post'),
+    ];
+  }
+
+  /// Expected results for search tests
+  static const Map<String, List<String>> searchExpectedResults = {
+    'flutter': ['Flutter Framework Documentation'],
+    'react': ['React JavaScript Library'],
+    'javascript': ['React JavaScript Library', 'Vue.js Progressive Framework'],
+    'framework': ['Vue.js Progressive Framework', 'Angular Platform'],
+    'mobile': ['Flutter Framework Documentation', 'Angular Platform'],
+    'nonexistent': [],
+  };
+
+  /// Expected tag lists for tag testing
+  static const List<String> expectedUniqueTags = [
+    'flutter',
+    'mobile',
+    'ui',
+    'react',
+    'javascript',
+    'frontend',
+    'vue',
+    'spa',
+    'angular',
+    'typescript',
+    'framework',
+  ];
+}
+
+/// Exception test data for testing error scenarios
+class ExceptionTestData {
+  /// Create a generic exception
+  static Exception createGenericException([String message = 'Test exception']) {
+    return Exception(message);
+  }
+
+  /// Create a network-related exception
+  static Exception createNetworkException() {
+    return Exception('Network error: Failed to connect to server');
+  }
+
+  /// Create an authentication exception
+  static Exception createAuthException() {
+    return Exception('Authentication failed: Invalid API token');
+  }
+
+  /// Create a timeout exception
+  static Exception createTimeoutException() {
+    return Exception('Request timeout: Operation took too long');
+  }
+
+  /// Create a server error exception
+  static Exception createServerException() {
+    return Exception('Server error: Internal server error (500)');
+  }
+
+  /// Create a not found exception
+  static Exception createNotFoundException() {
+    return Exception('Not found: Resource does not exist (404)');
   }
 }

@@ -7,8 +7,17 @@ import 'package:url_launcher/url_launcher.dart';
 
 class BookmarkTile extends StatelessWidget {
   final Post post;
+  final VoidCallback? onUpdate;
+  final VoidCallback? onDelete;
+  final VoidCallback? onPin;
 
-  const BookmarkTile({super.key, required this.post});
+  const BookmarkTile({
+    super.key,
+    required this.post,
+    this.onUpdate,
+    this.onDelete,
+    this.onPin,
+  });
 
   void _launchUrl(BuildContext context, String url) async {
     try {
@@ -31,6 +40,45 @@ class BookmarkTile extends StatelessWidget {
         );
       }
     }
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showMacosAlertDialog(
+      context: context,
+      builder: (_) => MacosAlertDialog(
+        appIcon: SizedBox(
+          width: 64,
+          height: 64,
+          child: Icon(
+            CupertinoIcons.trash_fill,
+            size: 64,
+            color: MacosColors.systemRedColor,
+          ),
+        ),
+        title: const Text('Delete Bookmark'),
+        message: Text(
+          'Are you sure you want to delete "${post.description}"?\n\nThis action cannot be undone.',
+        ),
+        primaryButton: PushButton(
+          controlSize: ControlSize.large,
+          child: const Text('Cancel'),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        secondaryButton: PushButton(
+          controlSize: ControlSize.large,
+          onPressed: () {
+            Navigator.of(context).pop();
+            if (onDelete != null) {
+              onDelete!();
+            }
+          },
+          child: Text(
+            'Delete',
+            style: TextStyle(color: MacosColors.systemRedColor),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -56,6 +104,70 @@ class BookmarkTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Action buttons row
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (onPin != null)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            CupertinoIcons.pin_fill,
+                            size: 14,
+                            color: MacosColors.secondaryLabelColor.resolveFrom(
+                              context,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          MacosSwitch(
+                            value: post.tagList.contains('pin'),
+                            onChanged: (_) => onPin?.call(),
+                            size: ControlSize.mini,
+                          ),
+                        ],
+                      ),
+                    if (onUpdate != null) ...[
+                      if (onPin != null) const SizedBox(width: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: MacosColors.separatorColor,
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: MacosIconButton(
+                          icon: MacosIcon(
+                            CupertinoIcons.pencil,
+                            size: 16,
+                            color: MacosColors.secondaryLabelColor.resolveFrom(
+                              context,
+                            ),
+                          ),
+                          onPressed: onUpdate,
+                        ),
+                      ),
+                    ],
+                    if (onDelete != null) ...[
+                      if (onUpdate != null || onPin != null)
+                        const SizedBox(width: 8),
+                      MacosIconButton(
+                        icon: MacosIcon(
+                          CupertinoIcons.trash,
+                          size: 16,
+                          color: MacosColors.secondaryLabelColor.resolveFrom(
+                            context,
+                          ),
+                        ),
+                        onPressed: () => _showDeleteConfirmation(context),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
               // Title as a link
               StatefulBuilder(
                 builder: (context, setState) {
@@ -119,27 +231,30 @@ class BookmarkTile extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 4,
                   children: post.tagList.map((tag) {
+                    final theme = MacosTheme.of(context);
                     return Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
-                        vertical: 2,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: CupertinoColors.systemPurple.withOpacity(0.1),
+                        color: theme.brightness == Brightness.dark
+                            ? MacosColors.controlBackgroundColor.darkColor
+                            : MacosColors.controlBackgroundColor,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: CupertinoColors.systemPurple.withOpacity(0.3),
+                          color: MacosColors.separatorColor,
                           width: 0.5,
                         ),
                       ),
                       child: Text(
                         tag,
                         style: TextStyle(
-                          color: CupertinoColors.systemPurple.resolveFrom(
-                            context,
-                          ),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                          color: theme.brightness == Brightness.dark
+                              ? Colors.white.withValues(alpha: 0.87)
+                              : Colors.black.withValues(alpha: 0.87),
+                          fontWeight: FontWeight.normal,
                         ),
                       ),
                     );

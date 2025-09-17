@@ -1,31 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 
-class AddBookmarkDialog extends StatefulWidget {
-  const AddBookmarkDialog({super.key});
+class EditBookmarkDialog extends StatefulWidget {
+  final Post bookmark;
+
+  const EditBookmarkDialog({super.key, required this.bookmark});
 
   @override
-  State<AddBookmarkDialog> createState() => _AddBookmarkDialogState();
+  State<EditBookmarkDialog> createState() => _EditBookmarkDialogState();
 }
 
-class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
+class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _urlController = TextEditingController();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _tagsController = TextEditingController();
+  late final TextEditingController _urlController;
+  late final TextEditingController _titleController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _tagsController;
 
-  bool _isPrivate = true;
-  bool _markAsToRead = true;
-  bool _replaceExisting = false;
+  late bool _isPrivate;
+  late bool _markAsToRead;
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    _tryLoadClipboardUrl();
+
+    // Initialize controllers with existing bookmark data
+    _urlController = TextEditingController(text: widget.bookmark.href);
+    _titleController = TextEditingController(text: widget.bookmark.description);
+    _descriptionController = TextEditingController(
+      text: widget.bookmark.extended,
+    );
+    _tagsController = TextEditingController(text: widget.bookmark.tags);
+
+    // Initialize boolean values
+    _isPrivate = !widget.bookmark.shared;
+    _markAsToRead = widget.bookmark.toread;
   }
 
   @override
@@ -55,14 +67,14 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                     width: 32,
                     height: 32,
                     child: Icon(
-                      CupertinoIcons.bookmark_fill,
+                      CupertinoIcons.pencil,
                       size: 24,
                       color: MacosColors.controlAccentColor,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Add Bookmark',
+                    'Edit Bookmark',
                     style: MacosTheme.of(context).typography.largeTitle,
                   ),
                   const Spacer(),
@@ -145,10 +157,10 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                                 child: ProgressCircle(),
                               ),
                               const SizedBox(width: 8),
-                              const Text('Adding...'),
+                              const Text('Updating...'),
                             ],
                           )
-                        : const Text('Add Bookmark'),
+                        : const Text('Update Bookmark'),
                   ),
                 ],
               ),
@@ -247,13 +259,8 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
               ),
             ),
             const SizedBox(width: 20),
-            Expanded(
-              child: _buildSwitch(
-                value: _replaceExisting,
-                label: 'Replace if exists',
-                onChanged: (value) => setState(() => _replaceExisting = value),
-              ),
-            ),
+            // Empty space to match add dialog layout
+            const Expanded(child: SizedBox()),
           ],
         ),
       ],
@@ -323,19 +330,19 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
     setState(() => _isSubmitting = true);
 
     try {
-      final bookmarkData = {
-        'url': _urlController.text.trim(),
-        'title': _titleController.text.trim(),
-        'description': _descriptionController.text.trim().isEmpty
-            ? null
+      // Create updated bookmark with new values
+      final updatedBookmark = widget.bookmark.copyWith(
+        href: _urlController.text.trim(),
+        description: _titleController.text.trim(),
+        extended: _descriptionController.text.trim().isEmpty
+            ? ''
             : _descriptionController.text.trim(),
-        'tags': _parseTags(_tagsController.text),
-        'shared': !_isPrivate,
-        'toRead': _markAsToRead,
-        'replace': _replaceExisting,
-      };
+        tags: _parseTags(_tagsController.text).join(' '),
+        shared: !_isPrivate,
+        toread: _markAsToRead,
+      );
 
-      Navigator.of(context).pop(bookmarkData);
+      Navigator.of(context).pop(updatedBookmark);
     } catch (e) {
       setState(() => _isSubmitting = false);
       if (context.mounted) {
@@ -366,27 +373,5 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
         ),
       ),
     );
-  }
-
-  Future<void> _tryLoadClipboardUrl() async {
-    try {
-      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-      if (clipboardData?.text != null && clipboardData!.text!.isNotEmpty) {
-        final text = clipboardData.text!.trim();
-        final uri = Uri.tryParse(text);
-        if (uri != null && uri.hasScheme && uri.scheme.startsWith('http')) {
-          _urlController.text = text;
-          // Try to generate a title from the URL
-          if (uri.host.isNotEmpty) {
-            _titleController.text = uri.host
-                .replaceAll('www.', '')
-                .split('.')
-                .first;
-          }
-        }
-      }
-    } catch (e) {
-      // Ignore clipboard errors
-    }
   }
 }

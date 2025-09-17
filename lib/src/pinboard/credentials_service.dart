@@ -106,12 +106,16 @@ class CredentialsService {
       }
 
       print('✅ Credentials found');
-      print('API Key format: ${isValidApiKey(credentials.apiKey) ? "✅ Valid" : "❌ Invalid"}');
+      print(
+        'API Key format: ${isValidApiKey(credentials.apiKey) ? "✅ Valid" : "❌ Invalid"}',
+      );
       print(
         'Username extracted: ${getUsernameFromApiKey(credentials.apiKey) ?? "❌ Failed to extract"}',
       );
       print('API Key length: ${credentials.apiKey.length}');
-      print('Contains colon: ${credentials.apiKey.contains(":") ? "✅ Yes" : "❌ No"}');
+      print(
+        'Contains colon: ${credentials.apiKey.contains(":") ? "✅ Yes" : "❌ No"}',
+      );
 
       // Show first and last few characters for verification without exposing full key
       if (credentials.apiKey.length > 10) {

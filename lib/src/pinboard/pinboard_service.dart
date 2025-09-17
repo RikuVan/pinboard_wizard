@@ -7,9 +7,12 @@ class PinboardService {
   final PinboardClient _client;
   final CredentialsService _credentialsService;
 
-  PinboardService({required SecretStorage secretStorage, CredentialsService? credentialsService})
-    : _client = PinboardClient(secretStorage: secretStorage),
-      _credentialsService = credentialsService ?? CredentialsService(storage: secretStorage);
+  PinboardService({
+    required SecretStorage secretStorage,
+    CredentialsService? credentialsService,
+  }) : _client = PinboardClient(secretStorage: secretStorage),
+       _credentialsService =
+           credentialsService ?? CredentialsService(storage: secretStorage);
 
   Future<bool> isAuthenticated() async {
     return await _client.isAuthenticated();
@@ -64,7 +67,9 @@ class PinboardService {
     final queryLower = query.toLowerCase();
 
     return allBookmarks.where((bookmark) {
-      final titleMatch = bookmark.description.toLowerCase().contains(queryLower);
+      final titleMatch = bookmark.description.toLowerCase().contains(
+        queryLower,
+      );
       final descMatch = bookmark.extended.toLowerCase().contains(queryLower);
       final tagMatch = bookmark.tags.toLowerCase().contains(queryLower);
       final urlMatch = bookmark.href.toLowerCase().contains(queryLower);
@@ -180,7 +185,10 @@ class PinboardService {
     return sortedTags;
   }
 
-  Future<void> renameTag({required String oldTag, required String newTag}) async {
+  Future<void> renameTag({
+    required String oldTag,
+    required String newTag,
+  }) async {
     try {
       await _client.renameTag(oldTag: oldTag, newTag: newTag);
     } on PinboardException {
