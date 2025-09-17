@@ -10,6 +10,7 @@ import 'package:pinboard_wizard/src/pinboard/models/tags_response.dart';
 import 'package:pinboard_wizard/src/pinboard/models/user_secret_response.dart';
 import 'package:pinboard_wizard/src/pinboard/models/suggest_response.dart';
 import 'package:pinboard_wizard/src/pinboard/models/update_response.dart';
+import 'package:pinboard_wizard/src/pinboard/models/notes_response.dart';
 import 'package:pinboard_wizard/src/pinboard/secrets_storage.dart';
 
 class PinboardException implements Exception {
@@ -264,14 +265,14 @@ class PinboardClient {
     return SuggestResponse.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<Map<String, dynamic>> getNotes() async {
+  Future<NotesListResponse> getNotes() async {
     final response = await _get('notes/list');
-    return response as Map<String, dynamic>;
+    return NotesListResponse.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<Map<String, dynamic>> getNote(String noteId) async {
+  Future<NoteDetailResponse> getNote(String noteId) async {
     final response = await _get('notes/$noteId');
-    return response;
+    return NoteDetailResponse.fromJson(response as Map<String, dynamic>);
   }
 
   Future<UpdateResponse> getLastUpdate() async {

@@ -1,5 +1,7 @@
 import 'package:pinboard_wizard/src/pinboard/pinboard_client.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
+import 'package:pinboard_wizard/src/pinboard/models/note.dart';
+import 'package:pinboard_wizard/src/pinboard/models/notes_response.dart';
 import 'package:pinboard_wizard/src/pinboard/secrets_storage.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 
@@ -260,6 +262,38 @@ class PinboardService {
     } catch (e) {
       return null;
     }
+  }
+
+  // Notes functionality
+  Future<List<Note>> getAllNotes() async {
+    try {
+      final response = await _client.getNotes();
+      return response.notes;
+    } on PinboardException {
+      rethrow;
+    } catch (e) {
+      throw PinboardServiceException('Failed to fetch notes: $e');
+    }
+  }
+
+  Future<NoteDetailResponse> getNote(String noteId) async {
+    try {
+      return await _client.getNote(noteId);
+    } on PinboardException {
+      rethrow;
+    } catch (e) {
+      throw PinboardServiceException('Failed to fetch note: $e');
+    }
+  }
+
+  Future<List<Note>> searchNotes(String query) async {
+    final allNotes = await getAllNotes();
+    final queryLower = query.toLowerCase();
+
+    return allNotes.where((note) {
+      final titleMatch = note.title.toLowerCase().contains(queryLower);
+      return titleMatch;
+    }).toList();
   }
 
   /// Debug method to test authentication and diagnose issues

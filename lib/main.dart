@@ -5,6 +5,7 @@ import 'package:pinboard_wizard/src/theme.dart';
 import 'package:pinboard_wizard/src/auth/auth_gate.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/bookmarks_page.dart';
 import 'package:pinboard_wizard/src/pages/pinned/pinned_page.dart';
+import 'package:pinboard_wizard/src/pages/notes/notes_page.dart';
 import 'package:pinboard_wizard/src/pages/settings_page.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
@@ -109,7 +110,7 @@ class _PinboardWizardState extends State<PinboardWizard> {
                   child: [
                     const PinnedPage(),
                     const BookmarksPage(),
-                    const Text("3"),
+                    const NotesPage(),
                     const SettingsPage(),
                   ][pageIndex],
                 ),
