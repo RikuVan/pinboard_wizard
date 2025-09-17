@@ -100,245 +100,275 @@ class BookmarkTile extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              // Action buttons row
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (onPin != null)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Main content (left side)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title as a link
+                        _HoverableText(
+                          text: post.description,
+                          onTap: () => _launchUrl(context, post.href),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: CupertinoColors.activeBlue,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        // URL as a clickable link
+                        _HoverableText(
+                          text: post.href,
+                          onTap: () => _launchUrl(context, post.href),
+                          style: TextStyle(
+                            color: MacosColors.tertiaryLabelColor.resolveFrom(
+                              context,
+                            ),
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        // Tags below URL
+                        if (post.tagList.isNotEmpty)
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: post.tagList.map((tag) {
+                              final theme = MacosTheme.of(context);
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.brightness == Brightness.dark
+                                      ? MacosColors
+                                            .controlBackgroundColor
+                                            .darkColor
+                                      : MacosColors.controlBackgroundColor,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: MacosColors.separatorColor,
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: Text(
+                                  tag,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: theme.brightness == Brightness.dark
+                                        ? Colors.white.withValues(alpha: 0.87)
+                                        : Colors.black.withValues(alpha: 0.87),
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        if (post.extended.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Html(
+                            data: post.extended,
+                            style: {
+                              "body": Style(
+                                fontSize: FontSize(13),
+                                color: MacosColors.secondaryLabelColor
+                                    .resolveFrom(context),
+                                margin: Margins.zero,
+                                padding: HtmlPaddings.zero,
+                              ),
+                              "p": Style(margin: Margins.only(bottom: 8)),
+                              "a": Style(
+                                color: CupertinoColors.activeBlue,
+                                textDecoration: TextDecoration.none,
+                              ),
+                              "blockquote": Style(
+                                margin: Margins.only(left: 16, bottom: 8),
+                                padding: HtmlPaddings.only(left: 12),
+                                border: Border(
+                                  left: BorderSide(
+                                    color: MacosColors.tertiaryLabelColor
+                                        .resolveFrom(context),
+                                    width: 3,
+                                  ),
+                                ),
+                                backgroundColor: MacosColors
+                                    .controlBackgroundColor
+                                    .resolveFrom(context)
+                                    .withOpacity(0.3),
+                              ),
+                            },
+                            onLinkTap: (url, attributes, element) {
+                              if (url != null) {
+                                _launchUrl(context, url);
+                              }
+                            },
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        Text(
+                          post.domain,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: MacosColors.tertiaryLabelColor.resolveFrom(
+                              context,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Controls (right side)
+                  const SizedBox(width: 12),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Top action buttons
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            CupertinoIcons.pin_fill,
-                            size: 14,
-                            color: MacosColors.secondaryLabelColor.resolveFrom(
-                              context,
+                          if (onPin != null)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  CupertinoIcons.pin_fill,
+                                  size: 14,
+                                  color: MacosColors.secondaryLabelColor
+                                      .resolveFrom(context),
+                                ),
+                                const SizedBox(width: 4),
+                                MacosSwitch(
+                                  value: post.tagList.contains('pin'),
+                                  onChanged: (_) => onPin?.call(),
+                                  size: ControlSize.mini,
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          MacosSwitch(
-                            value: post.tagList.contains('pin'),
-                            onChanged: (_) => onPin?.call(),
-                            size: ControlSize.mini,
-                          ),
+                          if (onUpdate != null) ...[
+                            if (onPin != null) const SizedBox(width: 8),
+                            Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: MacosColors.separatorColor,
+                                  width: 1,
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: MacosIconButton(
+                                icon: MacosIcon(
+                                  CupertinoIcons.pencil,
+                                  size: 16,
+                                  color: MacosColors.secondaryLabelColor
+                                      .resolveFrom(context),
+                                ),
+                                onPressed: onUpdate,
+                              ),
+                            ),
+                          ],
+                          if (onDelete != null) ...[
+                            if (onUpdate != null || onPin != null)
+                              const SizedBox(width: 8),
+                            MacosIconButton(
+                              icon: MacosIcon(
+                                CupertinoIcons.trash,
+                                size: 16,
+                                color: MacosColors.secondaryLabelColor
+                                    .resolveFrom(context),
+                              ),
+                              onPressed: () => _showDeleteConfirmation(context),
+                            ),
+                          ],
                         ],
                       ),
-                    if (onUpdate != null) ...[
-                      if (onPin != null) const SizedBox(width: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: MacosColors.separatorColor,
-                            width: 1,
-                          ),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: MacosIconButton(
-                          icon: MacosIcon(
-                            CupertinoIcons.pencil,
-                            size: 16,
-                            color: MacosColors.secondaryLabelColor.resolveFrom(
-                              context,
-                            ),
-                          ),
-                          onPressed: onUpdate,
-                        ),
-                      ),
-                    ],
-                    if (onDelete != null) ...[
-                      if (onUpdate != null || onPin != null)
-                        const SizedBox(width: 8),
-                      MacosIconButton(
-                        icon: MacosIcon(
-                          CupertinoIcons.trash,
-                          size: 16,
-                          color: MacosColors.secondaryLabelColor.resolveFrom(
-                            context,
-                          ),
-                        ),
-                        onPressed: () => _showDeleteConfirmation(context),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              // Title as a link
-              StatefulBuilder(
-                builder: (context, setState) {
-                  bool isHovering = false;
-                  return GestureDetector(
-                    onTap: () => _launchUrl(context, post.href),
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      onEnter: (_) => setState(() => isHovering = true),
-                      onExit: (_) => setState(() => isHovering = false),
-                      child: Text(
-                        post.description,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: CupertinoColors.activeBlue,
-                          decoration: isHovering
-                              ? TextDecoration.underline
-                              : TextDecoration.none,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 6),
-              // URL as a clickable link
-              StatefulBuilder(
-                builder: (context, setState) {
-                  bool isHovering = false;
-                  return GestureDetector(
-                    onTap: () => _launchUrl(context, post.href),
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      onEnter: (_) => setState(() => isHovering = true),
-                      onExit: (_) => setState(() => isHovering = false),
-                      child: Text(
-                        post.href,
-                        style: TextStyle(
-                          color: isHovering
-                              ? CupertinoColors.activeBlue
-                              : MacosColors.tertiaryLabelColor.resolveFrom(
-                                  context,
-                                ),
-                          fontSize: 12,
-                          decoration: isHovering
-                              ? TextDecoration.underline
-                              : TextDecoration.none,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 8),
-              // Tags below URL
-              if (post.tagList.isNotEmpty)
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: post.tagList.map((tag) {
-                    final theme = MacosTheme.of(context);
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.brightness == Brightness.dark
-                            ? MacosColors.controlBackgroundColor.darkColor
-                            : MacosColors.controlBackgroundColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: MacosColors.separatorColor,
-                          width: 0.5,
-                        ),
-                      ),
-                      child: Text(
-                        tag,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: theme.brightness == Brightness.dark
-                              ? Colors.white.withValues(alpha: 0.87)
-                              : Colors.black.withValues(alpha: 0.87),
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              if (post.extended.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Html(
-                  data: post.extended,
-                  style: {
-                    "body": Style(
-                      fontSize: FontSize(13),
-                      color: MacosColors.secondaryLabelColor.resolveFrom(
-                        context,
-                      ),
-                      margin: Margins.zero,
-                      padding: HtmlPaddings.zero,
-                    ),
-                    "p": Style(margin: Margins.only(bottom: 8)),
-                    "a": Style(
-                      color: CupertinoColors.activeBlue,
-                      textDecoration: TextDecoration.none,
-                    ),
-                    "blockquote": Style(
-                      margin: Margins.only(left: 16, bottom: 8),
-                      padding: HtmlPaddings.only(left: 12),
-                      border: Border(
-                        left: BorderSide(
-                          color: MacosColors.tertiaryLabelColor.resolveFrom(
-                            context,
-                          ),
-                          width: 3,
-                        ),
-                      ),
-                      backgroundColor: MacosColors.controlBackgroundColor
-                          .resolveFrom(context)
-                          .withOpacity(0.3),
-                    ),
-                  },
-                  onLinkTap: (url, attributes, element) {
-                    if (url != null) {
-                      _launchUrl(context, url);
-                    }
-                  },
-                ),
-              ],
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    post.domain,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: MacosColors.tertiaryLabelColor.resolveFrom(
-                        context,
-                      ),
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (post.toread)
-                        Icon(
-                          CupertinoIcons.clock,
-                          size: 14,
-                          color: MacosColors.secondaryLabelColor.resolveFrom(
-                            context,
-                          ),
-                        ),
-                      if (post.toread && !post.shared) const SizedBox(width: 4),
-                      if (!post.shared)
-                        Icon(
-                          CupertinoIcons.lock_fill,
-                          size: 14,
-                          color: MacosColors.secondaryLabelColor.resolveFrom(
-                            context,
-                          ),
-                        ),
                     ],
                   ),
                 ],
               ),
+              // Status icons positioned in bottom right corner
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (post.toread)
+                      Icon(
+                        CupertinoIcons.clock,
+                        size: 14,
+                        color: MacosColors.secondaryLabelColor.resolveFrom(
+                          context,
+                        ),
+                      ),
+                    if (post.toread && !post.shared) const SizedBox(width: 4),
+                    if (!post.shared)
+                      Icon(
+                        CupertinoIcons.lock_fill,
+                        size: 14,
+                        color: MacosColors.secondaryLabelColor.resolveFrom(
+                          context,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HoverableText extends StatefulWidget {
+  final String text;
+  final VoidCallback onTap;
+  final TextStyle style;
+  final int? maxLines;
+  final TextOverflow? overflow;
+
+  const _HoverableText({
+    required this.text,
+    required this.onTap,
+    required this.style,
+    this.maxLines,
+    this.overflow,
+  });
+
+  @override
+  State<_HoverableText> createState() => _HoverableTextState();
+}
+
+class _HoverableTextState extends State<_HoverableText> {
+  bool isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => isHovering = true),
+        onExit: (_) => setState(() => isHovering = false),
+        child: Text(
+          widget.text,
+          style: widget.style.copyWith(
+            decoration: isHovering
+                ? TextDecoration.underline
+                : TextDecoration.none,
+            color: isHovering ? CupertinoColors.activeBlue : widget.style.color,
+          ),
+          maxLines: widget.maxLines,
+          overflow: widget.overflow,
         ),
       ),
     );

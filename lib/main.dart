@@ -40,7 +40,7 @@ class _PinboardWizardState extends State<PinboardWizard> {
       if (!authed) {
         setState(() => pageIndex = 3);
       } else if (pageIndex == 3) {
-        setState(() => pageIndex = 1);
+        setState(() => pageIndex = 0);
       }
     });
   }
