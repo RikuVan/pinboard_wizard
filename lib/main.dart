@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/service_locator.dart';
 import 'package:pinboard_wizard/src/theme.dart';
@@ -7,17 +7,23 @@ import 'package:pinboard_wizard/src/pages/bookmarks/bookmarks_page.dart';
 import 'package:pinboard_wizard/src/pages/pinned/pinned_page.dart';
 import 'package:pinboard_wizard/src/pages/settings_page.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
+import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
 import 'package:provider/provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  PackageInfo packageInfo = await PackageInfo.fromPlatform();
   const config = MacosWindowUtilsConfig();
   await config.apply();
   await setup();
-  runApp(const PinboardWizard());
+  runApp(PinboardWizard(version: packageInfo.version));
 }
 
 class PinboardWizard extends StatefulWidget {
-  const PinboardWizard({super.key});
+  const PinboardWizard({required this.version, super.key});
+
+  final String version;
 
   @override
   State<PinboardWizard> createState() => _PinboardWizardState();
@@ -31,6 +37,7 @@ class _PinboardWizardState extends State<PinboardWizard> {
   void initState() {
     super.initState();
     _credentialsService = locator.get<CredentialsService>();
+
     // Ensure initial selection reflects auth state
     if (!_credentialsService!.isAuthenticatedNotifier.value) {
       pageIndex = 3;
@@ -61,17 +68,39 @@ class _PinboardWizardState extends State<PinboardWizard> {
               sidebar: Sidebar(
                 minWidth: 200,
                 builder: (context, scrollController) {
-                  return SidebarItems(
-                    currentIndex: pageIndex,
-                    items: [
-                      SidebarItem(label: Text('Pinned')),
-                      SidebarItem(label: Text('Bookmarks')),
-                      SidebarItem(label: Text('Notes')),
-                      SidebarItem(label: Text('Settings')),
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: SidebarItems(
+                          currentIndex: pageIndex,
+                          items: [
+                            SidebarItem(label: Text('Pinned')),
+                            SidebarItem(label: Text('Bookmarks')),
+                            SidebarItem(label: Text('Notes')),
+                            SidebarItem(label: Text('Settings')),
+                          ],
+                          onChanged: (i) {
+                            setState(() => pageIndex = i);
+                          },
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(
+                              color: MacosColors.separatorColor,
+                              width: 0.5,
+                            ),
+                          ),
+                        ),
+                        child: MacosListTile(
+                          leading: const AppLogo.small(),
+                          title: Text('Pinboard Wizard'),
+                          subtitle: Text('Version ${widget.version}'),
+                        ),
+                      ),
                     ],
-                    onChanged: (i) {
-                      setState(() => pageIndex = i);
-                    },
                   );
                 },
               ),
