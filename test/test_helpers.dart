@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pinboard_wizard/src/pinboard/models/credentials.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
+import 'package:pinboard_wizard/src/pinboard/models/note.dart';
+import 'package:pinboard_wizard/src/pinboard/models/notes_response.dart';
 import 'package:pinboard_wizard/src/pinboard/in_memory_secrets_storage.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 
@@ -444,6 +446,186 @@ class PostTestData {
     'typescript',
     'framework',
   ];
+}
+
+/// Test data helpers for creating Note instances and related test data
+class NoteTestData {
+  /// Create a basic test note
+  static Note createNote({
+    String? id,
+    String? hash,
+    String? title,
+    int? length,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Note(
+      id: id ?? 'note_1',
+      hash: hash ?? 'abcdef123456',
+      title: title ?? 'Test Note',
+      length: length ?? 100,
+      createdAt: createdAt ?? DateTime(2023, 1, 1),
+      updatedAt: updatedAt ?? DateTime(2023, 1, 2),
+    );
+  }
+
+  /// Create a list of test notes with varying properties
+  static List<Note> createNoteList({int count = 3}) {
+    return List.generate(count, (index) {
+      return Note(
+        id: 'note_${index + 1}',
+        hash: 'hash${index}${DateTime.now().millisecondsSinceEpoch}',
+        title: 'Test Note ${index + 1}',
+        length: 50 + (index * 25),
+        createdAt: DateTime(2023, 1, index + 1),
+        updatedAt: DateTime(2023, 1, index + 2),
+      );
+    });
+  }
+
+  /// Create notes for testing search functionality
+  static List<Note> createSearchTestNotes() {
+    return [
+      createNote(
+        id: 'search_1',
+        title: 'Flutter Development Notes',
+        length: 200,
+      ),
+      createNote(id: 'search_2', title: 'React Components Guide', length: 150),
+      createNote(
+        id: 'search_3',
+        title: 'Database Design Patterns',
+        length: 300,
+      ),
+      createNote(id: 'search_4', title: 'Flutter Widget Testing', length: 180),
+    ];
+  }
+
+  /// Create a note detail response
+  static NoteDetailResponse createNoteDetailResponse({
+    String? id,
+    String? title,
+    String? hash,
+    int? length,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? text,
+  }) {
+    return NoteDetailResponse(
+      id: id ?? 'note_1',
+      title: title ?? 'Test Note',
+      hash: hash ?? 'abcdef123456',
+      length: length ?? 100,
+      createdAt: createdAt ?? DateTime(2023, 1, 1),
+      updatedAt: updatedAt ?? DateTime(2023, 1, 2),
+      text: text ?? 'This is the content of the test note.',
+    );
+  }
+
+  /// Create notes with specific titles for testing search functionality
+  static List<Note> createNotesWithSpecificTitles() {
+    return [
+      createNote(
+        id: 'meeting_1',
+        title: 'Meeting Notes - Sprint Planning',
+        length: 250,
+      ),
+      createNote(id: 'recipe_1', title: 'Recipe - Chocolate Cake', length: 180),
+      createNote(id: 'todo_1', title: 'Todo List for Weekend', length: 120),
+      createNote(id: 'book_1', title: 'Book Review - Clean Code', length: 300),
+      createNote(id: 'travel_1', title: 'Travel Plans for Summer', length: 200),
+    ];
+  }
+
+  /// Create notes with different lengths for testing
+  static List<Note> createNotesWithDifferentLengths() {
+    return [
+      createNote(id: 'short_1', title: 'Short Note', length: 25),
+      createNote(id: 'medium_1', title: 'Medium Note', length: 150),
+      createNote(id: 'long_1', title: 'Long Note', length: 500),
+      createNote(id: 'very_long_1', title: 'Very Long Note', length: 1000),
+    ];
+  }
+
+  /// Create a large list for testing performance
+  static List<Note> createLargeNoteList({int count = 50}) {
+    return List.generate(count, (index) {
+      return Note(
+        id: 'bulk_note_${index.toString().padLeft(3, '0')}',
+        hash: 'bulk_hash_$index',
+        title: 'Bulk Note ${index + 1}',
+        length: 50 + (index % 200),
+        createdAt: DateTime(2023, 1, 1).add(Duration(days: index)),
+        updatedAt: DateTime(2023, 1, 1).add(Duration(days: index, hours: 1)),
+      );
+    });
+  }
+
+  /// Create notes list response
+  static NotesListResponse createNotesListResponse({
+    int? count,
+    List<Note>? notes,
+  }) {
+    final notesList = notes ?? createNoteList();
+    return NotesListResponse(
+      count: count ?? notesList.length,
+      notes: notesList,
+    );
+  }
+
+  /// Expected results for search tests
+  static const Map<String, List<String>> searchExpectedResults = {
+    'flutter': ['Flutter Development Notes', 'Flutter Widget Testing'],
+    'react': ['React Components Guide'],
+    'database': ['Database Design Patterns'],
+    'testing': ['Flutter Widget Testing'],
+    'guide': ['React Components Guide'],
+    'nonexistent': [],
+  };
+
+  /// Create notes for specific date ranges
+  static List<Note> createNotesWithDateRanges() {
+    return [
+      createNote(
+        id: 'jan_note',
+        title: 'January Note',
+        createdAt: DateTime(2023, 1, 15),
+        updatedAt: DateTime(2023, 1, 16),
+      ),
+      createNote(
+        id: 'feb_note',
+        title: 'February Note',
+        createdAt: DateTime(2023, 2, 10),
+        updatedAt: DateTime(2023, 2, 11),
+      ),
+      createNote(
+        id: 'mar_note',
+        title: 'March Note',
+        createdAt: DateTime(2023, 3, 5),
+        updatedAt: DateTime(2023, 3, 6),
+      ),
+      createNote(
+        id: 'current_note',
+        title: 'Current Note',
+        createdAt: DateTime.now().subtract(Duration(days: 1)),
+        updatedAt: DateTime.now(),
+      ),
+    ];
+  }
+
+  /// Create note with matching ID for detail testing
+  static Note createNoteForDetail({String? id}) {
+    return createNote(id: id ?? 'detail_test_note');
+  }
+
+  /// Create matching note detail response
+  static NoteDetailResponse createMatchingNoteDetail({String? id}) {
+    final noteId = id ?? 'detail_test_note';
+    return createNoteDetailResponse(
+      id: noteId,
+      text: 'This is the detailed content for $noteId.',
+    );
+  }
 }
 
 /// Exception test data for testing error scenarios
