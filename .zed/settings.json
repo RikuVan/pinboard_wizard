@@ -1,0 +1,44 @@
+{
+  "languages": {
+    "Dart": {
+      "language_servers": ["dart"],
+      "format_on_save": "on",
+      "formatter": "dart_format",
+      "code_actions_on_format": ["source.fixAll", "source.organizeImports"]
+    }
+  },
+  "lsp": {
+    "dart": {
+      "binary": {
+        "path": "dart",
+        "arguments": ["language-server", "--protocol=lsp"]
+      }
+    }
+  },
+
+  "terminal": {
+    "env": {
+      "PATH": "/opt/homebrew/bin:$PATH"
+    }
+  },
+  "git": {
+    "inline_blame": {
+      "enabled": true
+    }
+  },
+  "project_panel": {
+    "dock": "left"
+  },
+  "file_types": {
+    "Dart": ["dart"],
+    "YAML": ["yaml", "yml", "pubspec.yaml", "pubspec.yml"]
+  },
+  "tab_size": 2,
+  "soft_wrap": "editor_width",
+  "show_whitespaces": "selection",
+  "remove_trailing_whitespace_on_save": true,
+  "ensure_final_newline_on_save": true,
+  "preview_tabs": {
+    "enabled": false
+  }
+}
