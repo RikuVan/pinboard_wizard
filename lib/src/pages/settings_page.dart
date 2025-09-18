@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart' hide OverlayVisibilityMode;
 import 'dart:async';
 import 'package:macos_ui/macos_ui.dart';
@@ -136,10 +135,7 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               const AppLogo.medium(),
               const SizedBox(width: 12),
-              Text(
-                'Pinboard Wizard Settings',
-                style: MacosTheme.of(context).typography.largeTitle,
-              ),
+              Text('Pinboard Wizard Settings', style: MacosTheme.of(context).typography.largeTitle),
             ],
           ),
           const SizedBox(height: 16),
@@ -166,10 +162,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   );
                 },
               ),
-              if (_testing) ...[
-                const SizedBox(width: 8),
-                const ProgressCircle(),
-              ],
+              if (_testing) ...[const SizedBox(width: 8), const ProgressCircle()],
             ],
           ),
           const SizedBox(height: 16),
@@ -199,10 +192,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 8),
           if (_error != null)
-            Text(
-              _error!,
-              style: const TextStyle(color: MacosColors.systemRedColor),
-            ),
+            Text(_error!, style: const TextStyle(color: MacosColors.systemRedColor)),
           const SizedBox(height: 12),
           Row(
             children: [

@@ -106,14 +106,10 @@ void main() {
     });
 
     test('should maintain state during async operations', () async {
-      final credentials = Credentials(apiKey: 'testuser:1234567890abcdef');
-
       // Start multiple save operations
       final futures = <Future<void>>[];
       for (int i = 0; i < 10; i++) {
-        final testCredentials = Credentials(
-          apiKey: 'user$i:${i.toString().padLeft(16, '0')}',
-        );
+        final testCredentials = Credentials(apiKey: 'user$i:${i.toString().padLeft(16, '0')}');
         futures.add(storage.save(testCredentials));
       }
 
