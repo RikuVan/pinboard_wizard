@@ -26,6 +26,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
   late final ScrollController _scrollController;
   late final TextEditingController _searchController;
   late final BookmarksCubit _bookmarksCubit;
+  double _scrollProgress = 0.0;
 
   @override
   void initState() {
@@ -53,6 +54,26 @@ class _BookmarksPageState extends State<BookmarksPage> {
   }
 
   void _onScroll() {
+    // Update scroll progress
+    if (_scrollController.hasClients) {
+      final maxScrollExtent = _scrollController.position.maxScrollExtent;
+      final currentScroll = _scrollController.position.pixels;
+
+      if (maxScrollExtent > 0) {
+        setState(() {
+          _scrollProgress = (currentScroll / maxScrollExtent * 100).clamp(
+            0.0,
+            100.0,
+          );
+        });
+      } else {
+        setState(() {
+          _scrollProgress = 0.0;
+        });
+      }
+    }
+
+    // Load more bookmarks when near the end
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       if (_bookmarksCubit.shouldLoadMore()) {
@@ -96,6 +117,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
           return Column(
             children: [
               _buildSearchToolbar(state),
+              _buildProgressBar(),
               Expanded(
                 child: ResizableSplitView(
                   initialRatio: 0.75,
@@ -156,6 +178,40 @@ class _BookmarksPageState extends State<BookmarksPage> {
               child: const Text('Refresh'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: MacosTheme.of(context).canvasColor,
+        border: Border(
+          bottom: BorderSide(color: MacosColors.separatorColor, width: 0.5),
+        ),
+      ),
+      child: SizedBox(
+        height: 6.0,
+        width: double.infinity,
+        child: Container(
+          decoration: BoxDecoration(
+            color: MacosTheme.of(context).brightness == Brightness.dark
+                ? MacosColors.controlBackgroundColor.darkColor
+                : MacosColors.controlBackgroundColor,
+            borderRadius: BorderRadius.circular(2.25),
+          ),
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: _scrollProgress / 100.0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: MacosColors.systemBlueColor,
+                borderRadius: BorderRadius.circular(2.25),
+              ),
+            ),
+          ),
         ),
       ),
     );

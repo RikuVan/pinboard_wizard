@@ -25,8 +25,11 @@ class PinboardException implements Exception {
 }
 
 class PinboardAuthException extends PinboardException {
-  const PinboardAuthException(String message, {int? statusCode, String? response})
-    : super(message, statusCode: statusCode, response: response);
+  const PinboardAuthException(
+    String message, {
+    int? statusCode,
+    String? response,
+  }) : super(message, statusCode: statusCode, response: response);
 }
 
 class PinboardClient {
@@ -35,9 +38,11 @@ class PinboardClient {
   final SecretStorage _secretStorage;
   final http.Client _httpClient;
 
-  PinboardClient({required SecretStorage secretStorage, http.Client? httpClient})
-    : _secretStorage = secretStorage,
-      _httpClient = httpClient ?? http.Client();
+  PinboardClient({
+    required SecretStorage secretStorage,
+    http.Client? httpClient,
+  }) : _secretStorage = secretStorage,
+       _httpClient = httpClient ?? http.Client();
   Future<Credentials?> _getCredentials() async {
     try {
       return await _secretStorage.read();
@@ -50,8 +55,14 @@ class PinboardClient {
     return Uri.parse('$_baseUrl/$endpoint');
   }
 
-  Map<String, String> _addRequiredParams(String authToken, [Map<String, String>? params]) {
-    final allParams = <String, String>{'auth_token': authToken, 'format': 'json'};
+  Map<String, String> _addRequiredParams(
+    String authToken, [
+    Map<String, String>? params,
+  ]) {
+    final allParams = <String, String>{
+      'auth_token': authToken,
+      'format': 'json',
+    };
 
     if (params != null) {
       allParams.addAll(params);
@@ -63,7 +74,9 @@ class PinboardClient {
   Future<dynamic> _get(String endpoint, [Map<String, String>? params]) async {
     final credentials = await _getCredentials();
     if (credentials == null) {
-      throw PinboardAuthException('No credentials found. Please authenticate first.');
+      throw PinboardAuthException(
+        'No credentials found. Please authenticate first.',
+      );
     }
 
     final requiredParams = _addRequiredParams(credentials.apiKey, params);
@@ -148,7 +161,9 @@ class PinboardClient {
 
     // Handle different response formats - posts/all returns array directly
     if (response is List) {
-      final posts = response.map((e) => Post.fromJson(e as Map<String, dynamic>)).toList();
+      final posts = response
+          .map((e) => Post.fromJson(e as Map<String, dynamic>))
+          .toList();
       return PostsResponse(
         date: DateTime.now(),
         user: '', // Not provided by posts/all
@@ -177,7 +192,12 @@ class PinboardClient {
     return PostDatesResponse.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<PostsResponse> getPost({String? tag, DateTime? dt, String? url, String? meta}) async {
+  Future<PostsResponse> getPost({
+    String? tag,
+    DateTime? dt,
+    String? url,
+    String? meta,
+  }) async {
     final params = <String, String>{};
 
     if (tag != null) params['tag'] = tag;
@@ -227,7 +247,10 @@ class PinboardClient {
     return AddPostResponse.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<AddPostResponse> renameTag({required String oldTag, required String newTag}) async {
+  Future<AddPostResponse> renameTag({
+    required String oldTag,
+    required String newTag,
+  }) async {
     final response = await _get('tags/rename', {'old': oldTag, 'new': newTag});
     return AddPostResponse.fromJson(response as Map<String, dynamic>);
   }
