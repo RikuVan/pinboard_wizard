@@ -11,6 +11,7 @@ import 'package:pinboard_wizard/src/common/widgets/validated_secret_field.dart';
 import 'package:pinboard_wizard/src/common/extensions/theme_extensions.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
+import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -49,6 +50,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
   final TextEditingController _s3BucketNameController = TextEditingController();
   final TextEditingController _s3FilePathController = TextEditingController();
   late MacosTabController _tabController;
+  Timer? _s3DebounceTimer;
 
   @override
   void initState() {
@@ -57,11 +59,6 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
     _apiKeyController.addListener(_onApiKeyChanged);
     _openaiKeyController.addListener(_onOpenAiKeyChanged);
     _jinaKeyController.addListener(_onJinaKeyChanged);
-    _s3AccessKeyController.addListener(_onS3AccessKeyChanged);
-    _s3SecretKeyController.addListener(_onS3SecretKeyChanged);
-    _s3RegionController.addListener(_onS3RegionChanged);
-    _s3BucketNameController.addListener(_onS3BucketNameChanged);
-    _s3FilePathController.addListener(_onS3FilePathChanged);
   }
 
   @override
@@ -69,11 +66,6 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
     _apiKeyController.removeListener(_onApiKeyChanged);
     _openaiKeyController.removeListener(_onOpenAiKeyChanged);
     _jinaKeyController.removeListener(_onJinaKeyChanged);
-    _s3AccessKeyController.removeListener(_onS3AccessKeyChanged);
-    _s3SecretKeyController.removeListener(_onS3SecretKeyChanged);
-    _s3RegionController.removeListener(_onS3RegionChanged);
-    _s3BucketNameController.removeListener(_onS3BucketNameChanged);
-    _s3FilePathController.removeListener(_onS3FilePathChanged);
     _apiKeyController.dispose();
     _openaiKeyController.dispose();
     _jinaKeyController.dispose();
@@ -83,6 +75,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
     _s3BucketNameController.dispose();
     _s3FilePathController.dispose();
     _tabController.dispose();
+    _s3DebounceTimer?.cancel();
     super.dispose();
   }
 
@@ -96,36 +89,6 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
 
   void _onJinaKeyChanged() {
     context.read<SettingsCubit>().updateJinaApiKey(_jinaKeyController.text);
-  }
-
-  void _onS3AccessKeyChanged() {
-    context.read<SettingsCubit>().updateS3Config(
-      accessKey: _s3AccessKeyController.text,
-    );
-  }
-
-  void _onS3SecretKeyChanged() {
-    context.read<SettingsCubit>().updateS3Config(
-      secretKey: _s3SecretKeyController.text,
-    );
-  }
-
-  void _onS3RegionChanged() {
-    context.read<SettingsCubit>().updateS3Config(
-      region: _s3RegionController.text,
-    );
-  }
-
-  void _onS3BucketNameChanged() {
-    context.read<SettingsCubit>().updateS3Config(
-      bucketName: _s3BucketNameController.text,
-    );
-  }
-
-  void _onS3FilePathChanged() {
-    context.read<SettingsCubit>().updateS3Config(
-      filePath: _s3FilePathController.text,
-    );
   }
 
   @override
@@ -148,31 +111,18 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           _jinaKeyController.text = state.jinaApiKey;
           _jinaKeyController.addListener(_onJinaKeyChanged);
         }
-        // Update S3 controllers
-        if (_s3AccessKeyController.text != state.s3Config.accessKey) {
-          _s3AccessKeyController.removeListener(_onS3AccessKeyChanged);
+        // Load S3 configuration only once when settings are loaded
+        if (state.status == SettingsStatus.loaded &&
+            _s3AccessKeyController.text.isEmpty &&
+            _s3SecretKeyController.text.isEmpty &&
+            _s3RegionController.text.isEmpty &&
+            _s3BucketNameController.text.isEmpty &&
+            _s3FilePathController.text.isEmpty) {
           _s3AccessKeyController.text = state.s3Config.accessKey;
-          _s3AccessKeyController.addListener(_onS3AccessKeyChanged);
-        }
-        if (_s3SecretKeyController.text != state.s3Config.secretKey) {
-          _s3SecretKeyController.removeListener(_onS3SecretKeyChanged);
           _s3SecretKeyController.text = state.s3Config.secretKey;
-          _s3SecretKeyController.addListener(_onS3SecretKeyChanged);
-        }
-        if (_s3RegionController.text != state.s3Config.region) {
-          _s3RegionController.removeListener(_onS3RegionChanged);
           _s3RegionController.text = state.s3Config.region;
-          _s3RegionController.addListener(_onS3RegionChanged);
-        }
-        if (_s3BucketNameController.text != state.s3Config.bucketName) {
-          _s3BucketNameController.removeListener(_onS3BucketNameChanged);
           _s3BucketNameController.text = state.s3Config.bucketName;
-          _s3BucketNameController.addListener(_onS3BucketNameChanged);
-        }
-        if (_s3FilePathController.text != state.s3Config.filePath) {
-          _s3FilePathController.removeListener(_onS3FilePathChanged);
           _s3FilePathController.text = state.s3Config.filePath;
-          _s3FilePathController.addListener(_onS3FilePathChanged);
         }
       },
       builder: (context, state) {
@@ -880,8 +830,8 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
             children: [
               PushButton(
                 controlSize: ControlSize.large,
-                onPressed: state.s3Config.isValid && !state.isBackupValidating
-                    ? () => context.read<SettingsCubit>().validateS3Config()
+                onPressed: _canValidateS3Config() && !state.isBackupValidating
+                    ? () => _validateS3Config()
                     : null,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -904,15 +854,14 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
               PushButton(
                 controlSize: ControlSize.large,
                 secondary: true,
-                onPressed: () =>
-                    context.read<SettingsCubit>().clearBackupConfig(),
+                onPressed: () => _clearS3Config(),
                 child: const Text('Clear All'),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            'Validation tests your S3 credentials by uploading a small test file.',
+            'Validation tests your S3 credentials by uploading a small test file to verify access and permissions.',
             style: TextStyle(fontSize: 11, color: context.helperTextColor),
           ),
 
@@ -976,8 +925,11 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
             children: [
               PushButton(
                 controlSize: ControlSize.large,
-                onPressed: state.canBackup
-                    ? () => context.read<SettingsCubit>().performBackup()
+                onPressed:
+                    _canValidateS3Config() &&
+                        state.isBackupValid &&
+                        !state.isBackupInProgress
+                    ? () => _performBackup()
                     : null,
                 child: state.isBackupInProgress
                     ? const Row(
@@ -1021,6 +973,51 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
         ],
       ),
     );
+  }
+
+  bool _canValidateS3Config() {
+    final accessKey = _s3AccessKeyController.text.trim();
+    final secretKey = _s3SecretKeyController.text.trim();
+    final region = _s3RegionController.text.trim();
+    final bucketName = _s3BucketNameController.text.trim();
+
+    return accessKey.isNotEmpty &&
+        secretKey.isNotEmpty &&
+        region.isNotEmpty &&
+        bucketName.isNotEmpty;
+  }
+
+  void _validateS3Config() {
+    final s3Config = S3Config(
+      accessKey: _s3AccessKeyController.text.trim(),
+      secretKey: _s3SecretKeyController.text.trim(),
+      region: _s3RegionController.text.trim(),
+      bucketName: _s3BucketNameController.text.trim(),
+      filePath: _s3FilePathController.text.trim(),
+    );
+
+    context.read<SettingsCubit>().validateS3ConfigWithValues(s3Config);
+  }
+
+  void _clearS3Config() {
+    _s3AccessKeyController.clear();
+    _s3SecretKeyController.clear();
+    _s3RegionController.clear();
+    _s3BucketNameController.clear();
+    _s3FilePathController.clear();
+    context.read<SettingsCubit>().clearBackupConfig();
+  }
+
+  void _performBackup() {
+    final s3Config = S3Config(
+      accessKey: _s3AccessKeyController.text.trim(),
+      secretKey: _s3SecretKeyController.text.trim(),
+      region: _s3RegionController.text.trim(),
+      bucketName: _s3BucketNameController.text.trim(),
+      filePath: _s3FilePathController.text.trim(),
+    );
+
+    context.read<SettingsCubit>().performBackupWithConfig(s3Config);
   }
 
   void _showPermissionsDialog(String service, String permissions) {

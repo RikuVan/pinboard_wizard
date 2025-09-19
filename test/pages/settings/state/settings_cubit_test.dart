@@ -153,8 +153,10 @@ class MockBackupService extends Mock implements BackupService {
   );
 
   @override
-  Future<bool> validateConfiguration() => super.noSuchMethod(
-    Invocation.method(#validateConfiguration, []),
+  Future<bool> validateConfiguration({
+    S3VerificationMethod method = S3VerificationMethod.standard,
+  }) => super.noSuchMethod(
+    Invocation.method(#validateConfiguration, [], {#method: method}),
     returnValue: Future.value(true),
   );
 

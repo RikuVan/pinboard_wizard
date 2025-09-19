@@ -411,37 +411,34 @@ class SettingsCubit extends Cubit<SettingsState> {
   /// Listen to backup service changes
   void _onBackupServiceChanged() {
     final backupService = _backupService;
+
+    // Determine validation status based on backup service status
+    ValidationStatus validationStatus = ValidationStatus.initial;
+    String? validationMessage;
+    String? successMessage;
+
+    if (backupService.status == BackupStatus.backingUp) {
+      validationStatus = ValidationStatus.validating;
+      validationMessage = 'Backup in progress...';
+    } else if (backupService.status == BackupStatus.success) {
+      validationStatus = ValidationStatus.valid;
+      successMessage = backupService.lastBackupMessage;
+    } else if (backupService.status == BackupStatus.error) {
+      validationStatus = ValidationStatus.invalid;
+      validationMessage = backupService.lastError;
+    } else if (backupService.isConfigValid) {
+      validationStatus = ValidationStatus.valid;
+    }
+
     emit(
       state.copyWith(
         s3Config: backupService.s3Config,
-        backupValidationStatus: backupService.isConfigValid
-            ? ValidationStatus.valid
-            : ValidationStatus.initial,
+        backupValidationStatus: validationStatus,
         isBackupInProgress: backupService.isBackingUp,
-        lastBackupMessage: backupService.lastBackupMessage,
-        backupValidationMessage: backupService.lastError,
+        lastBackupMessage: successMessage,
+        backupValidationMessage: validationMessage,
       ),
     );
-  }
-
-  /// Update S3 configuration
-  void updateS3Config({
-    String? accessKey,
-    String? secretKey,
-    String? region,
-    String? bucketName,
-    String? filePath,
-  }) {
-    final updatedConfig = state.s3Config.copyWith(
-      accessKey: accessKey,
-      secretKey: secretKey,
-      region: region,
-      bucketName: bucketName,
-      filePath: filePath,
-    );
-
-    emit(state.copyWith(s3Config: updatedConfig));
-    _saveS3Config(updatedConfig);
   }
 
   /// Save S3 configuration
@@ -487,7 +484,55 @@ class SettingsCubit extends Cubit<SettingsState> {
               : ValidationStatus.invalid,
           backupValidationMessage: isValid
               ? 'S3 configuration is valid'
-              : 'Failed to validate S3 configuration',
+              : _backupService.lastError ??
+                    'Failed to validate S3 configuration',
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          backupValidationStatus: ValidationStatus.invalid,
+          backupValidationMessage: 'Validation failed: $e',
+        ),
+      );
+    }
+  }
+
+  /// Validate S3 configuration with provided values
+  Future<void> validateS3ConfigWithValues(S3Config config) async {
+    if (!config.isValid) {
+      emit(
+        state.copyWith(
+          backupValidationStatus: ValidationStatus.invalid,
+          backupValidationMessage: 'Please fill in all required fields',
+        ),
+      );
+      return;
+    }
+
+    // Save the config first
+    emit(state.copyWith(s3Config: config));
+    await _saveS3Config(config);
+
+    emit(
+      state.copyWith(
+        backupValidationStatus: ValidationStatus.validating,
+        backupValidationMessage: 'Validating S3 configuration...',
+      ),
+    );
+
+    try {
+      final isValid = await _backupService.validateConfiguration();
+
+      emit(
+        state.copyWith(
+          backupValidationStatus: isValid
+              ? ValidationStatus.valid
+              : ValidationStatus.invalid,
+          backupValidationMessage: isValid
+              ? 'S3 configuration is valid'
+              : _backupService.lastError ??
+                    'Failed to validate S3 configuration',
         ),
       );
     } catch (e) {
@@ -534,6 +579,20 @@ class SettingsCubit extends Cubit<SettingsState> {
         ),
       );
     }
+  }
+
+  /// Perform backup with provided S3 configuration
+  Future<void> performBackupWithConfig(S3Config config) async {
+    if (!config.isValid) {
+      return;
+    }
+
+    // Save the config first
+    emit(state.copyWith(s3Config: config));
+    await _saveS3Config(config);
+
+    // Then perform the backup
+    await performBackup();
   }
 
   /// Clear backup configuration
