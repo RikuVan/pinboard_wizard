@@ -55,4 +55,7 @@ format:
 format-check:
 	dart format --set-exit-if-changed .
 
+generate:
+	dart run build_runner build --delete-conflicting-outputs
+
 # Run everything: format check + an
