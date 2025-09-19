@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
+import 'package:pinboard_wizard/src/backup/backup_service.dart';
+import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
 import 'package:pinboard_wizard/src/pages/settings/state/settings_state.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
@@ -10,19 +12,24 @@ class SettingsCubit extends Cubit<SettingsState> {
     required CredentialsService credentialsService,
     required PinboardService pinboardService,
     required AiSettingsService aiSettingsService,
+    required BackupService backupService,
   }) : _credentialsService = credentialsService,
        _pinboardService = pinboardService,
        _aiSettingsService = aiSettingsService,
+       _backupService = backupService,
        super(const SettingsState()) {
     // Listen to authentication changes
     _credentialsService.isAuthenticatedNotifier.addListener(_onAuthChanged);
     // Listen to AI settings changes
     _aiSettingsService.addListener(_onAiSettingsChanged);
+    // Listen to backup service changes
+    _backupService.addListener(_onBackupServiceChanged);
   }
 
   final CredentialsService _credentialsService;
   final PinboardService _pinboardService;
   final AiSettingsService _aiSettingsService;
+  final BackupService _backupService;
   Timer? _debounceTimer;
 
   /// Initialize and load current settings
@@ -39,6 +46,10 @@ class SettingsCubit extends Cubit<SettingsState> {
       // Load AI settings
       final aiSettings = _aiSettingsService.settings;
 
+      // Load backup settings
+      await _backupService.loadConfiguration();
+      final s3Config = _backupService.s3Config;
+
       emit(
         state.copyWith(
           status: SettingsStatus.loaded,
@@ -48,6 +59,10 @@ class SettingsCubit extends Cubit<SettingsState> {
           openAiApiKey: aiSettings.openai.apiKey ?? '',
           jinaApiKey: aiSettings.webScraping.jinaApiKey ?? '',
           descriptionMaxLength: aiSettings.openai.descriptionMaxLength,
+          s3Config: s3Config,
+          backupValidationStatus: s3Config.isValid
+              ? ValidationStatus.valid
+              : ValidationStatus.initial,
           maxTags: aiSettings.openai.maxTags,
         ),
       );
@@ -393,11 +408,161 @@ class SettingsCubit extends Cubit<SettingsState> {
     );
   }
 
+  /// Listen to backup service changes
+  void _onBackupServiceChanged() {
+    final backupService = _backupService;
+    emit(
+      state.copyWith(
+        s3Config: backupService.s3Config,
+        backupValidationStatus: backupService.isConfigValid
+            ? ValidationStatus.valid
+            : ValidationStatus.initial,
+        isBackupInProgress: backupService.isBackingUp,
+        lastBackupMessage: backupService.lastBackupMessage,
+        backupValidationMessage: backupService.lastError,
+      ),
+    );
+  }
+
+  /// Update S3 configuration
+  void updateS3Config({
+    String? accessKey,
+    String? secretKey,
+    String? region,
+    String? bucketName,
+    String? filePath,
+  }) {
+    final updatedConfig = state.s3Config.copyWith(
+      accessKey: accessKey,
+      secretKey: secretKey,
+      region: region,
+      bucketName: bucketName,
+      filePath: filePath,
+    );
+
+    emit(state.copyWith(s3Config: updatedConfig));
+    _saveS3Config(updatedConfig);
+  }
+
+  /// Save S3 configuration
+  Future<void> _saveS3Config(S3Config config) async {
+    try {
+      await _backupService.saveConfiguration(config);
+    } catch (e) {
+      emit(
+        state.copyWith(
+          backupValidationStatus: ValidationStatus.invalid,
+          backupValidationMessage: 'Failed to save configuration: $e',
+        ),
+      );
+    }
+  }
+
+  /// Validate S3 configuration
+  Future<void> validateS3Config() async {
+    if (!state.s3Config.isValid) {
+      emit(
+        state.copyWith(
+          backupValidationStatus: ValidationStatus.invalid,
+          backupValidationMessage: 'Please fill in all required fields',
+        ),
+      );
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        backupValidationStatus: ValidationStatus.validating,
+        backupValidationMessage: 'Validating S3 configuration...',
+      ),
+    );
+
+    try {
+      final isValid = await _backupService.validateConfiguration();
+
+      emit(
+        state.copyWith(
+          backupValidationStatus: isValid
+              ? ValidationStatus.valid
+              : ValidationStatus.invalid,
+          backupValidationMessage: isValid
+              ? 'S3 configuration is valid'
+              : 'Failed to validate S3 configuration',
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          backupValidationStatus: ValidationStatus.invalid,
+          backupValidationMessage: 'Validation failed: $e',
+        ),
+      );
+    }
+  }
+
+  /// Perform backup to S3
+  Future<void> performBackup() async {
+    if (!state.canBackup) {
+      return;
+    }
+
+    emit(state.copyWith(isBackupInProgress: true, lastBackupMessage: null));
+
+    try {
+      final success = await _backupService.backupBookmarks();
+
+      if (success) {
+        emit(
+          state.copyWith(
+            isBackupInProgress: false,
+            lastBackupMessage: _backupService.lastBackupMessage,
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            isBackupInProgress: false,
+            backupValidationMessage: _backupService.lastError,
+          ),
+        );
+      }
+    } catch (e) {
+      emit(
+        state.copyWith(
+          isBackupInProgress: false,
+          backupValidationMessage: 'Backup failed: $e',
+        ),
+      );
+    }
+  }
+
+  /// Clear backup configuration
+  Future<void> clearBackupConfig() async {
+    try {
+      await _backupService.clearConfiguration();
+      emit(
+        state.copyWith(
+          s3Config: const S3Config(),
+          backupValidationStatus: ValidationStatus.initial,
+          backupValidationMessage: null,
+          lastBackupMessage: null,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          backupValidationMessage: 'Failed to clear configuration: $e',
+        ),
+      );
+    }
+  }
+
   @override
   Future<void> close() {
     _debounceTimer?.cancel();
     _credentialsService.isAuthenticatedNotifier.removeListener(_onAuthChanged);
     _aiSettingsService.removeListener(_onAiSettingsChanged);
+    _backupService.removeListener(_onBackupServiceChanged);
     return super.close();
   }
 }

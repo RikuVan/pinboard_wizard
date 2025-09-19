@@ -10,6 +10,7 @@ import 'package:pinboard_wizard/src/pages/settings/state/settings_state.dart';
 import 'package:pinboard_wizard/src/common/widgets/validated_secret_field.dart';
 import 'package:pinboard_wizard/src/common/extensions/theme_extensions.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
+import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -24,6 +25,7 @@ class SettingsPage extends StatelessWidget {
         credentialsService: locator.get<CredentialsService>(),
         pinboardService: locator.get<PinboardService>(),
         aiSettingsService: locator.get<AiSettingsService>(),
+        backupService: locator.get<BackupService>(),
       )..loadSettings(),
       child: const _SettingsPageView(),
     );
@@ -41,26 +43,46 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
   final TextEditingController _apiKeyController = TextEditingController();
   final TextEditingController _openaiKeyController = TextEditingController();
   final TextEditingController _jinaKeyController = TextEditingController();
+  final TextEditingController _s3AccessKeyController = TextEditingController();
+  final TextEditingController _s3SecretKeyController = TextEditingController();
+  final TextEditingController _s3RegionController = TextEditingController();
+  final TextEditingController _s3BucketNameController = TextEditingController();
+  final TextEditingController _s3FilePathController = TextEditingController();
   late MacosTabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = MacosTabController(length: 2);
+    _tabController = MacosTabController(length: 3);
     _apiKeyController.addListener(_onApiKeyChanged);
     _openaiKeyController.addListener(_onOpenAiKeyChanged);
     _jinaKeyController.addListener(_onJinaKeyChanged);
+    _s3AccessKeyController.addListener(_onS3AccessKeyChanged);
+    _s3SecretKeyController.addListener(_onS3SecretKeyChanged);
+    _s3RegionController.addListener(_onS3RegionChanged);
+    _s3BucketNameController.addListener(_onS3BucketNameChanged);
+    _s3FilePathController.addListener(_onS3FilePathChanged);
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _apiKeyController.removeListener(_onApiKeyChanged);
     _openaiKeyController.removeListener(_onOpenAiKeyChanged);
     _jinaKeyController.removeListener(_onJinaKeyChanged);
+    _s3AccessKeyController.removeListener(_onS3AccessKeyChanged);
+    _s3SecretKeyController.removeListener(_onS3SecretKeyChanged);
+    _s3RegionController.removeListener(_onS3RegionChanged);
+    _s3BucketNameController.removeListener(_onS3BucketNameChanged);
+    _s3FilePathController.removeListener(_onS3FilePathChanged);
     _apiKeyController.dispose();
     _openaiKeyController.dispose();
     _jinaKeyController.dispose();
+    _s3AccessKeyController.dispose();
+    _s3SecretKeyController.dispose();
+    _s3RegionController.dispose();
+    _s3BucketNameController.dispose();
+    _s3FilePathController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -74,6 +96,36 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
 
   void _onJinaKeyChanged() {
     context.read<SettingsCubit>().updateJinaApiKey(_jinaKeyController.text);
+  }
+
+  void _onS3AccessKeyChanged() {
+    context.read<SettingsCubit>().updateS3Config(
+      accessKey: _s3AccessKeyController.text,
+    );
+  }
+
+  void _onS3SecretKeyChanged() {
+    context.read<SettingsCubit>().updateS3Config(
+      secretKey: _s3SecretKeyController.text,
+    );
+  }
+
+  void _onS3RegionChanged() {
+    context.read<SettingsCubit>().updateS3Config(
+      region: _s3RegionController.text,
+    );
+  }
+
+  void _onS3BucketNameChanged() {
+    context.read<SettingsCubit>().updateS3Config(
+      bucketName: _s3BucketNameController.text,
+    );
+  }
+
+  void _onS3FilePathChanged() {
+    context.read<SettingsCubit>().updateS3Config(
+      filePath: _s3FilePathController.text,
+    );
   }
 
   @override
@@ -95,6 +147,32 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           _jinaKeyController.removeListener(_onJinaKeyChanged);
           _jinaKeyController.text = state.jinaApiKey;
           _jinaKeyController.addListener(_onJinaKeyChanged);
+        }
+        // Update S3 controllers
+        if (_s3AccessKeyController.text != state.s3Config.accessKey) {
+          _s3AccessKeyController.removeListener(_onS3AccessKeyChanged);
+          _s3AccessKeyController.text = state.s3Config.accessKey;
+          _s3AccessKeyController.addListener(_onS3AccessKeyChanged);
+        }
+        if (_s3SecretKeyController.text != state.s3Config.secretKey) {
+          _s3SecretKeyController.removeListener(_onS3SecretKeyChanged);
+          _s3SecretKeyController.text = state.s3Config.secretKey;
+          _s3SecretKeyController.addListener(_onS3SecretKeyChanged);
+        }
+        if (_s3RegionController.text != state.s3Config.region) {
+          _s3RegionController.removeListener(_onS3RegionChanged);
+          _s3RegionController.text = state.s3Config.region;
+          _s3RegionController.addListener(_onS3RegionChanged);
+        }
+        if (_s3BucketNameController.text != state.s3Config.bucketName) {
+          _s3BucketNameController.removeListener(_onS3BucketNameChanged);
+          _s3BucketNameController.text = state.s3Config.bucketName;
+          _s3BucketNameController.addListener(_onS3BucketNameChanged);
+        }
+        if (_s3FilePathController.text != state.s3Config.filePath) {
+          _s3FilePathController.removeListener(_onS3FilePathChanged);
+          _s3FilePathController.text = state.s3Config.filePath;
+          _s3FilePathController.addListener(_onS3FilePathChanged);
         }
       },
       builder: (context, state) {
@@ -123,10 +201,12 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                   tabs: const [
                     MacosTab(label: 'Pinboard'),
                     MacosTab(label: 'AI Settings'),
+                    MacosTab(label: 'Backups'),
                   ],
                   children: [
                     _buildPinboardTab(context, state),
                     _buildAiTab(context, state),
+                    _buildBackupTab(context, state),
                   ],
                 ),
               ),
@@ -570,6 +650,374 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
               child: const Text('Clear All AI Settings'),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackupTab(BuildContext context, SettingsState state) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Backup Configuration',
+            style: MacosTheme.of(context).typography.title1,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Securely backup your bookmarks to Amazon S3. All credentials are encrypted and stored locally.',
+            style: TextStyle(fontSize: 12, color: context.subtitleTextColor),
+          ),
+          const SizedBox(height: 24),
+
+          // S3 Configuration Section
+          Row(
+            children: [
+              Text(
+                'Amazon S3 Settings',
+                style: MacosTheme.of(context).typography.headline,
+              ),
+              const SizedBox(width: 8),
+              MacosIconButton(
+                icon: const MacosIcon(CupertinoIcons.link, size: 14),
+                onPressed: () => _launchUrl(
+                  'https://docs.aws.amazon.com/s3/latest/userguide/setting-up-s3.html',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'You\'ll need an AWS account with an S3 bucket and IAM credentials with S3 write permissions.',
+            style: TextStyle(fontSize: 11, color: context.helperTextColor),
+          ),
+          const SizedBox(height: 16),
+
+          // Access Key
+          Text('Access Key', style: MacosTheme.of(context).typography.body),
+          const SizedBox(height: 4),
+          MacosTextField(
+            controller: _s3AccessKeyController,
+            placeholder: 'Enter your AWS Access Key ID',
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Your AWS IAM user access key (e.g., AKIAIOSFODNN7EXAMPLE)',
+            style: TextStyle(fontSize: 11, color: context.helperTextColor),
+          ),
+          const SizedBox(height: 16),
+
+          // Secret Key
+          Text('Secret Key', style: MacosTheme.of(context).typography.body),
+          const SizedBox(height: 4),
+          ValidatedSecretField(
+            controller: _s3SecretKeyController,
+            placeholder: 'Enter your AWS Secret Access Key',
+            helperText:
+                'Your AWS IAM user secret key (kept secure and encrypted)',
+            isValidating: false,
+            isValid: null,
+          ),
+          const SizedBox(height: 16),
+
+          // Region
+          Text('Region', style: MacosTheme.of(context).typography.body),
+          const SizedBox(height: 4),
+          MacosTextField(
+            controller: _s3RegionController,
+            placeholder: 'us-east-1',
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'AWS region where your S3 bucket is located (e.g., us-east-1, eu-west-1)',
+            style: TextStyle(fontSize: 11, color: context.helperTextColor),
+          ),
+          const SizedBox(height: 16),
+
+          // Bucket Name
+          Text('Bucket Name', style: MacosTheme.of(context).typography.body),
+          const SizedBox(height: 4),
+          MacosTextField(
+            controller: _s3BucketNameController,
+            placeholder: 'my-pinboard-backups',
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Name of your S3 bucket where backups will be stored',
+            style: TextStyle(fontSize: 11, color: context.helperTextColor),
+          ),
+          const SizedBox(height: 16),
+
+          // File Path (optional)
+          Text(
+            'File Path (Optional)',
+            style: MacosTheme.of(context).typography.body,
+          ),
+          const SizedBox(height: 4),
+          MacosTextField(
+            controller: _s3FilePathController,
+            placeholder: 'backups/pinboard',
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Optional folder path within your bucket. Leave empty to store in root.',
+            style: TextStyle(fontSize: 11, color: context.helperTextColor),
+          ),
+          const SizedBox(height: 16),
+
+          // Validation Status
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: state.isBackupValidating
+                  ? MacosColors.systemBlueColor.withOpacity(0.1)
+                  : state.isBackupValid
+                  ? MacosColors.systemGreenColor.withOpacity(0.1)
+                  : state.isBackupInvalid
+                  ? MacosColors.systemRedColor.withOpacity(0.1)
+                  : MacosColors.systemGrayColor.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: state.isBackupValidating
+                    ? MacosColors.systemBlueColor.withOpacity(0.3)
+                    : state.isBackupValid
+                    ? MacosColors.systemGreenColor.withOpacity(0.3)
+                    : state.isBackupInvalid
+                    ? MacosColors.systemRedColor.withOpacity(0.3)
+                    : MacosColors.systemGrayColor.withOpacity(0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                if (state.isBackupValidating) ...[
+                  const ProgressCircle(),
+                  const SizedBox(width: 8),
+                  const Text('Testing connection to S3...'),
+                ] else if (state.isBackupValid) ...[
+                  const MacosIcon(
+                    CupertinoIcons.check_mark_circled_solid,
+                    color: MacosColors.systemGreenColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '✓ Configuration Valid',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        if (state.backupValidationMessage != null)
+                          Text(
+                            state.backupValidationMessage!,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: context.subtitleTextColor,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ] else if (state.isBackupInvalid) ...[
+                  const MacosIcon(
+                    CupertinoIcons.xmark_circle_fill,
+                    color: MacosColors.systemRedColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '✗ Configuration Invalid',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        Text(
+                          state.backupValidationMessage ??
+                              'Please check your S3 credentials and try again.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: context.subtitleTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  const MacosIcon(
+                    CupertinoIcons.info_circle,
+                    color: MacosColors.systemGrayColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Ready to Validate',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        Text(
+                          'Fill in all required fields and click "Validate Config" to test your S3 connection.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: context.subtitleTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Action buttons
+          Row(
+            children: [
+              PushButton(
+                controlSize: ControlSize.large,
+                onPressed: state.s3Config.isValid && !state.isBackupValidating
+                    ? () => context.read<SettingsCubit>().validateS3Config()
+                    : null,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (state.isBackupValidating) ...[
+                      const ProgressCircle(),
+                      const SizedBox(width: 8),
+                    ] else if (state.isBackupValid)
+                      const MacosIcon(CupertinoIcons.checkmark, size: 16),
+                    if (state.isBackupValid) const SizedBox(width: 4),
+                    Text(
+                      state.isBackupValidating
+                          ? 'Testing...'
+                          : 'Validate Config',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              PushButton(
+                controlSize: ControlSize.large,
+                secondary: true,
+                onPressed: () =>
+                    context.read<SettingsCubit>().clearBackupConfig(),
+                child: const Text('Clear All'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Validation tests your S3 credentials by uploading a small test file.',
+            style: TextStyle(fontSize: 11, color: context.helperTextColor),
+          ),
+
+          const SizedBox(height: 32),
+          Container(height: 1, color: MacosColors.separatorColor),
+          const SizedBox(height: 32),
+
+          // Backup Section
+          Text(
+            'Backup Operations',
+            style: MacosTheme.of(context).typography.headline,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Create a JSON backup of all your bookmarks including titles, descriptions, tags, and metadata.',
+            style: TextStyle(fontSize: 11, color: context.helperTextColor),
+          ),
+          const SizedBox(height: 16),
+
+          if (state.lastBackupMessage != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: MacosColors.systemGreenColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: MacosColors.systemGreenColor.withOpacity(0.3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const MacosIcon(
+                        CupertinoIcons.check_mark_circled_solid,
+                        color: MacosColors.systemGreenColor,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Backup Successful',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    state.lastBackupMessage!,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: context.subtitleTextColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          Row(
+            children: [
+              PushButton(
+                controlSize: ControlSize.large,
+                onPressed: state.canBackup
+                    ? () => context.read<SettingsCubit>().performBackup()
+                    : null,
+                child: state.isBackupInProgress
+                    ? const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ProgressCircle(),
+                          SizedBox(width: 8),
+                          Text('Creating backup...'),
+                        ],
+                      )
+                    : const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          MacosIcon(CupertinoIcons.cloud_upload, size: 16),
+                          SizedBox(width: 6),
+                          Text('Backup Bookmarks'),
+                        ],
+                      ),
+              ),
+              if (!state.canBackup && !state.isBackupInProgress) ...[
+                const SizedBox(width: 8),
+                Text(
+                  state.isBackupValid
+                      ? 'Ready to backup'
+                      : 'Please validate configuration first',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: state.isBackupValid
+                        ? MacosColors.systemGreenColor
+                        : MacosColors.systemOrangeColor,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'This will export all your bookmarks as a timestamped JSON file and upload it to your S3 bucket. The backup includes bookmark metadata and is compressed for efficiency.',
+            style: TextStyle(fontSize: 11, color: context.helperTextColor),
+          ),
         ],
       ),
     );

@@ -7,6 +7,7 @@ import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/ai/ai_bookmark_service.dart';
 import 'package:pinboard_wizard/src/ai/openai/openai_service.dart';
 import 'package:pinboard_wizard/src/ai/web_scraping/jina_service.dart';
+import 'package:pinboard_wizard/src/backup/backup_service.dart';
 
 final locator = GetIt.instance;
 
@@ -22,5 +23,6 @@ Future<void> setup() async {
     ..registerLazySingleton<AiSettingsService>(() => AiSettingsService())
     ..registerLazySingleton<OpenAiService>(() => OpenAiService())
     ..registerLazySingleton<JinaService>(() => JinaService())
-    ..registerLazySingleton<AiBookmarkService>(() => AiBookmarkService());
+    ..registerLazySingleton<AiBookmarkService>(() => AiBookmarkService())
+    ..registerLazySingleton<BackupService>(() => BackupService());
 }

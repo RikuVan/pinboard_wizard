@@ -28,6 +28,7 @@ dependencies:
   intl: ^0.20.2
   package_info_plus: ^9.0.0
   openai_dart: ^0.5.5
+  aws_s3_upload_lite: ^0.1.6
 
 dev_dependencies:
   flutter_test:

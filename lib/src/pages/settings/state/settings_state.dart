@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
 
 enum SettingsStatus { initial, loading, loaded, error, saving, testing }
 
@@ -24,6 +25,12 @@ class SettingsState extends Equatable {
     this.jinaValidationMessage,
     this.descriptionMaxLength = 100,
     this.maxTags = 5,
+    // Backup settings
+    this.s3Config = const S3Config(),
+    this.backupValidationStatus = ValidationStatus.initial,
+    this.backupValidationMessage,
+    this.isBackupInProgress = false,
+    this.lastBackupMessage,
   });
 
   final SettingsStatus status;
@@ -47,6 +54,13 @@ class SettingsState extends Equatable {
   final int descriptionMaxLength;
   final int maxTags;
 
+  // Backup settings
+  final S3Config s3Config;
+  final ValidationStatus backupValidationStatus;
+  final String? backupValidationMessage;
+  final bool isBackupInProgress;
+  final String? lastBackupMessage;
+
   SettingsState copyWith({
     SettingsStatus? status,
     Object? errorMessage = _sentinel,
@@ -64,6 +78,11 @@ class SettingsState extends Equatable {
     Object? jinaValidationMessage = _sentinel,
     int? descriptionMaxLength,
     int? maxTags,
+    S3Config? s3Config,
+    ValidationStatus? backupValidationStatus,
+    Object? backupValidationMessage = _sentinel,
+    bool? isBackupInProgress,
+    Object? lastBackupMessage = _sentinel,
   }) {
     return SettingsState(
       status: status ?? this.status,
@@ -93,6 +112,16 @@ class SettingsState extends Equatable {
           : jinaValidationMessage as String?,
       descriptionMaxLength: descriptionMaxLength ?? this.descriptionMaxLength,
       maxTags: maxTags ?? this.maxTags,
+      s3Config: s3Config ?? this.s3Config,
+      backupValidationStatus:
+          backupValidationStatus ?? this.backupValidationStatus,
+      backupValidationMessage: backupValidationMessage == _sentinel
+          ? this.backupValidationMessage
+          : backupValidationMessage as String?,
+      isBackupInProgress: isBackupInProgress ?? this.isBackupInProgress,
+      lastBackupMessage: lastBackupMessage == _sentinel
+          ? this.lastBackupMessage
+          : lastBackupMessage as String?,
     );
   }
 
@@ -122,6 +151,13 @@ class SettingsState extends Equatable {
   bool get isJinaValid => jinaValidationStatus == ValidationStatus.valid;
   bool get isJinaInvalid => jinaValidationStatus == ValidationStatus.invalid;
 
+  bool get isBackupValidating =>
+      backupValidationStatus == ValidationStatus.validating;
+  bool get isBackupValid => backupValidationStatus == ValidationStatus.valid;
+  bool get isBackupInvalid =>
+      backupValidationStatus == ValidationStatus.invalid;
+  bool get canBackup => isBackupValid && !isBackupInProgress;
+
   @override
   List<Object?> get props => [
     status,
@@ -140,5 +176,10 @@ class SettingsState extends Equatable {
     jinaValidationMessage,
     descriptionMaxLength,
     maxTags,
+    s3Config,
+    backupValidationStatus,
+    backupValidationMessage,
+    isBackupInProgress,
+    lastBackupMessage,
   ];
 }

@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings.dart';
+import 'package:pinboard_wizard/src/backup/backup_service.dart';
+import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
 import 'package:pinboard_wizard/src/pages/settings/state/settings_cubit.dart';
 import 'package:pinboard_wizard/src/pages/settings/state/settings_state.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
@@ -131,29 +133,88 @@ class MockAiSettingsService extends Mock implements AiSettingsService {
   );
 }
 
+class MockBackupService extends Mock implements BackupService {
+  @override
+  S3Config get s3Config => super.noSuchMethod(
+    Invocation.getter(#s3Config),
+    returnValue: const S3Config(),
+  );
+
+  @override
+  Future<void> loadConfiguration() => super.noSuchMethod(
+    Invocation.method(#loadConfiguration, []),
+    returnValue: Future.value(),
+  );
+
+  @override
+  Future<void> saveConfiguration(S3Config config) => super.noSuchMethod(
+    Invocation.method(#saveConfiguration, [config]),
+    returnValue: Future.value(),
+  );
+
+  @override
+  Future<bool> validateConfiguration() => super.noSuchMethod(
+    Invocation.method(#validateConfiguration, []),
+    returnValue: Future.value(true),
+  );
+
+  @override
+  Future<bool> backupBookmarks() => super.noSuchMethod(
+    Invocation.method(#backupBookmarks, []),
+    returnValue: Future.value(true),
+  );
+
+  @override
+  Future<void> clearConfiguration() => super.noSuchMethod(
+    Invocation.method(#clearConfiguration, []),
+    returnValue: Future.value(),
+  );
+
+  @override
+  void addListener(VoidCallback listener) => super.noSuchMethod(
+    Invocation.method(#addListener, [listener]),
+    returnValue: null,
+  );
+
+  @override
+  void removeListener(VoidCallback listener) => super.noSuchMethod(
+    Invocation.method(#removeListener, [listener]),
+    returnValue: null,
+  );
+
+  @override
+  void dispose() =>
+      super.noSuchMethod(Invocation.method(#dispose, []), returnValue: null);
+}
+
 void main() {
   group('SettingsCubit', () {
     late SettingsCubit settingsCubit;
     late MockCredentialsService mockCredentialsService;
     late MockPinboardService mockPinboardService;
     late MockAiSettingsService mockAiSettingsService;
+    late MockBackupService mockBackupService;
     late ValueNotifier<bool> mockAuthNotifier;
 
     setUp(() {
       mockCredentialsService = MockCredentialsService();
       mockPinboardService = MockPinboardService();
       mockAiSettingsService = MockAiSettingsService();
+      mockBackupService = MockBackupService();
       mockAuthNotifier = ValueNotifier<bool>(false);
 
       when(
         mockCredentialsService.isAuthenticatedNotifier,
       ).thenReturn(mockAuthNotifier);
       when(mockAiSettingsService.settings).thenReturn(const AiSettings());
+      when(mockBackupService.s3Config).thenReturn(const S3Config());
+      when(mockBackupService.loadConfiguration()).thenAnswer((_) async {});
 
       settingsCubit = SettingsCubit(
         credentialsService: mockCredentialsService,
         pinboardService: mockPinboardService,
         aiSettingsService: mockAiSettingsService,
+        backupService: mockBackupService,
       );
     });
 
