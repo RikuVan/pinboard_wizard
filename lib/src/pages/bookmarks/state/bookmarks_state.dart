@@ -26,6 +26,7 @@ class BookmarksState extends Equatable {
     this.searchQuery = '',
     this.availableTags = const [],
     this.selectedTags = const [],
+    this.showUnreadOnly = false,
   });
 
   final BookmarksStatus status;
@@ -41,6 +42,7 @@ class BookmarksState extends Equatable {
   final String searchQuery;
   final List<String> availableTags;
   final List<String> selectedTags;
+  final bool showUnreadOnly;
 
   BookmarksState copyWith({
     BookmarksStatus? status,
@@ -56,6 +58,7 @@ class BookmarksState extends Equatable {
     String? searchQuery,
     List<String>? availableTags,
     List<String>? selectedTags,
+    bool? showUnreadOnly,
   }) {
     return BookmarksState(
       status: status ?? this.status,
@@ -71,6 +74,7 @@ class BookmarksState extends Equatable {
       searchQuery: searchQuery ?? this.searchQuery,
       availableTags: availableTags ?? this.availableTags,
       selectedTags: selectedTags ?? this.selectedTags,
+      showUnreadOnly: showUnreadOnly ?? this.showUnreadOnly,
     );
   }
 
@@ -88,6 +92,13 @@ class BookmarksState extends Equatable {
       baseBookmarks = filteredBookmarks;
     } else {
       baseBookmarks = bookmarks;
+    }
+
+    // Apply unread filter
+    if (showUnreadOnly) {
+      baseBookmarks = baseBookmarks
+          .where((bookmark) => bookmark.toread)
+          .toList();
     }
 
     // Apply tag filtering
@@ -119,5 +130,6 @@ class BookmarksState extends Equatable {
     searchQuery,
     availableTags,
     selectedTags,
+    showUnreadOnly,
   ];
 }

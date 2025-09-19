@@ -98,6 +98,7 @@ void main() {
         expect(cubit.state.searchAll, isFalse);
         expect(cubit.state.hasMoreData, isTrue);
         expect(cubit.state.currentOffset, equals(0));
+        expect(cubit.state.showUnreadOnly, isFalse);
       });
 
       test('convenience getters work correctly', () {
@@ -357,6 +358,70 @@ void main() {
       );
     });
 
+    group('unread filter', () {
+      blocTest<BookmarksCubit, BookmarksState>(
+        'toggleUnreadFilter sets showUnreadOnly to true',
+        build: () => cubit,
+        act: (cubit) => cubit.toggleUnreadFilter(true),
+        expect: () => [
+          isA<BookmarksState>().having(
+            (s) => s.showUnreadOnly,
+            'showUnreadOnly',
+            isTrue,
+          ),
+        ],
+      );
+
+      blocTest<BookmarksCubit, BookmarksState>(
+        'toggleUnreadFilter sets showUnreadOnly to false',
+        build: () => cubit,
+        seed: () => const BookmarksState(showUnreadOnly: true),
+        act: (cubit) => cubit.toggleUnreadFilter(false),
+        expect: () => [
+          isA<BookmarksState>().having(
+            (s) => s.showUnreadOnly,
+            'showUnreadOnly',
+            isFalse,
+          ),
+        ],
+      );
+
+      test('displayBookmarks filters unread when showUnreadOnly is true', () {
+        final readBookmark = testPost.copyWith(toread: false);
+        final unreadBookmark = testPost.copyWith(
+          href: 'https://unread.example.com',
+          toread: true,
+        );
+
+        cubit.emit(
+          cubit.state.copyWith(
+            bookmarks: [readBookmark, unreadBookmark],
+            showUnreadOnly: true,
+          ),
+        );
+
+        expect(cubit.state.displayBookmarks, hasLength(1));
+        expect(cubit.state.displayBookmarks.first.toread, isTrue);
+      });
+
+      test('displayBookmarks shows all when showUnreadOnly is false', () {
+        final readBookmark = testPost.copyWith(toread: false);
+        final unreadBookmark = testPost.copyWith(
+          href: 'https://unread.example.com',
+          toread: true,
+        );
+
+        cubit.emit(
+          cubit.state.copyWith(
+            bookmarks: [readBookmark, unreadBookmark],
+            showUnreadOnly: false,
+          ),
+        );
+
+        expect(cubit.state.displayBookmarks, hasLength(2));
+      });
+    });
+
     group('shouldLoadMore', () {
       test('returns true when conditions are met', () {
         cubit.emit(
@@ -408,6 +473,57 @@ void main() {
         );
 
         expect(cubit.getFooterText(), equals('2 bookmarks loaded'));
+      });
+
+      test('getFooterText includes unread filter info', () {
+        final readBookmark = testPost.copyWith(toread: false);
+        final unreadBookmark = testPost.copyWith(
+          href: 'https://unread.example.com',
+          toread: true,
+        );
+
+        cubit.emit(
+          cubit.state.copyWith(
+            bookmarks: [readBookmark, unreadBookmark],
+            isSearching: false,
+            searchAll: false,
+            showUnreadOnly: true,
+          ),
+        );
+
+        expect(
+          cubit.getFooterText(),
+          equals('2 bookmarks loaded • 1 after unread only filtering'),
+        );
+      });
+
+      test('getFooterText includes combined filters info', () {
+        final taggedReadBookmark = testPost.copyWith(
+          toread: false,
+          tags: 'flutter dart',
+        );
+        final taggedUnreadBookmark = testPost.copyWith(
+          href: 'https://unread.example.com',
+          toread: true,
+          tags: 'flutter dart',
+        );
+
+        cubit.emit(
+          cubit.state.copyWith(
+            bookmarks: [taggedReadBookmark, taggedUnreadBookmark],
+            isSearching: false,
+            searchAll: false,
+            showUnreadOnly: true,
+            selectedTags: ['flutter'],
+          ),
+        );
+
+        expect(
+          cubit.getFooterText(),
+          equals(
+            '2 bookmarks loaded • 1 after unread only & tag filtered filtering',
+          ),
+        );
       });
 
       test('getSecondaryFooterText returns total when all loaded', () {

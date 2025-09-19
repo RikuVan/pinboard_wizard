@@ -27,6 +27,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
   late TextEditingController _searchController;
   late BookmarksCubit _bookmarksCubit;
   double _scrollProgress = 0.0;
+  int _lastDisplayedItemCount = 0;
 
   @override
   void initState() {
@@ -54,6 +55,18 @@ class _BookmarksPageState extends State<BookmarksPage> {
   }
 
   void _onScroll() {
+    _updateScrollProgress();
+
+    // Load more bookmarks when near the end
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      if (_bookmarksCubit.shouldLoadMore()) {
+        _bookmarksCubit.loadMoreBookmarks();
+      }
+    }
+  }
+
+  void _updateScrollProgress() {
     // Update scroll progress
     if (_scrollController.hasClients) {
       final maxScrollExtent = _scrollController.position.maxScrollExtent;
@@ -70,14 +83,6 @@ class _BookmarksPageState extends State<BookmarksPage> {
         setState(() {
           _scrollProgress = 0.0;
         });
-      }
-    }
-
-    // Load more bookmarks when near the end
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      if (_bookmarksCubit.shouldLoadMore()) {
-        _bookmarksCubit.loadMoreBookmarks();
       }
     }
   }
@@ -99,6 +104,36 @@ class _BookmarksPageState extends State<BookmarksPage> {
         listener: (context, state) {
           if (state.hasError && state.errorMessage != null) {
             _showErrorDialog(state.errorMessage!);
+          }
+
+          // Update scroll progress when the displayed item count changes
+          final currentDisplayedCount = state.displayBookmarks.length;
+          if (currentDisplayedCount != _lastDisplayedItemCount) {
+            final previousCount = _lastDisplayedItemCount;
+            _lastDisplayedItemCount = currentDisplayedCount;
+
+            // Only scroll to top for extremely dramatic reductions (more than 90% reduction)
+            // and only when we have a substantial starting count to avoid normal filter behavior
+            final dramaticReduction =
+                previousCount > 100 &&
+                currentDisplayedCount < (previousCount * 0.1);
+
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && _scrollController.hasClients) {
+                if (dramaticReduction) {
+                  _scrollController.animateTo(
+                    0,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
+                  );
+                }
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  if (mounted) {
+                    _updateScrollProgress();
+                  }
+                });
+              }
+            });
           }
         },
         builder: (context, state) {
@@ -248,6 +283,21 @@ class _BookmarksPageState extends State<BookmarksPage> {
               placeholder: 'Search bookmarks...',
               onChanged: (_) {}, // handled by controller listener
             ),
+          ),
+          const SizedBox(width: 16),
+          Text(
+            'Unread Only:',
+            style: TextStyle(
+              color: MacosTheme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : Colors.black,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(width: 8),
+          MacosSwitch(
+            value: state.showUnreadOnly,
+            onChanged: (value) => _bookmarksCubit.toggleUnreadFilter(value),
           ),
           const SizedBox(width: 16),
           Text(

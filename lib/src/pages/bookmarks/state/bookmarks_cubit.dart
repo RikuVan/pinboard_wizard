@@ -296,6 +296,11 @@ class BookmarksCubit extends Cubit<BookmarksState> {
     safeEmit(state.copyWith(selectedTags: newSelectedTags));
   }
 
+  /// Toggle unread filter
+  void toggleUnreadFilter(bool showUnreadOnly) {
+    safeEmit(state.copyWith(showUnreadOnly: showUnreadOnly));
+  }
+
   /// Get footer text for display including tag filtering info
   String getFooterText() {
     String baseText;
@@ -309,9 +314,19 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       baseText = '${state.bookmarks.length} bookmarks loaded';
     }
 
-    if (state.hasTagsSelected) {
+    if (state.hasTagsSelected || state.showUnreadOnly) {
       final displayedCount = state.displayBookmarks.length;
-      baseText += ' • $displayedCount after filtering';
+      List<String> filters = [];
+
+      if (state.showUnreadOnly) {
+        filters.add('unread only');
+      }
+
+      if (state.hasTagsSelected) {
+        filters.add('tag filtered');
+      }
+
+      baseText += ' • $displayedCount after ${filters.join(' & ')} filtering';
     }
 
     return baseText;
