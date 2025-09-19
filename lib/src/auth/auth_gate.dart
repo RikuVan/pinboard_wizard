@@ -1,10 +1,8 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
-import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
 import 'package:pinboard_wizard/src/service_locator.dart';
-import 'package:pinboard_wizard/src/pages/settings_page.dart';
+import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
 
 class AuthGate extends StatefulWidget {
   final Widget child;
@@ -17,78 +15,58 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   late final CredentialsService _credentialsService;
-  late final PinboardService _pinboardService;
-
-  bool _checking = true;
-  String? _error;
-  bool _authenticated = false;
 
   @override
   void initState() {
     super.initState();
     _credentialsService = locator.get<CredentialsService>();
-    _pinboardService = locator.get<PinboardService>();
-    _check();
   }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  Future<void> _check() async {
-    setState(() {
-      _checking = true;
-      _error = null;
-    });
-
-    final has = await _credentialsService.isAuthenticated();
-    _authenticated = has;
-    if (!has) {
-      setState(() => _checking = false);
-      return;
-    }
-
-    try {
-      final ok = await _pinboardService.testConnection();
-      if (!ok) {
-        setState(() {
-          _checking = false;
-          _error = 'Failed to authenticate with Pinboard.';
-          _authenticated = false;
-        });
-      } else {
-        setState(() {
-          _checking = false;
-          _authenticated = true;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _checking = false;
-        _error = 'Connection error: $e';
-        _authenticated = false;
-      });
-    }
-  }
-
-  // Dialog flow replaced by SettingsPage navigation/content handled by AuthGate.
 
   @override
   Widget build(BuildContext context) {
-    if (_checking) {
-      return const Center(child: ProgressCircle());
-    }
+    return ValueListenableBuilder<bool>(
+      valueListenable: _credentialsService.isAuthenticatedNotifier,
+      builder: (context, isAuthenticated, _) {
+        if (isAuthenticated) {
+          return widget.child;
+        }
 
-    final notAuthed = _error == null && !_authenticated;
-    if (notAuthed) {
-      return const SettingsPage();
-    }
+        return _buildAuthRequired();
+      },
+    );
+  }
 
-    if (_error != null) {
-      return const SettingsPage();
-    }
-
-    return widget.child;
+  Widget _buildAuthRequired() {
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const AppLogo(size: 120),
+            const SizedBox(height: 32),
+            Text(
+              'Welcome to Pinboard Wizard',
+              style: MacosTheme.of(context).typography.largeTitle,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'To get started, please configure your Pinboard API credentials in Settings.',
+              style: MacosTheme.of(context).typography.body,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            PushButton(
+              controlSize: ControlSize.large,
+              onPressed: () {
+                // This will be handled by the main app navigation
+                // The user can navigate to settings through the sidebar
+              },
+              child: const Text('Go to Settings'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
