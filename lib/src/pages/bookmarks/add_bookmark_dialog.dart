@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ai/ai_bookmark_service.dart';
+import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
+import 'package:pinboard_wizard/src/service_locator.dart';
 
 class AddBookmarkDialog extends StatefulWidget {
   const AddBookmarkDialog({super.key});
@@ -21,15 +25,43 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
   bool _markAsToRead = true;
   bool _replaceExisting = false;
   bool _isSubmitting = false;
+  bool _isAnalyzing = false;
+  String? _aiError;
+  Timer? _clipboardTimer;
+  bool _userClearedForm = false;
+  String? _lastClipboardUrl;
+
+  late final AiBookmarkService _aiBookmarkService;
+  late final AiSettingsService _aiSettingsService;
 
   @override
   void initState() {
     super.initState();
+    _aiBookmarkService = locator.get<AiBookmarkService>();
+    _aiSettingsService = locator.get<AiSettingsService>();
     _tryLoadClipboardUrl();
+    _startClipboardMonitoring();
   }
 
   @override
   void dispose() {
+    // Stop clipboard monitoring
+    _clipboardTimer?.cancel();
+
+    // Clear all data before disposing
+    _urlController.clear();
+    _titleController.clear();
+    _descriptionController.clear();
+    _tagsController.clear();
+
+    // Reset state
+    _isPrivate = true;
+    _markAsToRead = true;
+    _replaceExisting = false;
+    _isSubmitting = false;
+    _isAnalyzing = false;
+    _aiError = null;
+
     _urlController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
@@ -68,7 +100,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                   const Spacer(),
                   MacosIconButton(
                     icon: const MacosIcon(CupertinoIcons.xmark),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => _handleClose(),
                   ),
                 ],
               ),
@@ -82,12 +114,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildTextField(
-                          controller: _urlController,
-                          label: 'URL',
-                          placeholder: 'https://example.com',
-                          isRequired: true,
-                        ),
+                        _buildUrlField(),
                         const SizedBox(height: 20),
                         _buildTextField(
                           controller: _titleController,
@@ -121,34 +148,49 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
 
               // Bottom buttons
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   PushButton(
                     controlSize: ControlSize.large,
                     secondary: true,
-                    onPressed: _isSubmitting
-                        ? null
-                        : () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
+                    onPressed: _isSubmitting ? null : _handleClear,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const MacosIcon(CupertinoIcons.clear),
+                        const SizedBox(width: 6),
+                        const Text('Clear'),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 12),
-                  PushButton(
-                    controlSize: ControlSize.large,
-                    onPressed: _isSubmitting ? null : _handleSubmit,
-                    child: _isSubmitting
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: ProgressCircle(),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text('Adding...'),
-                            ],
-                          )
-                        : const Text('Add Bookmark'),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      PushButton(
+                        controlSize: ControlSize.large,
+                        secondary: true,
+                        onPressed: _isSubmitting ? null : _handleClose,
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 12),
+                      PushButton(
+                        controlSize: ControlSize.large,
+                        onPressed: _isSubmitting ? null : _handleSubmit,
+                        child: _isSubmitting
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: ProgressCircle(),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text('Adding...'),
+                                ],
+                              )
+                            : const Text('Add Bookmark'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -156,6 +198,122 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildUrlField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'URL',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: MacosTheme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
+            ),
+            Text(
+              ' *',
+              style: TextStyle(
+                color: MacosColors.systemRedColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: MacosTextField(
+                controller: _urlController,
+                placeholder: 'https://example.com',
+                onChanged: (_) {
+                  setState(() {
+                    _aiError = null; // Clear error when URL changes
+                    _userClearedForm =
+                        false; // Reset clear flag when user types
+                  });
+                },
+              ),
+            ),
+            if (_aiSettingsService.isEnabled) ...[
+              const SizedBox(width: 12),
+              PushButton(
+                controlSize: ControlSize.regular,
+                onPressed: _canUseAiMagic ? _handleAiAnalysis : null,
+                child: _isAnalyzing
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: ProgressCircle(),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text('Analyzing...'),
+                        ],
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            CupertinoIcons.sparkles,
+                            size: 16,
+                            color: _canUseAiMagic
+                                ? MacosColors.controlAccentColor
+                                : MacosTheme.of(context).brightness ==
+                                      Brightness.dark
+                                ? Colors.white38
+                                : Colors.black38,
+                          ),
+                          const SizedBox(width: 6),
+                          const Text('Complete with AI'),
+                        ],
+                      ),
+              ),
+            ],
+          ],
+        ),
+        if (_aiError != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: MacosColors.systemRedColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: MacosColors.systemRedColor.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  CupertinoIcons.exclamationmark_triangle_fill,
+                  size: 16,
+                  color: MacosColors.systemRedColor,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _aiError!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: MacosColors.systemRedColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -335,12 +493,67 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
         'replace': _replaceExisting,
       };
 
+      // Clear clipboard after successful save to prevent reuse
+      await Clipboard.setData(const ClipboardData(text: ''));
+
       Navigator.of(context).pop(bookmarkData);
     } catch (e) {
       setState(() => _isSubmitting = false);
       if (context.mounted) {
         _showErrorDialog('Failed to prepare bookmark data: $e');
       }
+    }
+  }
+
+  bool get _canUseAiMagic {
+    if (!_aiSettingsService.isEnabled || _isAnalyzing || _isSubmitting) {
+      return false;
+    }
+
+    if (!_aiSettingsService.openaiSettings.hasApiKey) {
+      return false;
+    }
+
+    final url = _urlController.text.trim();
+    return url.isNotEmpty && _aiBookmarkService.isValidUrl(url);
+  }
+
+  Future<void> _handleAiAnalysis() async {
+    final url = _urlController.text.trim();
+    if (!_aiBookmarkService.isValidUrl(url)) {
+      setState(() {
+        _aiError = 'Please enter a valid URL first';
+      });
+      return;
+    }
+
+    setState(() {
+      _isAnalyzing = true;
+      _aiError = null;
+    });
+
+    try {
+      final suggestions = await _aiBookmarkService.analyzeUrl(url);
+
+      setState(() {
+        _isAnalyzing = false;
+
+        // Fill in the fields with AI suggestions
+        if (suggestions.hasTitle) {
+          _titleController.text = suggestions.title!;
+        }
+        if (suggestions.hasDescription) {
+          _descriptionController.text = suggestions.description!;
+        }
+        if (suggestions.hasTags) {
+          _tagsController.text = suggestions.tags.join(' ');
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isAnalyzing = false;
+        _aiError = e.toString().replaceFirst('AiBookmarkException: ', '');
+      });
     }
   }
 
@@ -384,9 +597,77 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                 .first;
           }
         }
+        // Set the last clipboard URL to prevent monitoring from re-filling
+        _lastClipboardUrl = text;
       }
     } catch (e) {
       // Ignore clipboard errors
+    }
+  }
+
+  void _handleClear() {
+    setState(() {
+      _urlController.clear();
+      _titleController.clear();
+      _descriptionController.clear();
+      _tagsController.clear();
+      _isPrivate = true;
+      _markAsToRead = true;
+      _replaceExisting = false;
+      _aiError = null;
+      _userClearedForm = true;
+    });
+  }
+
+  void _handleClose() {
+    Navigator.of(context).pop();
+  }
+
+  void _startClipboardMonitoring() {
+    _clipboardTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _checkClipboardForNewUrl();
+    });
+  }
+
+  Future<void> _checkClipboardForNewUrl() async {
+    try {
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      if (clipboardData?.text != null && clipboardData!.text!.isNotEmpty) {
+        final text = clipboardData.text!.trim();
+        final uri = Uri.tryParse(text);
+        final currentUrl = _urlController.text.trim();
+
+        // Only update if clipboard content actually changed
+        if (text != _lastClipboardUrl) {
+          _lastClipboardUrl = text;
+
+          // Only update if it's a valid URL, different from current URL, and user hasn't manually cleared
+          if (uri != null &&
+              uri.hasScheme &&
+              uri.scheme.startsWith('http') &&
+              text != currentUrl &&
+              !_userClearedForm) {
+            setState(() {
+              _urlController.text = text;
+              // Generate a title from the URL if title is empty or was auto-generated
+              if (_titleController.text.isEmpty ||
+                  _titleController.text ==
+                      uri.host.replaceAll('www.', '').split('.').first) {
+                if (uri.host.isNotEmpty) {
+                  _titleController.text = uri.host
+                      .replaceAll('www.', '')
+                      .split('.')
+                      .first;
+                }
+              }
+              // Clear AI error when URL changes
+              _aiError = null;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore clipboard errors during monitoring
     }
   }
 }

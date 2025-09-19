@@ -4,6 +4,7 @@ import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
 import 'package:pinboard_wizard/src/pinboard/secrets_storage.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
+import 'package:pinboard_wizard/src/ai/ai_bookmark_service.dart';
 import 'package:pinboard_wizard/src/ai/openai/openai_service.dart';
 import 'package:pinboard_wizard/src/ai/web_scraping/jina_service.dart';
 
@@ -20,5 +21,6 @@ Future<void> setup() async {
     ..registerLazySingleton<SecretStorage>(() => FlutterSecureSecretsStorage())
     ..registerLazySingleton<AiSettingsService>(() => AiSettingsService())
     ..registerLazySingleton<OpenAiService>(() => OpenAiService())
-    ..registerLazySingleton<JinaService>(() => JinaService());
+    ..registerLazySingleton<JinaService>(() => JinaService())
+    ..registerLazySingleton<AiBookmarkService>(() => AiBookmarkService());
 }

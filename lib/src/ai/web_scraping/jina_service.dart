@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:pinboard_wizard/src/ai/web_scraping/models/scraped_content.dart';
 
@@ -19,7 +18,7 @@ class JinaService {
   Future<ScrapedContent> scrapeUrl(String url) async {
     try {
       final headers = <String, String>{
-        'Accept': 'application/json',
+        'Accept': 'text/plain',
         'User-Agent': 'Pinboard-Wizard/1.0',
       };
 
@@ -34,8 +33,16 @@ class JinaService {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        return _parseJinaResponse(data, url);
+        return ScrapedContent(
+          url: url,
+          title: null, // Let OpenAI extract the title
+          content: response.body,
+          description: null,
+          images: [],
+          metadata: {},
+          scrapedAt: DateTime.now(),
+          source: ScrapingSource.jina,
+        );
       } else if (response.statusCode == 401) {
         throw JinaException('Invalid API key');
       } else if (response.statusCode == 429) {
@@ -55,104 +62,6 @@ class JinaService {
     }
   }
 
-  ScrapedContent _parseJinaResponse(Map<String, dynamic> data, String url) {
-    try {
-      // Jina AI returns markdown content directly in the response body
-      // along with some metadata
-
-      final String content = data['content'] ?? data['data'] ?? '';
-      final Map<String, dynamic> metadata = data['meta'] ?? <String, dynamic>{};
-
-      // Extract title from content if not in metadata
-      String? title = metadata['title'] as String?;
-      if (title == null && content.isNotEmpty) {
-        // Try to extract title from first heading in markdown
-        final lines = content.split('\n');
-        for (final line in lines.take(5)) {
-          if (line.startsWith('# ')) {
-            title = line.substring(2).trim();
-            break;
-          }
-        }
-      }
-
-      // Extract description from metadata or first paragraph
-      String? description = metadata['description'] as String?;
-      if (description == null && content.isNotEmpty) {
-        final lines = content.split('\n');
-        for (final line in lines) {
-          final trimmed = line.trim();
-          if (trimmed.isNotEmpty &&
-              !trimmed.startsWith('#') &&
-              !trimmed.startsWith('*') &&
-              !trimmed.startsWith('-') &&
-              trimmed.length > 50) {
-            description = trimmed.length > 200
-                ? '${trimmed.substring(0, 200)}...'
-                : trimmed;
-            break;
-          }
-        }
-      }
-
-      return ScrapedContent(
-        url: url,
-        title: title,
-        content: content,
-        description: description,
-        images: _extractImages(metadata),
-        metadata: _buildMetadata(metadata),
-        scrapedAt: DateTime.now(),
-        source: ScrapingSource.jina,
-      );
-    } catch (e) {
-      throw JinaException('Failed to parse Jina response: $e');
-    }
-  }
-
-  List<String> _extractImages(Map<String, dynamic> metadata) {
-    final images = <String>[];
-
-    // Try different possible image fields
-    final imageFields = ['images', 'image', 'og_image', 'twitter_image'];
-
-    for (final field in imageFields) {
-      final value = metadata[field];
-      if (value != null) {
-        if (value is List) {
-          images.addAll(value.cast<String>());
-        } else if (value is String) {
-          images.add(value);
-        }
-      }
-    }
-
-    return images.where((img) => img.isNotEmpty).take(5).toList();
-  }
-
-  Map<String, String> _buildMetadata(Map<String, dynamic> data) {
-    final metadata = <String, String>{};
-
-    final stringFields = [
-      'author',
-      'published_time',
-      'site_name',
-      'lang',
-      'canonical_url',
-      'og_type',
-      'twitter_card',
-    ];
-
-    for (final field in stringFields) {
-      final value = data[field];
-      if (value != null && value.toString().isNotEmpty) {
-        metadata[field] = value.toString();
-      }
-    }
-
-    return metadata;
-  }
-
   Future<bool> testConnection() async {
     try {
       // Test with a simple, reliable URL
@@ -166,9 +75,8 @@ class JinaService {
   /// Get detailed information about the API key including quota and rate limits
   Future<JinaKeyInfo> getApiKeyInfo() async {
     try {
-      // For Jina AI, we'll test with a simple request and check response headers
       final headers = <String, String>{
-        'Accept': 'application/json',
+        'Accept': 'text/plain',
         'User-Agent': 'Pinboard-Wizard/1.0',
       };
 
@@ -184,7 +92,6 @@ class JinaService {
       if (response.statusCode == 200) {
         // Check rate limit headers if available
         final remainingRequests = response.headers['x-ratelimit-remaining'];
-        final resetTime = response.headers['x-ratelimit-reset'];
         final dailyLimit = response.headers['x-ratelimit-limit'];
 
         return JinaKeyInfo(
@@ -194,7 +101,6 @@ class JinaService {
               ? int.tryParse(remainingRequests)
               : null,
           dailyLimit: dailyLimit != null ? int.tryParse(dailyLimit) : null,
-          resetTime: resetTime != null ? int.tryParse(resetTime) : null,
         );
       } else if (response.statusCode == 401) {
         // Only show error if we actually provided an API key
@@ -208,8 +114,6 @@ class JinaService {
         return JinaKeyInfo.invalid(
           'Rate limit exceeded. Consider adding an API key for higher limits.',
         );
-      } else if (response.statusCode == 403) {
-        return JinaKeyInfo.invalid('API key lacks required permissions');
       } else {
         return JinaKeyInfo.invalid('API error: ${response.statusCode}');
       }
@@ -242,7 +146,6 @@ class JinaKeyInfo {
   final bool hasApiKey;
   final int? remainingRequests;
   final int? dailyLimit;
-  final int? resetTime;
 
   const JinaKeyInfo({
     required this.isValid,
@@ -250,7 +153,6 @@ class JinaKeyInfo {
     required this.hasApiKey,
     this.remainingRequests,
     this.dailyLimit,
-    this.resetTime,
   });
 
   const JinaKeyInfo.invalid(String error)
@@ -258,8 +160,7 @@ class JinaKeyInfo {
       errorMessage = error,
       hasApiKey = false,
       remainingRequests = null,
-      dailyLimit = null,
-      resetTime = null;
+      dailyLimit = null;
 
   String get statusMessage {
     if (!isValid) {

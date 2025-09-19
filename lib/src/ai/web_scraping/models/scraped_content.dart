@@ -50,8 +50,17 @@ class ScrapedContent extends Equatable {
 
   String get cleanContent {
     if (content == null) return '';
-    // Remove excessive whitespace and newlines
-    return content!.replaceAll(RegExp(r'\s+'), ' ').trim();
+    // For Jina responses, preserve line breaks but clean up excessive whitespace
+    return content!
+        .replaceAll(
+          RegExp(r'[ \t]+'),
+          ' ',
+        ) // Replace multiple spaces/tabs with single space
+        .replaceAll(
+          RegExp(r'\n\s*\n\s*\n+'),
+          '\n\n',
+        ) // Replace multiple newlines with double newline
+        .trim();
   }
 
   String get previewContent {

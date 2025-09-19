@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
+import 'package:pinboard_wizard/src/ai/ai_bookmark_service.dart';
+import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
+import 'package:pinboard_wizard/src/service_locator.dart';
 
 class EditBookmarkDialog extends StatefulWidget {
   final Post bookmark;
@@ -22,6 +25,11 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
   late bool _isPrivate;
   late bool _markAsToRead;
   bool _isSubmitting = false;
+  bool _isAnalyzing = false;
+  String? _aiError;
+
+  late final AiBookmarkService _aiBookmarkService;
+  late final AiSettingsService _aiSettingsService;
 
   @override
   void initState() {
@@ -38,6 +46,10 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
     // Initialize boolean values
     _isPrivate = !widget.bookmark.shared;
     _markAsToRead = widget.bookmark.toread;
+
+    // Initialize AI services
+    _aiBookmarkService = locator.get<AiBookmarkService>();
+    _aiSettingsService = locator.get<AiSettingsService>();
   }
 
   @override
@@ -80,7 +92,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                   const Spacer(),
                   MacosIconButton(
                     icon: const MacosIcon(CupertinoIcons.xmark),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => _handleClose(),
                   ),
                 ],
               ),
@@ -94,12 +106,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildTextField(
-                          controller: _urlController,
-                          label: 'URL',
-                          placeholder: 'https://example.com',
-                          isRequired: true,
-                        ),
+                        _buildUrlField(),
                         const SizedBox(height: 20),
                         _buildTextField(
                           controller: _titleController,
@@ -133,34 +140,49 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
 
               // Bottom buttons
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   PushButton(
                     controlSize: ControlSize.large,
                     secondary: true,
-                    onPressed: _isSubmitting
-                        ? null
-                        : () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
+                    onPressed: _isSubmitting ? null : _handleClear,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const MacosIcon(CupertinoIcons.clear),
+                        const SizedBox(width: 6),
+                        const Text('Clear'),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 12),
-                  PushButton(
-                    controlSize: ControlSize.large,
-                    onPressed: _isSubmitting ? null : _handleSubmit,
-                    child: _isSubmitting
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: ProgressCircle(),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text('Updating...'),
-                            ],
-                          )
-                        : const Text('Update Bookmark'),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      PushButton(
+                        controlSize: ControlSize.large,
+                        secondary: true,
+                        onPressed: _isSubmitting ? null : _handleClose,
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 12),
+                      PushButton(
+                        controlSize: ControlSize.large,
+                        onPressed: _isSubmitting ? null : _handleSubmit,
+                        child: _isSubmitting
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: ProgressCircle(),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text('Updating...'),
+                                ],
+                              )
+                            : const Text('Update Bookmark'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -168,6 +190,120 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildUrlField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'URL',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: MacosTheme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
+            ),
+            Text(
+              ' *',
+              style: TextStyle(
+                color: MacosColors.systemRedColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: MacosTextField(
+                controller: _urlController,
+                placeholder: 'https://example.com',
+                onChanged: (_) {
+                  setState(() {
+                    _aiError = null; // Clear error when URL changes
+                  });
+                },
+              ),
+            ),
+            if (_aiSettingsService.isEnabled) ...[
+              const SizedBox(width: 12),
+              PushButton(
+                controlSize: ControlSize.regular,
+                onPressed: _canUseAiMagic ? _handleAiAnalysis : null,
+                child: _isAnalyzing
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: ProgressCircle(),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text('Analyzing...'),
+                        ],
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            CupertinoIcons.sparkles,
+                            size: 16,
+                            color: _canUseAiMagic
+                                ? MacosColors.controlAccentColor
+                                : MacosTheme.of(context).brightness ==
+                                      Brightness.dark
+                                ? Colors.white38
+                                : Colors.black38,
+                          ),
+                          const SizedBox(width: 6),
+                          const Text('Complete with AI'),
+                        ],
+                      ),
+              ),
+            ],
+          ],
+        ),
+        if (_aiError != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: MacosColors.systemRedColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: MacosColors.systemRedColor.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  CupertinoIcons.exclamationmark_triangle_fill,
+                  size: 16,
+                  color: MacosColors.systemRedColor,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _aiError!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: MacosColors.systemRedColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -342,6 +478,8 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
         toread: _markAsToRead,
       );
 
+      // Clear form data before closing
+      _clearFormData();
       Navigator.of(context).pop(updatedBookmark);
     } catch (e) {
       setState(() => _isSubmitting = false);
@@ -349,6 +487,34 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
         _showErrorDialog('Failed to prepare bookmark data: $e');
       }
     }
+  }
+
+  void _clearFormData() {
+    _urlController.clear();
+    _titleController.clear();
+    _descriptionController.clear();
+    _tagsController.clear();
+  }
+
+  void _handleClear() {
+    setState(() {
+      _urlController.text = widget.bookmark.href;
+      _titleController.text = widget.bookmark.description;
+      _descriptionController.text = widget.bookmark.extended;
+      _tagsController.text = widget.bookmark.tags;
+      _isPrivate = !widget.bookmark.shared;
+      _markAsToRead = widget.bookmark.toread;
+      _aiError = null;
+    });
+  }
+
+  void _handleClose() {
+    // Clear all form data before closing
+    _urlController.clear();
+    _titleController.clear();
+    _descriptionController.clear();
+    _tagsController.clear();
+    Navigator.of(context).pop();
   }
 
   void _showErrorDialog(String message) {
@@ -373,5 +539,57 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
         ),
       ),
     );
+  }
+
+  bool get _canUseAiMagic {
+    if (!_aiSettingsService.isEnabled || _isAnalyzing || _isSubmitting) {
+      return false;
+    }
+
+    if (!_aiSettingsService.openaiSettings.hasApiKey) {
+      return false;
+    }
+
+    final url = _urlController.text.trim();
+    return url.isNotEmpty && _aiBookmarkService.isValidUrl(url);
+  }
+
+  Future<void> _handleAiAnalysis() async {
+    final url = _urlController.text.trim();
+    if (!_aiBookmarkService.isValidUrl(url)) {
+      setState(() {
+        _aiError = 'Please enter a valid URL first';
+      });
+      return;
+    }
+
+    setState(() {
+      _isAnalyzing = true;
+      _aiError = null;
+    });
+
+    try {
+      final suggestions = await _aiBookmarkService.analyzeUrl(url);
+
+      setState(() {
+        _isAnalyzing = false;
+
+        // Fill in the fields with AI suggestions
+        if (suggestions.hasTitle) {
+          _titleController.text = suggestions.title!;
+        }
+        if (suggestions.hasDescription) {
+          _descriptionController.text = suggestions.description!;
+        }
+        if (suggestions.hasTags) {
+          _tagsController.text = suggestions.tags.join(' ');
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isAnalyzing = false;
+        _aiError = e.toString().replaceFirst('AiBookmarkException: ', '');
+      });
+    }
   }
 }

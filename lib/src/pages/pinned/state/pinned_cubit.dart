@@ -10,9 +10,17 @@ class PinnedCubit extends Cubit<PinnedState> {
 
   final PinboardService _pinboardService;
 
+  /// Safe emit that checks if cubit is closed
+  void safeEmit(PinnedState newState) {
+    if (!isClosed) {
+      emit(newState);
+    }
+  }
+
   /// Load all pinned bookmarks (bookmarks with 'pin' tag)
   Future<void> loadPinnedBookmarks() async {
-    emit(state.copyWith(status: PinnedStatus.loading, errorMessage: null));
+    if (isClosed) return;
+    safeEmit(state.copyWith(status: PinnedStatus.loading, errorMessage: null));
 
     try {
       // Use API tag filtering to get only bookmarks with 'pin' tag
@@ -20,14 +28,16 @@ class PinnedCubit extends Cubit<PinnedState> {
         tag: 'pin',
       );
 
-      emit(
+      if (isClosed) return;
+      safeEmit(
         state.copyWith(
           status: PinnedStatus.loaded,
           pinnedBookmarks: pinnedBookmarks,
         ),
       );
     } catch (e) {
-      emit(
+      if (isClosed) return;
+      safeEmit(
         state.copyWith(
           status: PinnedStatus.error,
           errorMessage: 'Error loading pinned bookmarks: $e',
@@ -38,7 +48,8 @@ class PinnedCubit extends Cubit<PinnedState> {
 
   /// Refresh pinned bookmarks
   Future<void> refresh() async {
-    emit(state.copyWith(status: PinnedStatus.refreshing));
+    if (isClosed) return;
+    safeEmit(state.copyWith(status: PinnedStatus.refreshing));
     await loadPinnedBookmarks();
   }
 
@@ -57,7 +68,7 @@ class PinnedCubit extends Cubit<PinnedState> {
       // Refresh to update the list
       await refresh();
     } catch (e) {
-      emit(
+      safeEmit(
         state.copyWith(
           status: PinnedStatus.error,
           errorMessage: 'Failed to unpin bookmark: $e',
@@ -72,7 +83,7 @@ class PinnedCubit extends Cubit<PinnedState> {
       await _pinboardService.updateBookmark(bookmark);
       await refresh();
     } catch (e) {
-      emit(
+      safeEmit(
         state.copyWith(
           status: PinnedStatus.error,
           errorMessage: 'Failed to update bookmark: $e',
@@ -87,7 +98,7 @@ class PinnedCubit extends Cubit<PinnedState> {
       await _pinboardService.deleteBookmark(url);
       await refresh();
     } catch (e) {
-      emit(
+      safeEmit(
         state.copyWith(
           status: PinnedStatus.error,
           errorMessage: 'Failed to delete bookmark: $e',

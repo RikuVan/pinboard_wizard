@@ -23,9 +23,9 @@ class BookmarksPage extends StatefulWidget {
 }
 
 class _BookmarksPageState extends State<BookmarksPage> {
-  late final ScrollController _scrollController;
-  late final TextEditingController _searchController;
-  late final BookmarksCubit _bookmarksCubit;
+  late ScrollController _scrollController;
+  late TextEditingController _searchController;
+  late BookmarksCubit _bookmarksCubit;
   double _scrollProgress = 0.0;
 
   @override

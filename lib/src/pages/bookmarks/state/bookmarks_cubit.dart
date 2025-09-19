@@ -11,9 +11,17 @@ class BookmarksCubit extends Cubit<BookmarksState> {
   final PinboardService _pinboardService;
   static const int _pageSize = 50;
 
+  /// Safe emit that checks if cubit is closed
+  void safeEmit(BookmarksState newState) {
+    if (!isClosed) {
+      emit(newState);
+    }
+  }
+
   /// Load initial bookmarks
   Future<void> loadBookmarks() async {
-    emit(
+    if (isClosed) return;
+    safeEmit(
       state.copyWith(
         status: BookmarksStatus.loading,
         errorMessage: null,
@@ -29,7 +37,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
         results: _pageSize,
       );
 
-      emit(
+      safeEmit(
         state.copyWith(
           status: BookmarksStatus.loaded,
           bookmarks: results,
@@ -41,7 +49,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       // Extract and update available tags
       _updateAvailableTags();
     } catch (e) {
-      emit(
+      safeEmit(
         state.copyWith(
           status: BookmarksStatus.error,
           errorMessage: 'Error loading bookmarks: $e',
@@ -56,7 +64,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       return;
     }
 
-    emit(state.copyWith(status: BookmarksStatus.loadingMore));
+    safeEmit(state.copyWith(status: BookmarksStatus.loadingMore));
 
     try {
       final results = await _pinboardService.getAllBookmarks(
@@ -67,11 +75,11 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       final updatedBookmarks = List<Post>.from(state.bookmarks)
         ..addAll(results);
 
-      emit(
+      safeEmit(
         state.copyWith(
           status: BookmarksStatus.loaded,
           bookmarks: updatedBookmarks,
-          currentOffset: state.currentOffset + results.length,
+          currentOffset: updatedBookmarks.length,
           hasMoreData: results.length == _pageSize,
         ),
       );
@@ -79,7 +87,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       // Update available tags after loading more bookmarks
       _updateAvailableTags();
     } catch (e) {
-      emit(
+      safeEmit(
         state.copyWith(
           status: BookmarksStatus.error,
           errorMessage: 'Failed to load more bookmarks: $e',
@@ -94,14 +102,14 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       return;
     }
 
-    emit(state.copyWith(status: BookmarksStatus.loadingAllBookmarks));
+    safeEmit(state.copyWith(status: BookmarksStatus.loadingAllBookmarks));
 
     try {
       final allBookmarks = await _pinboardService.getAllBookmarks(
         results: null, // No limit - get all bookmarks
       );
 
-      emit(
+      safeEmit(
         state.copyWith(
           status: BookmarksStatus.loaded,
           allBookmarks: allBookmarks,
@@ -112,7 +120,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       // Update available tags with all bookmarks
       _updateAvailableTags();
     } catch (e) {
-      emit(
+      safeEmit(
         state.copyWith(
           status: BookmarksStatus.error,
           errorMessage: 'Failed to load all bookmarks: $e',
@@ -123,7 +131,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
 
   /// Toggle search scope between current page and all bookmarks
   Future<void> toggleSearchScope(bool searchAll) async {
-    emit(state.copyWith(searchAll: searchAll));
+    safeEmit(state.copyWith(searchAll: searchAll));
 
     // If switching to "All" and we need to load all bookmarks
     if (searchAll && !state.allBookmarksLoaded) {
@@ -143,11 +151,12 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       return;
     }
 
-    emit(
+    safeEmit(
       state.copyWith(
         isSearching: true,
         searchQuery: query,
         status: BookmarksStatus.searching,
+        errorMessage: null,
       ),
     );
 
@@ -166,14 +175,14 @@ class BookmarksCubit extends Cubit<BookmarksState> {
         searchResults = _filterBookmarks(state.bookmarks, query);
       }
 
-      emit(
+      safeEmit(
         state.copyWith(
           status: BookmarksStatus.loaded,
           filteredBookmarks: searchResults,
         ),
       );
     } catch (e) {
-      emit(
+      safeEmit(
         state.copyWith(
           status: BookmarksStatus.error,
           errorMessage: 'Failed to search bookmarks: $e',
@@ -184,7 +193,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
 
   /// Clear search and return to normal view
   void clearSearch() {
-    emit(
+    safeEmit(
       state.copyWith(
         isSearching: false,
         searchQuery: '',
@@ -247,7 +256,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
 
     final List<String> sortedTags = tagSet.toList()..sort();
 
-    emit(state.copyWith(availableTags: sortedTags));
+    safeEmit(state.copyWith(availableTags: sortedTags));
   }
 
   /// Toggle a tag in the selected tags list
@@ -261,12 +270,12 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       newSelectedTags.add(normalizedTag);
     }
 
-    emit(state.copyWith(selectedTags: newSelectedTags));
+    safeEmit(state.copyWith(selectedTags: newSelectedTags));
   }
 
   /// Clear all selected tags
   void clearSelectedTags() {
-    emit(state.copyWith(selectedTags: []));
+    safeEmit(state.copyWith(selectedTags: []));
   }
 
   /// Add a tag to selected tags
@@ -275,7 +284,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
     if (!state.selectedTags.contains(normalizedTag)) {
       final List<String> newSelectedTags = List<String>.from(state.selectedTags)
         ..add(normalizedTag);
-      emit(state.copyWith(selectedTags: newSelectedTags));
+      safeEmit(state.copyWith(selectedTags: newSelectedTags));
     }
   }
 
@@ -284,7 +293,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
     final String normalizedTag = tag.toLowerCase();
     final List<String> newSelectedTags = List<String>.from(state.selectedTags)
       ..remove(normalizedTag);
-    emit(state.copyWith(selectedTags: newSelectedTags));
+    safeEmit(state.copyWith(selectedTags: newSelectedTags));
   }
 
   /// Get footer text for display including tag filtering info
@@ -332,7 +341,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       // Refresh bookmarks to show the new one
       await refresh();
     } catch (e) {
-      emit(
+      safeEmit(
         state.copyWith(
           status: BookmarksStatus.error,
           errorMessage: 'Failed to add bookmark: $e',
@@ -349,7 +358,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       // Refresh bookmarks to show the updated one
       await refresh();
     } catch (e) {
-      emit(
+      safeEmit(
         state.copyWith(
           status: BookmarksStatus.error,
           errorMessage: 'Failed to update bookmark: $e',
@@ -366,7 +375,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       // Refresh bookmarks to remove the deleted one
       await refresh();
     } catch (e) {
-      emit(
+      safeEmit(
         state.copyWith(
           status: BookmarksStatus.error,
           errorMessage: 'Failed to delete bookmark: $e',
