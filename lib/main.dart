@@ -11,8 +11,8 @@ import 'package:pinboard_wizard/src/pages/notes/notes_page.dart';
 import 'package:pinboard_wizard/src/pages/settings/settings_page.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
-import 'package:pinboard_wizard/src/common/keyboard_shortcuts.dart';
-import 'package:pinboard_wizard/src/common/bookmark_change_notifier.dart';
+import 'package:pinboard_wizard/src/common/widgets/keyboard_shortcuts.dart';
+import 'package:pinboard_wizard/src/common/state/bookmark_change_notifier.dart';
 import 'package:provider/provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 

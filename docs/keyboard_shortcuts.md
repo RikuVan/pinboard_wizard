@@ -28,7 +28,7 @@ The keyboard shortcuts system is implemented using Flutter's `Shortcuts` and `Ac
 
 ### Architecture
 
-- **Intent Classes** (`lib/src/common/keyboard_shortcuts.dart`)
+- **Intent Classes** (`lib/src/common/widgets/keyboard_shortcuts.dart`)
   - `NewBookmarkIntent` - Intent for creating a new bookmark
 
 - **KeyboardShortcuts Widget** - Wraps the main application content to provide global shortcut handling
@@ -39,7 +39,7 @@ The keyboard shortcuts system is implemented using Flutter's `Shortcuts` and `Ac
 
 To add a new keyboard shortcut:
 
-1. Create a new Intent class in `keyboard_shortcuts.dart`
+1. Create a new Intent class in `lib/src/common/widgets/keyboard_shortcuts.dart`
 2. Add the shortcut mapping to the `Shortcuts` widget
 3. Add the corresponding action to the `Actions` widget
 4. If the action needs to interact with the main app state, add a callback parameter to `KeyboardShortcuts`
@@ -113,8 +113,15 @@ Navigation shortcuts (⌘+1-4) use callback functions passed from the main app t
 
 The keyboard shortcuts and menu items use a global notification system to keep the BookmarksPage synchronized when bookmarks are added from outside the normal flow:
 
-- `BookmarkChangeNotifier` - A singleton that notifies listeners when bookmarks change
+- `BookmarkChangeNotifier` (`lib/src/common/state/bookmark_change_notifier.dart`) - A singleton that notifies listeners when bookmarks change
 - The BookmarksPage subscribes to these notifications and automatically refreshes its list
-- Debug messages starting with "📚 BookmarkChangeNotifier:" show when notifications are sent and received
 
 This ensures that when you create a bookmark via keyboard shortcut or menu item while viewing the bookmarks page, the new bookmark appears immediately without manual refresh.
+
+### Common Dialogs System
+
+Error and confirmation dialogs throughout the app use a centralized system:
+
+- `CommonDialogs` (`lib/src/common/widgets/dialogs.dart`) - Static methods for showing consistent dialogs
+- Provides `showError()`, `showConfirmation()`, `showDeleteConfirmation()`, and other common dialog types
+- Eliminates duplicate dialog code and ensures consistent UI/UX

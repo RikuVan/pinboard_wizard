@@ -6,6 +6,7 @@ import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/ai/ai_bookmark_service.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/service_locator.dart';
+import 'package:pinboard_wizard/src/common/widgets/dialogs.dart';
 
 class AddBookmarkDialog extends StatefulWidget {
   const AddBookmarkDialog({super.key});
@@ -558,27 +559,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
   }
 
   void _showErrorDialog(String message) {
-    showMacosAlertDialog(
-      context: context,
-      builder: (_) => MacosAlertDialog(
-        appIcon: SizedBox(
-          width: 64,
-          height: 64,
-          child: Icon(
-            CupertinoIcons.exclamationmark_triangle_fill,
-            size: 64,
-            color: MacosColors.systemOrangeColor,
-          ),
-        ),
-        title: const Text('Error'),
-        message: Text(message),
-        primaryButton: PushButton(
-          controlSize: ControlSize.large,
-          child: const Text('OK'),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-    );
+    CommonDialogs.showError(context, message);
   }
 
   Future<void> _tryLoadClipboardUrl() async {

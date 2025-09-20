@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
-import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
 import 'package:pinboard_wizard/src/common/extensions/theme_extensions.dart';
+import 'package:pinboard_wizard/src/common/widgets/dialogs.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class BookmarkTile extends StatelessWidget {
@@ -27,58 +27,20 @@ class BookmarkTile extends StatelessWidget {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {
       if (context.mounted) {
-        showMacosAlertDialog(
-          context: context,
-          builder: (_) => MacosAlertDialog(
-            appIcon: const AppLogo.dialog(),
-            title: const Text('Error'),
-            message: Text('Could not launch $url'),
-            primaryButton: PushButton(
-              controlSize: ControlSize.large,
-              child: const Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        );
+        await CommonDialogs.showUrlError(context, url);
       }
     }
   }
 
-  void _showDeleteConfirmation(BuildContext context) {
-    showMacosAlertDialog(
-      context: context,
-      builder: (_) => MacosAlertDialog(
-        appIcon: SizedBox(
-          width: 64,
-          height: 64,
-          child: Icon(
-            CupertinoIcons.trash_fill,
-            size: 64,
-            color: MacosColors.systemRedColor,
-          ),
-        ),
-        title: const Text('Delete Bookmark'),
-        message: Text(
-          'Are you sure you want to delete "${post.description}"?\n\nThis action cannot be undone.',
-        ),
-        primaryButton: PushButton(
-          controlSize: ControlSize.large,
-          onPressed: () {
-            Navigator.of(context).pop();
-            if (onDelete != null) {
-              onDelete!();
-            }
-          },
-          child: const Text('Delete'),
-        ),
-        secondaryButton: PushButton(
-          controlSize: ControlSize.large,
-          secondary: true,
-          child: const Text('Cancel'),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
+  void _showDeleteConfirmation(BuildContext context) async {
+    final confirmed = await CommonDialogs.showDeleteConfirmation(
+      context,
+      post.description,
     );
+
+    if (confirmed) {
+      onDelete?.call();
+    }
   }
 
   @override

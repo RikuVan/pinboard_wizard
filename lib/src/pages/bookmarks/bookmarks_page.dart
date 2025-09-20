@@ -9,8 +9,8 @@ import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_cubit.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_state.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/resizable_split_view.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/tags_panel.dart';
-import 'package:pinboard_wizard/src/common/bookmark_change_notifier.dart';
-import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
+import 'package:pinboard_wizard/src/common/state/bookmark_change_notifier.dart';
+import 'package:pinboard_wizard/src/common/widgets/dialogs.dart';
 
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
@@ -451,20 +451,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
 
   void _showErrorDialog(String errorMessage) {
     if (!mounted) return;
-
-    showMacosAlertDialog(
-      context: context,
-      builder: (_) => MacosAlertDialog(
-        appIcon: const AppLogo.dialog(),
-        title: const Text('Error'),
-        message: Text(errorMessage),
-        primaryButton: PushButton(
-          controlSize: ControlSize.large,
-          child: const Text('OK'),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-    );
+    CommonDialogs.showError(context, errorMessage);
   }
 
   void _showAddBookmarkDialog() async {
@@ -495,26 +482,10 @@ class _BookmarksPageState extends State<BookmarksPage> {
       return true;
     } catch (e) {
       if (mounted) {
-        showMacosAlertDialog(
-          context: context,
-          builder: (_) => MacosAlertDialog(
-            appIcon: SizedBox(
-              width: 64,
-              height: 64,
-              child: Icon(
-                CupertinoIcons.exclamationmark_triangle_fill,
-                size: 64,
-                color: MacosColors.systemOrangeColor,
-              ),
-            ),
-            title: const Text('Error'),
-            message: Text('Failed to add bookmark: $e'),
-            primaryButton: PushButton(
-              controlSize: ControlSize.large,
-              child: const Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
+        CommonDialogs.showServiceError(
+          context,
+          'add bookmark',
+          details: e.toString(),
         );
       }
       return false;
@@ -532,26 +503,10 @@ class _BookmarksPageState extends State<BookmarksPage> {
         await _bookmarksCubit.updateBookmark(updatedBookmark);
       } catch (e) {
         if (mounted) {
-          showMacosAlertDialog(
-            context: context,
-            builder: (_) => MacosAlertDialog(
-              appIcon: SizedBox(
-                width: 64,
-                height: 64,
-                child: Icon(
-                  CupertinoIcons.exclamationmark_triangle_fill,
-                  size: 64,
-                  color: MacosColors.systemOrangeColor,
-                ),
-              ),
-              title: const Text('Error'),
-              message: Text('Failed to update bookmark: $e'),
-              primaryButton: PushButton(
-                controlSize: ControlSize.large,
-                child: const Text('OK'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
+          CommonDialogs.showServiceError(
+            context,
+            'update bookmark',
+            details: e.toString(),
           );
         }
       }
@@ -563,26 +518,10 @@ class _BookmarksPageState extends State<BookmarksPage> {
       await _bookmarksCubit.deleteBookmark(url);
     } catch (e) {
       if (mounted) {
-        showMacosAlertDialog(
-          context: context,
-          builder: (_) => MacosAlertDialog(
-            appIcon: SizedBox(
-              width: 64,
-              height: 64,
-              child: Icon(
-                CupertinoIcons.exclamationmark_triangle_fill,
-                size: 64,
-                color: MacosColors.systemOrangeColor,
-              ),
-            ),
-            title: const Text('Error'),
-            message: Text('Failed to delete bookmark: $e'),
-            primaryButton: PushButton(
-              controlSize: ControlSize.large,
-              child: const Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
+        CommonDialogs.showServiceError(
+          context,
+          'delete bookmark',
+          details: e.toString(),
         );
       }
     }
@@ -601,26 +540,10 @@ class _BookmarksPageState extends State<BookmarksPage> {
       await _bookmarksCubit.updateBookmark(updatedBookmark);
     } catch (e) {
       if (mounted) {
-        showMacosAlertDialog(
-          context: context,
-          builder: (_) => MacosAlertDialog(
-            appIcon: SizedBox(
-              width: 64,
-              height: 64,
-              child: Icon(
-                CupertinoIcons.exclamationmark_triangle_fill,
-                size: 64,
-                color: MacosColors.systemOrangeColor,
-              ),
-            ),
-            title: const Text('Error'),
-            message: Text('Failed to toggle pin: $e'),
-            primaryButton: PushButton(
-              controlSize: ControlSize.large,
-              child: const Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
+        CommonDialogs.showServiceError(
+          context,
+          'toggle pin',
+          details: e.toString(),
         );
       }
     }

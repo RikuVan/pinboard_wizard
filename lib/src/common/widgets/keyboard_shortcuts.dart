@@ -5,7 +5,8 @@ import 'package:pinboard_wizard/src/pages/bookmarks/add_bookmark_dialog.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_cubit.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
 import 'package:pinboard_wizard/src/service_locator.dart';
-import 'package:pinboard_wizard/src/common/bookmark_change_notifier.dart';
+import 'package:pinboard_wizard/src/common/state/bookmark_change_notifier.dart';
+import 'package:pinboard_wizard/src/common/widgets/dialogs.dart';
 
 // Intent classes for keyboard shortcuts
 class NewBookmarkIntent extends Intent {
@@ -45,27 +46,7 @@ Future<void> showAddBookmarkDialog(BuildContext context) async {
     final success = await _addBookmark(context, result);
     if (!success && context.mounted) {
       // Show error dialog if bookmark creation failed
-      showMacosAlertDialog(
-        context: context,
-        builder: (_) => MacosAlertDialog(
-          appIcon: SizedBox(
-            width: 64,
-            height: 64,
-            child: Icon(
-              CupertinoIcons.exclamationmark_triangle_fill,
-              size: 64,
-              color: MacosColors.systemOrangeColor,
-            ),
-          ),
-          title: const Text('Error'),
-          message: const Text('Failed to save bookmark. Please try again.'),
-          primaryButton: PushButton(
-            controlSize: ControlSize.large,
-            child: const Text('OK'),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ),
-      );
+      await CommonDialogs.showServiceError(context, 'save bookmark');
     }
   }
 }
