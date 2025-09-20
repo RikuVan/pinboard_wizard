@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
+import 'package:pinboard_wizard/src/common/extensions/theme_extensions.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PinnedBookmarkTile extends StatefulWidget {
@@ -105,9 +106,7 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                               ? widget.post.domain
                               : widget.post.href,
                           style: TextStyle(
-                            color: MacosColors.tertiaryLabelColor.resolveFrom(
-                              context,
-                            ),
+                            color: context.urlTextColor,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),

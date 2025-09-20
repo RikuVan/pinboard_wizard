@@ -112,7 +112,13 @@ class _PinnedPageState extends State<PinnedPage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(CupertinoIcons.refresh, size: 16),
+                  Icon(
+                    CupertinoIcons.refresh,
+                    size: 16,
+                    color: MacosTheme.of(context).brightness == Brightness.dark
+                        ? MacosColors.secondaryLabelColor.resolveFrom(context)
+                        : Colors.white,
+                  ),
                   const SizedBox(width: 4),
                   Text('Refresh'),
                 ],

@@ -4,6 +4,7 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
+import 'package:pinboard_wizard/src/common/extensions/theme_extensions.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class BookmarkTile extends StatelessWidget {
@@ -126,9 +127,7 @@ class BookmarkTile extends StatelessWidget {
                           text: post.href,
                           onTap: () => _launchUrl(context, post.href),
                           style: TextStyle(
-                            color: MacosColors.tertiaryLabelColor.resolveFrom(
-                              context,
-                            ),
+                            color: context.urlTextColor,
                             fontSize: 12,
                           ),
                           maxLines: 1,

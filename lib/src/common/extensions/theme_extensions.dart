@@ -30,6 +30,13 @@ extension ThemeExtensions on BuildContext {
         : MacosColors.secondaryLabelColor;
   }
 
+  /// Returns appropriate URL text color for current theme
+  Color get urlTextColor {
+    return MacosTheme.of(this).brightness == Brightness.dark
+        ? MacosColors.secondaryLabelColor.resolveFrom(this)
+        : MacosColors.labelColor.withOpacity(0.75);
+  }
+
   /// Returns whether the current theme is dark mode
   bool get isDarkMode => MacosTheme.of(this).brightness == Brightness.dark;
 }
