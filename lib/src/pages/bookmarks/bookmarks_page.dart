@@ -9,6 +9,7 @@ import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_cubit.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_state.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/resizable_split_view.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/tags_panel.dart';
+import 'package:pinboard_wizard/src/common/bookmark_change_notifier.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
 
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
@@ -41,13 +42,24 @@ class _BookmarksPageState extends State<BookmarksPage> {
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChanged);
 
+    // Listen for bookmark changes from other parts of the app (keyboard shortcuts, menu items)
+    bookmarkChangeNotifier.addListener(_onBookmarkChanged);
+
     _bookmarksCubit.loadBookmarks();
+  }
+
+  void _onBookmarkChanged() {
+    // Refresh bookmarks when notified of changes from other parts of the app
+    if (mounted) {
+      _bookmarksCubit.refresh();
+    }
   }
 
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _searchController.removeListener(_onSearchChanged);
+    bookmarkChangeNotifier.removeListener(_onBookmarkChanged);
     _scrollController.dispose();
     _searchController.dispose();
     _bookmarksCubit.close();

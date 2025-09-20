@@ -1,4 +1,6 @@
 import 'package:flutter/cupertino.dart';
+
+import 'package:flutter/services.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/service_locator.dart';
 import 'package:pinboard_wizard/src/theme.dart';
@@ -9,8 +11,13 @@ import 'package:pinboard_wizard/src/pages/notes/notes_page.dart';
 import 'package:pinboard_wizard/src/pages/settings/settings_page.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
+import 'package:pinboard_wizard/src/common/keyboard_shortcuts.dart';
+import 'package:pinboard_wizard/src/common/bookmark_change_notifier.dart';
 import 'package:provider/provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+
+// Global navigator key for menu navigation
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,58 +68,104 @@ class _PinboardWizardState extends State<PinboardWizard> {
         final appTheme = context.watch<AppTheme>();
         return MacosApp(
           title: 'Pinboard Wizard',
+          navigatorKey: navigatorKey,
           themeMode: appTheme.mode,
           debugShowCheckedModeBanner: false,
           home: PlatformMenuBar(
-            menus: menuBarItems(),
-            child: MacosWindow(
-              sidebar: Sidebar(
-                minWidth: 200,
-                builder: (context, scrollController) {
-                  return Column(
-                    children: [
-                      Expanded(
-                        child: SidebarItems(
-                          currentIndex: pageIndex,
-                          items: [
-                            SidebarItem(label: Text('Pinned')),
-                            SidebarItem(label: Text('Bookmarks')),
-                            SidebarItem(label: Text('Notes')),
-                            SidebarItem(label: Text('Settings')),
-                          ],
-                          onChanged: (i) {
-                            setState(() => pageIndex = i);
-                          },
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            top: BorderSide(
-                              color: MacosColors.separatorColor,
-                              width: 0.5,
+            menus: menuBarItems(
+              context,
+              onNavigateToPinned: () => setState(() => pageIndex = 0),
+              onNavigateToBookmarks: () => setState(() => pageIndex = 1),
+              onNavigateToNotes: () => setState(() => pageIndex = 2),
+              onNavigateToSettings: () => setState(() => pageIndex = 3),
+              onRefresh: _refreshCurrentPage,
+            ),
+            child: FocusScope(
+              autofocus: true,
+              child: KeyboardShortcuts(
+                onNavigateToPinned: () => setState(() => pageIndex = 0),
+                onNavigateToBookmarks: () => setState(() => pageIndex = 1),
+                onNavigateToNotes: () => setState(() => pageIndex = 2),
+                onNavigateToSettings: () => setState(() => pageIndex = 3),
+                onRefreshPage: _refreshCurrentPage,
+                child: MacosWindow(
+                  sidebar: Sidebar(
+                    minWidth: 200,
+                    builder: (context, scrollController) {
+                      return Column(
+                        children: [
+                          Expanded(
+                            child: SidebarItems(
+                              currentIndex: pageIndex,
+                              items: [
+                                SidebarItem(
+                                  leading: MacosIcon(
+                                    CupertinoIcons.pin_fill,
+                                    color: CupertinoColors.systemBlue,
+                                    size: 20,
+                                  ),
+                                  label: Text('Pinned'),
+                                ),
+                                SidebarItem(
+                                  leading: MacosIcon(
+                                    CupertinoIcons.bookmark_fill,
+                                    color: CupertinoColors.systemBlue,
+                                    size: 20,
+                                  ),
+                                  label: Text('Bookmarks'),
+                                ),
+                                SidebarItem(
+                                  leading: MacosIcon(
+                                    CupertinoIcons.doc_text_fill,
+                                    color: CupertinoColors.systemBlue,
+                                    size: 20,
+                                  ),
+                                  label: Text('Notes'),
+                                ),
+                                SidebarItem(
+                                  leading: MacosIcon(
+                                    CupertinoIcons.gear_alt_fill,
+                                    color: CupertinoColors.systemBlue,
+                                    size: 20,
+                                  ),
+                                  label: Text('Settings'),
+                                ),
+                              ],
+                              onChanged: (i) {
+                                setState(() => pageIndex = i);
+                              },
                             ),
                           ),
-                        ),
-                        child: MacosListTile(
-                          leading: const AppLogo.small(),
-                          title: Text('Pinboard Wizard'),
-                          subtitle: Text('Version ${widget.version}'),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              child: ContentArea(
-                builder: (context, _) => AuthGate(
-                  child: [
-                    const PinnedPage(),
-                    const BookmarksPage(),
-                    const NotesPage(),
-                    const SettingsPage(),
-                  ][pageIndex],
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                top: BorderSide(
+                                  color: MacosColors.separatorColor,
+                                  width: 0.5,
+                                ),
+                              ),
+                            ),
+                            child: MacosListTile(
+                              leading: const AppLogo.small(),
+                              title: Text('Pinboard Wizard'),
+                              subtitle: Text('Version ${widget.version}'),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  child: ContentArea(
+                    builder: (context, _) => AuthGate(
+                      child: [
+                        const PinnedPage(),
+                        const BookmarksPage(),
+                        const NotesPage(),
+                        const SettingsPage(),
+                      ][pageIndex],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -121,11 +174,37 @@ class _PinboardWizardState extends State<PinboardWizard> {
       },
     );
   }
+
+  /// Refresh the currently active page
+  void _refreshCurrentPage() {
+    // Only refresh if authenticated
+    if (!_credentialsService!.isAuthenticatedNotifier.value) return;
+
+    switch (pageIndex) {
+      case 1: // Bookmarks page
+        // Trigger a bookmark refresh notification
+        bookmarkChangeNotifier.notifyBookmarksChanged();
+        break;
+      case 0: // Pinned page
+      case 2: // Notes page
+      case 3: // Settings page
+      default:
+        // For other pages, we could add specific refresh logic later
+        break;
+    }
+  }
 }
 
-List<PlatformMenuItem> menuBarItems() {
-  return const [
-    PlatformMenu(
+List<PlatformMenuItem> menuBarItems(
+  BuildContext context, {
+  VoidCallback? onNavigateToPinned,
+  VoidCallback? onNavigateToBookmarks,
+  VoidCallback? onNavigateToNotes,
+  VoidCallback? onNavigateToSettings,
+  VoidCallback? onRefresh,
+}) {
+  return [
+    const PlatformMenu(
       label: 'Pinboard Wizard',
       menus: [
         PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.about),
@@ -133,14 +212,68 @@ List<PlatformMenuItem> menuBarItems() {
       ],
     ),
     PlatformMenu(
-      label: 'View',
+      label: 'File',
       menus: [
-        PlatformProvidedMenuItem(
-          type: PlatformProvidedMenuItemType.toggleFullScreen,
+        PlatformMenuItem(
+          label: 'New Bookmark',
+          shortcut: SingleActivator(LogicalKeyboardKey.keyB, meta: true),
+          onSelected: () {
+            final navigatorContext = navigatorKey.currentContext;
+            if (navigatorContext != null) {
+              showAddBookmarkDialog(navigatorContext);
+            }
+          },
         ),
       ],
     ),
     PlatformMenu(
+      label: 'View',
+      menus: [
+        PlatformMenuItem(
+          label: 'Pinned',
+          shortcut: SingleActivator(LogicalKeyboardKey.digit1, meta: true),
+          onSelected: () {
+            onNavigateToPinned?.call();
+          },
+        ),
+        PlatformMenuItem(
+          label: 'Bookmarks',
+          shortcut: SingleActivator(LogicalKeyboardKey.digit2, meta: true),
+          onSelected: () {
+            onNavigateToBookmarks?.call();
+          },
+        ),
+        PlatformMenuItem(
+          label: 'Notes',
+          shortcut: SingleActivator(LogicalKeyboardKey.digit3, meta: true),
+          onSelected: () {
+            onNavigateToNotes?.call();
+          },
+        ),
+        PlatformMenuItem(
+          label: 'Settings',
+          shortcut: SingleActivator(LogicalKeyboardKey.digit4, meta: true),
+          onSelected: () {
+            onNavigateToSettings?.call();
+          },
+        ),
+        PlatformMenuItemGroup(
+          members: [
+            PlatformMenuItem(
+              label: 'Refresh',
+              shortcut: SingleActivator(LogicalKeyboardKey.keyR, meta: true),
+              onSelected: () {
+                onRefresh?.call();
+              },
+            ),
+            const PlatformProvidedMenuItem(
+              type: PlatformProvidedMenuItemType.toggleFullScreen,
+            ),
+          ],
+        ),
+      ],
+    ),
+    const PlatformMenu(
       label: 'Window',
       menus: [
         PlatformProvidedMenuItem(
