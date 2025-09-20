@@ -32,4 +32,4 @@ jobs:
         run: flutter test --coverage
 
       - name: Build macOS app
-        run: flutter build macos --release --dart-define=CI=true --verbose -- CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+        run: flutter build macos --release --dart-define=CI=true
