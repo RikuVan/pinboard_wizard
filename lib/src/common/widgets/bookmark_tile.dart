@@ -209,7 +209,7 @@ class BookmarkTile extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 MacosSwitch(
-                                  value: post.tagList.contains('pin'),
+                                  value: post.isPinned,
                                   onChanged: (_) => onPin?.call(),
                                   size: ControlSize.mini,
                                 ),

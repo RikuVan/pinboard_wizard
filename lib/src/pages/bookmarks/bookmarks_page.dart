@@ -5,6 +5,7 @@ import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/common/widgets/bookmark_tile.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/add_bookmark_dialog.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/edit_bookmark_dialog.dart';
+import 'package:pinboard_wizard/src/pages/bookmarks/pin_category_dialog.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_cubit.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_state.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/resizable_split_view.dart';
@@ -529,15 +530,60 @@ class _BookmarksPageState extends State<BookmarksPage> {
 
   Future<void> _togglePin(Post bookmark) async {
     try {
-      // Create a copy of the bookmark with pin tag toggled
-      final currentTags = bookmark.tagList;
-      final updatedTags = currentTags.contains('pin')
-          ? currentTags.where((tag) => tag != 'pin').toList()
-          : [...currentTags, 'pin'];
+      final isCurrentlyPinned = bookmark.isPinned;
+      final currentCategory = bookmark.pinCategory;
+      final currentState = _bookmarksCubit.state;
+      final allPosts = currentState.displayBookmarks;
 
-      final updatedBookmark = bookmark.copyWith(tags: updatedTags.join(' '));
+      if (isCurrentlyPinned) {
+        // Show dialog for updating/removing pin
+        final result = await showMacosAlertDialog<String>(
+          context: context,
+          builder: (context) => PinCategoryDialog(
+            isCurrentlyPinned: true,
+            currentCategory: currentCategory,
+            allPosts: allPosts,
+          ),
+        );
 
-      await _bookmarksCubit.updateBookmark(updatedBookmark);
+        if (result == null) return; // User cancelled
+
+        final currentTags = bookmark.tagList;
+        List<String> updatedTags;
+
+        if (result == 'unpin') {
+          // Remove all pin-related tags
+          updatedTags = currentTags.where((tag) {
+            final lowerTag = tag.toLowerCase();
+            return !(lowerTag == 'pin' || lowerTag.startsWith('pin:'));
+          }).toList();
+        } else {
+          // Update pin tag - remove old pin tags and add new one
+          updatedTags = currentTags.where((tag) {
+            final lowerTag = tag.toLowerCase();
+            return !(lowerTag == 'pin' || lowerTag.startsWith('pin:'));
+          }).toList();
+          updatedTags.add(result);
+        }
+
+        final updatedBookmark = bookmark.copyWith(tags: updatedTags.join(' '));
+        await _bookmarksCubit.updateBookmark(updatedBookmark);
+      } else {
+        // Show dialog for pinning
+        final result = await showMacosAlertDialog<String>(
+          context: context,
+          builder: (context) =>
+              PinCategoryDialog(isCurrentlyPinned: false, allPosts: allPosts),
+        );
+
+        if (result == null) return; // User cancelled
+
+        final currentTags = bookmark.tagList;
+        final updatedTags = [...currentTags, result];
+        final updatedBookmark = bookmark.copyWith(tags: updatedTags.join(' '));
+
+        await _bookmarksCubit.updateBookmark(updatedBookmark);
+      }
     } catch (e) {
       if (mounted) {
         CommonDialogs.showServiceError(

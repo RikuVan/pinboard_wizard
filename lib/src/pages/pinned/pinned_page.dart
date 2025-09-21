@@ -144,16 +144,7 @@ class _PinnedPageState extends State<PinnedPage> {
 
     return RefreshIndicator(
       onRefresh: () => _pinnedCubit.refresh(),
-      child: ListView.separated(
-        controller: _scrollController,
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: state.pinnedBookmarks.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 1),
-        itemBuilder: (context, index) {
-          final bookmark = state.pinnedBookmarks[index];
-          return PinnedBookmarkTile(post: bookmark);
-        },
-      ),
+      child: _buildGroupedBookmarksList(state),
     );
   }
 
@@ -294,6 +285,112 @@ class _PinnedPageState extends State<PinnedPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildGroupedBookmarksList(PinnedState state) {
+    final groups = state.groupedBookmarks;
+
+    if (groups.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: _getTotalItemCount(groups),
+      itemBuilder: (context, index) {
+        int currentIndex = 0;
+
+        for (final group in groups) {
+          // Check if this index is the group header
+          if (currentIndex == index) {
+            return _buildGroupHeader(group.categoryName);
+          }
+          currentIndex++;
+
+          // Check if this index is within this group's bookmarks
+          if (index < currentIndex + group.bookmarks.length) {
+            final bookmarkIndex = index - currentIndex;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 1),
+              child: PinnedBookmarkTile(post: group.bookmarks[bookmarkIndex]),
+            );
+          }
+          currentIndex += group.bookmarks.length;
+
+          // Add spacing after each group (except the last one)
+          if (group != groups.last) {
+            if (currentIndex == index) {
+              return const SizedBox(height: 16);
+            }
+            currentIndex++;
+          }
+        }
+
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  int _getTotalItemCount(List<PinnedBookmarkGroup> groups) {
+    int count = 0;
+    for (int i = 0; i < groups.length; i++) {
+      count += 1; // Header
+      count += groups[i].bookmarks.length; // Bookmarks
+      if (i < groups.length - 1) {
+        count += 1; // Spacing between groups
+      }
+    }
+    return count;
+  }
+
+  Widget _buildGroupHeader(String categoryName) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Row(
+        children: [
+          Icon(
+            _getCategoryIcon(categoryName),
+            size: 16,
+            color: MacosColors.controlAccentColor,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            categoryName,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: MacosColors.controlAccentColor,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(height: 0.5, color: MacosColors.separatorColor),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getCategoryIcon(String categoryName) {
+    switch (categoryName.toLowerCase()) {
+      case 'work':
+        return CupertinoIcons.briefcase;
+      case 'personal':
+        return CupertinoIcons.person;
+      case 'reading':
+        return CupertinoIcons.book;
+      case 'reference':
+        return CupertinoIcons.doc_text;
+      case 'ideas':
+        return CupertinoIcons.lightbulb;
+      case 'tools':
+        return CupertinoIcons.wrench;
+      case 'general':
+        return CupertinoIcons.pin;
+      default:
+        return CupertinoIcons.folder;
+    }
   }
 
   void _showErrorDialog(String errorMessage) {

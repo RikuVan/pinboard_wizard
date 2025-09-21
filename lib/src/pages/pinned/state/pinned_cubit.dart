@@ -17,16 +17,18 @@ class PinnedCubit extends Cubit<PinnedState> {
     }
   }
 
-  /// Load all pinned bookmarks (bookmarks with 'pin' tag)
+  /// Load all pinned bookmarks (bookmarks with any pin-related tags)
   Future<void> loadPinnedBookmarks() async {
     if (isClosed) return;
     safeEmit(state.copyWith(status: PinnedStatus.loading, errorMessage: null));
 
     try {
-      // Use API tag filtering to get only bookmarks with 'pin' tag
-      final pinnedBookmarks = await _pinboardService.getAllBookmarks(
-        tag: 'pin',
-      );
+      // Get all bookmarks and filter for pin-related tags
+      // We can't use API tag filtering because we need to match pin:* patterns
+      final allBookmarks = await _pinboardService.getAllBookmarks();
+      final pinnedBookmarks = allBookmarks
+          .where((bookmark) => bookmark.isPinned)
+          .toList();
 
       if (isClosed) return;
       safeEmit(
@@ -56,11 +58,12 @@ class PinnedCubit extends Cubit<PinnedState> {
   /// Remove pin from a bookmark
   Future<void> unpinBookmark(Post bookmark) async {
     try {
-      // Create a copy of the bookmark without the 'pin' tag
+      // Create a copy of the bookmark without any pin-related tags
       final currentTags = bookmark.tagList;
-      final updatedTags = currentTags
-          .where((tag) => tag.toLowerCase() != 'pin')
-          .toList();
+      final updatedTags = currentTags.where((tag) {
+        final lowerTag = tag.toLowerCase();
+        return !(lowerTag == 'pin' || lowerTag.startsWith('pin:'));
+      }).toList();
       final updatedBookmark = bookmark.copyWith(tags: updatedTags.join(' '));
 
       await _pinboardService.updateBookmark(updatedBookmark);

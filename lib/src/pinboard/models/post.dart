@@ -49,6 +49,58 @@ class Post extends Equatable {
     return tagList.any((t) => t.toLowerCase() == tag.toLowerCase());
   }
 
+  /// Check if this post has any pin-related tags (pin, pin:category, etc.)
+  bool get isPinned {
+    return tagList.any((tag) {
+      final lowerTag = tag.toLowerCase();
+      return lowerTag == 'pin' || lowerTag.startsWith('pin:');
+    });
+  }
+
+  /// Get the pin category from pin tags. Returns null if not pinned.
+  /// Examples:
+  /// - "pin" -> null (general/uncategorized)
+  /// - "pin:work" -> "Work"
+  /// - "pin:work-pay" -> "Work pay"
+  /// - "pin:personal-stuff" -> "Personal stuff"
+  String? get pinCategory {
+    final pinTags = tagList.where((tag) {
+      final lowerTag = tag.toLowerCase();
+      return lowerTag == 'pin' || lowerTag.startsWith('pin:');
+    }).toList();
+    if (pinTags.isEmpty) return null;
+
+    // Look for categorized pin tags first
+    for (final tag in pinTags) {
+      if (tag.contains(':')) {
+        final parts = tag.split(':');
+        if (parts.length >= 2) {
+          final categoryPart = parts[1];
+          // Replace hyphens with spaces and capitalize each word
+          return categoryPart
+              .split('-')
+              .map(
+                (word) => word.isNotEmpty
+                    ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
+                    : word,
+              )
+              .join(' ');
+        }
+      }
+    }
+
+    // If only "pin" tag exists, return null (will be grouped as "General")
+    return null;
+  }
+
+  /// Get all pin-related tags for this post
+  List<String> get pinTags {
+    return tagList.where((tag) {
+      final lowerTag = tag.toLowerCase();
+      return lowerTag == 'pin' || lowerTag.startsWith('pin:');
+    }).toList();
+  }
+
   String get domain {
     try {
       final uri = Uri.parse(href);

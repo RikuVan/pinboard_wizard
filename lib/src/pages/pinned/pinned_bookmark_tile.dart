@@ -137,16 +137,21 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                     ),
                   ],
 
-                  // Tags (excluding 'pin' since we're already in pinned view)
-                  if (widget.post.tagList
-                      .where((tag) => tag.toLowerCase() != 'pin')
-                      .isNotEmpty) ...[
+                  // Tags (excluding pin-related tags since we're already in pinned view)
+                  if (widget.post.tagList.where((tag) {
+                    final lowerTag = tag.toLowerCase();
+                    return !(lowerTag == 'pin' || lowerTag.startsWith('pin:'));
+                  }).isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Wrap(
                       spacing: 4,
                       runSpacing: 2,
                       children: widget.post.tagList
-                          .where((tag) => tag.toLowerCase() != 'pin')
+                          .where((tag) {
+                            final lowerTag = tag.toLowerCase();
+                            return !(lowerTag == 'pin' ||
+                                lowerTag.startsWith('pin:'));
+                          })
                           .take(3) // Limit to 3 tags to keep it compact
                           .map((tag) {
                             final theme = MacosTheme.of(context);

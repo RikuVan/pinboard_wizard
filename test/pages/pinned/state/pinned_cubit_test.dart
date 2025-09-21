@@ -71,7 +71,7 @@ void main() {
         'emits [loading, loaded] when successful with no pinned bookmarks',
         build: () {
           when(
-            mockPinboardService.getAllBookmarks(tag: 'pin'),
+            mockPinboardService.getAllBookmarks(),
           ).thenAnswer((_) async => []);
           return cubit;
         },
@@ -93,7 +93,7 @@ void main() {
       blocTest<PinnedCubit, PinnedState>(
         'emits [loading, loaded] when successful with pinned bookmarks',
         build: () {
-          final pinnedBookmarks = [
+          final allBookmarks = [
             PostTestData.createPost(
               href: 'https://flutter.dev',
               description: 'Flutter Docs',
@@ -102,12 +102,17 @@ void main() {
             PostTestData.createPost(
               href: 'https://dart.dev',
               description: 'Dart Docs',
-              tags: 'dart pin programming',
+              tags: 'dart pin:work programming',
+            ),
+            PostTestData.createPost(
+              href: 'https://example.com',
+              description: 'Non-pinned',
+              tags: 'example test',
             ),
           ];
           when(
-            mockPinboardService.getAllBookmarks(tag: 'pin'),
-          ).thenAnswer((_) async => pinnedBookmarks);
+            mockPinboardService.getAllBookmarks(),
+          ).thenAnswer((_) async => allBookmarks);
           return cubit;
         },
         act: (cubit) => cubit.loadPinnedBookmarks(),
@@ -128,7 +133,7 @@ void main() {
               PostTestData.createPost(
                 href: 'https://dart.dev',
                 description: 'Dart Docs',
-                tags: 'dart pin programming',
+                tags: 'dart pin:work programming',
               ),
             ],
             errorMessage: null,
@@ -140,7 +145,7 @@ void main() {
         'emits [loading, error] when service throws exception',
         build: () {
           when(
-            mockPinboardService.getAllBookmarks(tag: 'pin'),
+            mockPinboardService.getAllBookmarks(),
           ).thenThrow(ExceptionTestData.createNetworkException());
           return cubit;
         },
@@ -160,15 +165,12 @@ void main() {
         ],
       );
 
-      test('calls getAllBookmarks with correct tag parameter', () async {
-        when(
-          mockPinboardService.getAllBookmarks(tag: 'pin'),
-        ).thenAnswer((_) async => []);
+      test('calls getAllBookmarks with correct parameters', () async {
+        when(mockPinboardService.getAllBookmarks()).thenAnswer((_) async => []);
 
         await cubit.loadPinnedBookmarks();
 
-        verify(mockPinboardService.getAllBookmarks(tag: 'pin')).called(1);
-        verifyNoMoreInteractions(mockPinboardService);
+        verify(mockPinboardService.getAllBookmarks()).called(1);
       });
     });
 
@@ -184,7 +186,7 @@ void main() {
             ),
           ];
           when(
-            mockPinboardService.getAllBookmarks(tag: 'pin'),
+            mockPinboardService.getAllBookmarks(),
           ).thenAnswer((_) async => pinnedBookmarks);
           return cubit;
         },
@@ -218,7 +220,7 @@ void main() {
         'emits [refreshing, error] when service throws exception',
         build: () {
           when(
-            mockPinboardService.getAllBookmarks(tag: 'pin'),
+            mockPinboardService.getAllBookmarks(),
           ).thenThrow(ExceptionTestData.createServerException());
           return cubit;
         },
@@ -298,7 +300,7 @@ void main() {
             mockPinboardService.updateBookmark(expectedUpdatedBookmark),
           ).called(1);
           // Verify refresh was called (getAllBookmarks)
-          verify(mockPinboardService.getAllBookmarks(tag: 'pin')).called(1);
+          verify(mockPinboardService.getAllBookmarks()).called(1);
         },
       );
 
@@ -312,7 +314,7 @@ void main() {
             mockPinboardService.updateBookmark(expectedUpdated),
           ).thenAnswer((_) async {});
           when(
-            mockPinboardService.getAllBookmarks(tag: 'pin'),
+            mockPinboardService.getAllBookmarks(),
           ).thenAnswer((_) async => []);
 
           return cubit;
@@ -358,7 +360,7 @@ void main() {
             mockPinboardService.updateBookmark(expectedUpdated),
           ).thenAnswer((_) async {});
           when(
-            mockPinboardService.getAllBookmarks(tag: 'pin'),
+            mockPinboardService.getAllBookmarks(),
           ).thenAnswer((_) async => []);
 
           return cubit;
@@ -432,9 +434,8 @@ void main() {
             mockPinboardService.updateBookmark(testBookmark),
           ).thenAnswer((_) async {});
           when(
-            mockPinboardService.getAllBookmarks(tag: 'pin'),
+            mockPinboardService.getAllBookmarks(),
           ).thenAnswer((_) async => [testBookmark]);
-
           return cubit;
         },
         act: (cubit) => cubit.updateBookmark(testBookmark),
@@ -491,7 +492,7 @@ void main() {
             mockPinboardService.deleteBookmark(testUrl),
           ).thenAnswer((_) async {});
           when(
-            mockPinboardService.getAllBookmarks(tag: 'pin'),
+            mockPinboardService.getAllBookmarks(),
           ).thenAnswer((_) async => []);
 
           return cubit;
@@ -729,7 +730,7 @@ void main() {
 
           // Setup mock for after unpinning (should return empty list)
           when(
-            mockPinboardService.getAllBookmarks(tag: 'pin'),
+            mockPinboardService.getAllBookmarks(),
           ).thenAnswer((_) async => []);
 
           // Unpin the bookmark
