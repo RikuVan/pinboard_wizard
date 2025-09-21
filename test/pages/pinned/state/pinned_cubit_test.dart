@@ -271,7 +271,7 @@ void main() {
 
           // Set up the mock for the refresh call (getAllBookmarks)
           when(
-            mockPinboardService.getAllBookmarks(tag: 'pin'),
+            mockPinboardService.getAllBookmarks(),
           ).thenAnswer((_) async => []); // Empty list after unpinning
 
           return cubit;
@@ -458,7 +458,7 @@ void main() {
         ],
         verify: (_) {
           verify(mockPinboardService.updateBookmark(testBookmark)).called(1);
-          verify(mockPinboardService.getAllBookmarks(tag: 'pin')).called(1);
+          verify(mockPinboardService.getAllBookmarks()).called(1);
         },
       );
 
@@ -517,7 +517,7 @@ void main() {
         ],
         verify: (_) {
           verify(mockPinboardService.deleteBookmark(testUrl)).called(1);
-          verify(mockPinboardService.getAllBookmarks(tag: 'pin')).called(1);
+          verify(mockPinboardService.getAllBookmarks()).called(1);
         },
       );
 
@@ -707,9 +707,9 @@ void main() {
             tags: 'flutter pin development',
           );
 
-          // First call (initial load) returns the pinned bookmark
+          // Setup mocks for the sequence of API calls
           when(
-            mockPinboardService.getAllBookmarks(tag: 'pin'),
+            mockPinboardService.getAllBookmarks(),
           ).thenAnswer((_) async => [pinnedBookmark]);
 
           when(
@@ -728,7 +728,7 @@ void main() {
           // Load initial pinned bookmarks
           await cubit.loadPinnedBookmarks();
 
-          // Setup mock for after unpinning (should return empty list)
+          // Update mock for after unpinning (should return empty list)
           when(
             mockPinboardService.getAllBookmarks(),
           ).thenAnswer((_) async => []);
