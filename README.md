@@ -1,6 +1,41 @@
 # Pinboard Wizard
 
-A powerful, native macOS client for [Pinboard.in](https://pinboard.in) built with Flutter. Manage your bookmarks with speed, style, and AI-powered assistance.
+A powerful, native macOS client for [Pinboard.in](https://pinboard.in) built with Flutter. Designed for power users who want curated bookmark collections, AI-enhanced management, and secure cloud backups.
+
+## What Sets This Apart
+
+**Pinboard Wizard isn't just another bookmark manager.** It's designed for users who:
+
+### 🎯 **Want Curated Bookmark Collections**
+
+Traditional bookmark managers treat all bookmarks equally. We hack Pinboard's tagging system to create a **pin-based curation system**:
+
+- **Pin with categories**: `pin:work`, `pin:reading`, `pin:tools`
+- **Dynamic grouping**: Your pinned bookmarks auto-organize by category
+- **Quick access**: Instantly find your most important bookmarks
+- **Smart formatting**: `pin:work-projects` becomes "Work Projects" automatically
+
+### 🤖 **Want AI-Enhanced Bookmarks (Cost-Controlled)**
+
+Skip expensive AI subscription services. Bring your own OpenAI API key and pay only for what you use:
+
+- **Automatic metadata**: AI generates titles, descriptions, and tags from URLs
+- **Smart suggestions**: Content-aware tagging recommendations
+- **Your costs, your control**: Usually costs pennies per month
+- **No vendor lock-in**: Your data stays in Pinboard, AI is optional
+
+### ☁️ **Want Secure Cloud Backup Options**
+
+Your bookmarks are precious. Keep them safe with AWS S3 integration:
+
+- **Direct S3 backup**: Export to your own AWS bucket
+- **Full control**: You own your data and backup location
+- **Automated exports**: Schedule regular backup jobs
+- **Disaster recovery**: Import from S3 if needed
+
+---
+
+**Perfect for**: Developers, researchers, content curators, and anyone who treats bookmarks as a serious productivity tool.
 
 ## Features
 
@@ -9,7 +44,8 @@ A powerful, native macOS client for [Pinboard.in](https://pinboard.in) built wit
 - View, search, and organize all your Pinboard bookmarks
 - Add new bookmarks with rich metadata (title, description, tags)
 - Edit existing bookmarks inline
-- Pin/unpin bookmarks for quick access
+- **Categorized pinning**: Pin bookmarks with categories (`pin:work`, `pin:reading`)
+- **Smart grouping**: Pinned bookmarks auto-organize by category
 - Delete bookmarks with confirmation
 - Real-time search across titles, descriptions, and tags
 - Filter by unread status and pinned bookmarks
@@ -18,15 +54,38 @@ A powerful, native macOS client for [Pinboard.in](https://pinboard.in) built wit
 
 - Visual tag browser with click-to-filter
 - Auto-completion for existing tags
-- Bulk tag operations
-- Pin management with dedicated pinned bookmarks view
+- **Category-based organization**: `pin:work-tools` → "Work Tools" section
+- Dedicated pinned bookmarks view with intelligent grouping
 
-### 🤖 **AI Integration** (Optional)
+#### How Pin Categories Work
 
-- AI-powered bookmark analysis and metadata extraction
-- Automatic title and description generation from URLs
-- Smart tagging suggestions based on content
-- Powered by OpenAI GPT models
+The pin categorization system transforms Pinboard's simple tagging into a powerful curation tool:
+
+**Basic Pinning:**
+
+- Tag with `pin` → Appears in "General" section
+- Simple one-click pinning from bookmark list
+
+**Categorized Pinning:**
+
+- Tag with `pin:work` → Creates "Work" category
+- Tag with `pin:work-projects` → Creates "Work Projects" category
+- Tag with `pin:reading-list` → Creates "Reading List" category
+
+**Smart Features:**
+
+- **Dynamic categories**: Categories appear automatically as you create them
+- **Existing category suggestions**: Reuse categories with one click
+- **Intelligent formatting**: Hyphens become spaces, proper capitalization
+- **Grouped display**: Pinned page shows bookmarks organized by category
+- **Easy management**: Update categories or remove pins entirely
+
+### 🤖 **AI Integration** (Bring Your Own Key)
+
+- **Cost-effective AI**: Use your own OpenAI API key (typically pennies/month)
+- **Smart metadata extraction**: Auto-generate titles, descriptions, tags from URLs
+- **Content analysis**: AI reads page content for intelligent suggestions
+- **No subscriptions**: Pay only for what you use, when you use it
 
 ### ⌨️ **Keyboard Shortcuts**
 
@@ -48,11 +107,13 @@ A powerful, native macOS client for [Pinboard.in](https://pinboard.in) built wit
 - All communication with Pinboard uses HTTPS
 - No data is stored on third-party servers
 
-### 📤 **Backup & Export**
+### ☁️ **AWS S3 Backup Integration**
 
-- Export your bookmarks to JSON format
-- Backup and restore functionality
-- Data portability and peace of mind
+- **Direct S3 backup**: Export bookmarks to your own AWS bucket
+- **Scheduled exports**: Automated backup workflows
+- **Disaster recovery**: Import from S3 backups if needed
+- **Full data control**: You own your backup location and access
+- **JSON format**: Standard format for maximum compatibility
 
 ## Getting Started
 
@@ -104,14 +165,17 @@ A powerful, native macOS client for [Pinboard.in](https://pinboard.in) built wit
 4. Test the connection
 5. Start browsing your bookmarks!
 
-### Optional: AI Features Setup
+### Optional: AI Features Setup (Cost-Controlled)
 
-To enable AI-powered bookmark analysis:
+To enable AI-powered bookmark analysis with your own OpenAI key:
 
-1. Go to **Settings** → **AI Settings**
-2. Enable AI features
-3. Enter your OpenAI API key
-4. Configure your preferred AI model
+1. Get your OpenAI API key from [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+2. Go to **Settings** → **AI Settings**
+3. Enable AI features
+4. Enter your OpenAI API key
+5. Configure your preferred model (GPT-3.5-turbo recommended for cost efficiency)
+
+**Cost estimate**: Typically $0.50-$2.00/month for moderate usage (hundreds of bookmarks)
 
 ## Development
 
@@ -173,7 +237,7 @@ make analyze
 
 The app supports the following optional environment variables:
 
-- `OPENAI_API_KEY` - Default OpenAI API key for AI features
+- `OPENAI_API_KEY` - Default OpenAI API key for AI features (you provide your own)
 - `DEBUG_MODE` - Enable debug logging
 
 ### Settings File
@@ -181,9 +245,10 @@ The app supports the following optional environment variables:
 User settings are stored in the macOS app container. The app handles:
 
 - Pinboard API credentials (in Keychain)
-- AI service configuration
+- Your OpenAI API key (in Keychain, never shared)
+- AI service configuration and usage tracking
 - UI preferences
-- Backup settings
+- AWS S3 backup settings
 
 ## Troubleshooting
 
@@ -197,8 +262,9 @@ User settings are stored in the macOS app container. The app handles:
 
 **"AI features not working"**
 
-- Verify your OpenAI API key is valid
-- Check your OpenAI account has sufficient credits
+- Verify your OpenAI API key is valid and has sufficient credits
+- Check your OpenAI account billing status at [https://platform.openai.com/usage](https://platform.openai.com/usage)
+- Monitor your costs: AI analysis typically uses $0.01-0.05 per bookmark
 - Try disabling and re-enabling AI features
 
 **"App won't start"**
