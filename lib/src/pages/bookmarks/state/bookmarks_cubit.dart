@@ -302,7 +302,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
   }
 
   /// Get footer text for display including tag filtering info
-  String getFooterText() {
+  String get footerText {
     String baseText;
     if (state.isSearching) {
       baseText =

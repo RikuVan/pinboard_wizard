@@ -286,7 +286,7 @@ class _NotesPageState extends State<NotesPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            _notesCubit.getFooterText(),
+            _notesCubit.footerText,
             style: TextStyle(
               color: MacosTheme.of(context).brightness == Brightness.dark
                   ? Colors.white70

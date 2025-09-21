@@ -457,10 +457,7 @@ void main() {
           ),
         );
 
-        expect(
-          cubit.getFooterText(),
-          equals('Found 2 results in current page'),
-        );
+        expect(cubit.footerText, equals('Found 2 results in current page'));
       });
 
       test('getFooterText returns loaded count when not searching', () {
@@ -472,7 +469,7 @@ void main() {
           ),
         );
 
-        expect(cubit.getFooterText(), equals('2 bookmarks loaded'));
+        expect(cubit.footerText, equals('2 bookmarks loaded'));
       });
 
       test('getFooterText includes unread filter info', () {
@@ -492,7 +489,7 @@ void main() {
         );
 
         expect(
-          cubit.getFooterText(),
+          cubit.footerText,
           equals('2 bookmarks loaded • 1 after unread only filtering'),
         );
       });
@@ -519,7 +516,7 @@ void main() {
         );
 
         expect(
-          cubit.getFooterText(),
+          cubit.footerText,
           equals(
             '2 bookmarks loaded • 1 after unread only & tag filtered filtering',
           ),

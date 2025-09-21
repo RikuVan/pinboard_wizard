@@ -602,17 +602,17 @@ void main() {
     group('getFooterText', () {
       test('returns single note text when only one note exists', () {
         cubit.emit(NotesState(notes: [testNote]));
-        expect(cubit.getFooterText(), equals('1 note'));
+        expect(cubit.footerText, equals('1 note'));
       });
 
       test('returns multiple notes count when multiple notes exist', () {
         cubit.emit(NotesState(notes: testNotesList));
-        expect(cubit.getFooterText(), equals('3 notes'));
+        expect(cubit.footerText, equals('3 notes'));
       });
 
       test('returns zero notes when no notes exist', () {
         cubit.emit(const NotesState(notes: []));
-        expect(cubit.getFooterText(), equals('0 notes'));
+        expect(cubit.footerText, equals('0 notes'));
       });
 
       test('returns filtered count when searching with results', () {
@@ -623,7 +623,7 @@ void main() {
             isSearching: true,
           ),
         );
-        expect(cubit.getFooterText(), equals('1 of 3 notes'));
+        expect(cubit.footerText, equals('1 of 3 notes'));
       });
 
       test('returns no results text when searching with no results', () {
@@ -634,7 +634,7 @@ void main() {
             isSearching: true,
           ),
         );
-        expect(cubit.getFooterText(), equals('0 of 3 notes'));
+        expect(cubit.footerText, equals('0 of 3 notes'));
       });
 
       test('returns correct text when searching with multiple results', () {
@@ -648,7 +648,7 @@ void main() {
             isSearching: true,
           ),
         );
-        expect(cubit.getFooterText(), equals('2 of 3 notes'));
+        expect(cubit.footerText, equals('2 of 3 notes'));
       });
     });
 

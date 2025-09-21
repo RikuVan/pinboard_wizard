@@ -104,7 +104,7 @@ class NotesCubit extends Cubit<NotesState> {
     await loadNotes();
   }
 
-  String getFooterText() {
+  String get footerText {
     final displayNotes = state.displayNotes;
     final totalNotes = state.notes.length;
 

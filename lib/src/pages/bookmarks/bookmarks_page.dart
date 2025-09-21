@@ -426,7 +426,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            _bookmarksCubit.getFooterText(),
+            _bookmarksCubit.footerText,
             style: TextStyle(
               color: MacosTheme.of(context).brightness == Brightness.dark
                   ? Colors.white70
