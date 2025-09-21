@@ -39,7 +39,9 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
     // Initialize controllers with existing bookmark data
     _urlController = TextEditingController(text: widget.bookmark.href);
     _titleController = TextEditingController(text: widget.bookmark.description);
-    _descriptionController = TextEditingController(text: widget.bookmark.extended);
+    _descriptionController = TextEditingController(
+      text: widget.bookmark.extended,
+    );
     _tagsController = TextEditingController(text: widget.bookmark.tags);
 
     // Initialize boolean values
@@ -84,7 +86,10 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text('Edit Bookmark', style: MacosTheme.of(context).typography.largeTitle),
+                  Text(
+                    'Edit Bookmark',
+                    style: MacosTheme.of(context).typography.largeTitle,
+                  ),
                   const Spacer(),
                   MacosIconButton(
                     icon: const MacosIcon(CupertinoIcons.xmark),
@@ -167,7 +172,11 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                             ? Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const SizedBox(width: 16, height: 16, child: ProgressCircle()),
+                                  const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: ProgressCircle(),
+                                  ),
                                   const SizedBox(width: 8),
                                   const Text('Updating...'),
                                 ],
@@ -203,7 +212,10 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
             ),
             Text(
               ' *',
-              style: TextStyle(color: MacosColors.systemRedColor, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: MacosColors.systemRedColor,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -230,7 +242,11 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                     ? Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const SizedBox(width: 16, height: 16, child: ProgressCircle()),
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: ProgressCircle(),
+                          ),
                           const SizedBox(width: 8),
                           const Text('Analyzing...'),
                         ],
@@ -243,7 +259,8 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                             size: 16,
                             color: _canUseAiMagic
                                 ? MacosColors.controlAccentColor
-                                : MacosTheme.of(context).brightness == Brightness.dark
+                                : MacosTheme.of(context).brightness ==
+                                      Brightness.dark
                                 ? Colors.white38
                                 : Colors.black38,
                           ),
@@ -262,7 +279,9 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
             decoration: BoxDecoration(
               color: MacosColors.systemRedColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: MacosColors.systemRedColor.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: MacosColors.systemRedColor.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               children: [
@@ -275,7 +294,10 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                 Expanded(
                   child: Text(
                     _aiError!,
-                    style: TextStyle(fontSize: 12, color: MacosColors.systemRedColor),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: MacosColors.systemRedColor,
+                    ),
                   ),
                 ),
               ],
@@ -312,12 +334,19 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
             if (isRequired)
               Text(
                 ' *',
-                style: TextStyle(color: MacosColors.systemRedColor, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: MacosColors.systemRedColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
           ],
         ),
         const SizedBox(height: 6),
-        MacosTextField(controller: controller, placeholder: placeholder, maxLines: maxLines),
+        MacosTextField(
+          controller: controller,
+          placeholder: placeholder,
+          maxLines: maxLines,
+        ),
         if (helperText != null) ...[
           const SizedBox(height: 4),
           Text(
@@ -424,7 +453,8 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
 
   Future<void> _handleSubmit() async {
     // Validate manually since MacosTextField doesn't support validator
-    if (_urlController.text.trim().isEmpty || _titleController.text.trim().isEmpty) {
+    if (_urlController.text.trim().isEmpty ||
+        _titleController.text.trim().isEmpty) {
       _showErrorDialog('Please fill in all required fields');
       return;
     }

@@ -26,10 +26,10 @@ class PinboardException implements Exception {
 
 class PinboardAuthException extends PinboardException {
   const PinboardAuthException(
-    String message, {
-    int? statusCode,
-    String? response,
-  }) : super(message, statusCode: statusCode, response: response);
+    super.message, {
+    super.statusCode,
+    super.response,
+  });
 }
 
 class PinboardClient {

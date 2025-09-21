@@ -40,7 +40,8 @@ class SettingsCubit extends Cubit<SettingsState> {
       // Load Pinboard credentials
       final credentials = await _credentialsService.getCredentials();
       final pinboardApiKey = credentials?.apiKey ?? '';
-      final isPinboardAuthenticated = _credentialsService.isAuthenticatedNotifier.value;
+      final isPinboardAuthenticated =
+          _credentialsService.isAuthenticatedNotifier.value;
 
       // Load AI settings
       final aiSettings = _aiSettingsService.settings;
@@ -74,7 +75,10 @@ class SettingsCubit extends Cubit<SettingsState> {
       _validateJinaKey(aiSettings.webScraping.jinaApiKey ?? '');
     } catch (e) {
       emit(
-        state.copyWith(status: SettingsStatus.error, errorMessage: 'Failed to load settings: $e'),
+        state.copyWith(
+          status: SettingsStatus.error,
+          errorMessage: 'Failed to load settings: $e',
+        ),
       );
     }
   }
@@ -94,7 +98,11 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> savePinboardApiKey() async {
     final apiKey = state.pinboardApiKey.trim();
     if (!_credentialsService.isValidApiKey(apiKey)) {
-      emit(state.copyWith(errorMessage: 'Invalid API key. Expected: username:hexstring'));
+      emit(
+        state.copyWith(
+          errorMessage: 'Invalid API key. Expected: username:hexstring',
+        ),
+      );
       return;
     }
 
@@ -117,7 +125,9 @@ class SettingsCubit extends Cubit<SettingsState> {
           pinboardValidationMessage: connectionOk
               ? 'Valid API key - connection successful'
               : 'Connection failed',
-          errorMessage: connectionOk ? null : 'Saved, but connection test failed.',
+          errorMessage: connectionOk
+              ? null
+              : 'Saved, but connection test failed.',
         ),
       );
     } catch (e) {
@@ -283,7 +293,11 @@ class SettingsCubit extends Cubit<SettingsState> {
       await _aiSettingsService.setDescriptionMaxLength(length);
       emit(state.copyWith(descriptionMaxLength: length));
     } catch (e) {
-      emit(state.copyWith(errorMessage: 'Failed to update description max length: $e'));
+      emit(
+        state.copyWith(
+          errorMessage: 'Failed to update description max length: $e',
+        ),
+      );
     }
   }
 
@@ -346,7 +360,9 @@ class SettingsCubit extends Cubit<SettingsState> {
     );
 
     try {
-      final result = await _aiSettingsService.testJinaConnection(apiKey.isEmpty ? null : apiKey);
+      final result = await _aiSettingsService.testJinaConnection(
+        apiKey.isEmpty ? null : apiKey,
+      );
 
       if (!isClosed) {
         emit(
@@ -373,7 +389,10 @@ class SettingsCubit extends Cubit<SettingsState> {
   /// Listen to authentication changes from CredentialsService
   void _onAuthChanged() {
     emit(
-      state.copyWith(isPinboardAuthenticated: _credentialsService.isAuthenticatedNotifier.value),
+      state.copyWith(
+        isPinboardAuthenticated:
+            _credentialsService.isAuthenticatedNotifier.value,
+      ),
     );
   }
 
@@ -460,10 +479,13 @@ class SettingsCubit extends Cubit<SettingsState> {
 
       emit(
         state.copyWith(
-          backupValidationStatus: isValid ? ValidationStatus.valid : ValidationStatus.invalid,
+          backupValidationStatus: isValid
+              ? ValidationStatus.valid
+              : ValidationStatus.invalid,
           backupValidationMessage: isValid
               ? 'S3 configuration is valid'
-              : _backupService.lastError ?? 'Failed to validate S3 configuration',
+              : _backupService.lastError ??
+                    'Failed to validate S3 configuration',
         ),
       );
     } catch (e) {
@@ -504,10 +526,13 @@ class SettingsCubit extends Cubit<SettingsState> {
 
       emit(
         state.copyWith(
-          backupValidationStatus: isValid ? ValidationStatus.valid : ValidationStatus.invalid,
+          backupValidationStatus: isValid
+              ? ValidationStatus.valid
+              : ValidationStatus.invalid,
           backupValidationMessage: isValid
               ? 'S3 configuration is valid'
-              : _backupService.lastError ?? 'Failed to validate S3 configuration',
+              : _backupService.lastError ??
+                    'Failed to validate S3 configuration',
         ),
       );
     } catch (e) {
@@ -547,7 +572,12 @@ class SettingsCubit extends Cubit<SettingsState> {
         );
       }
     } catch (e) {
-      emit(state.copyWith(isBackupInProgress: false, backupValidationMessage: 'Backup failed: $e'));
+      emit(
+        state.copyWith(
+          isBackupInProgress: false,
+          backupValidationMessage: 'Backup failed: $e',
+        ),
+      );
     }
   }
 
@@ -578,7 +608,11 @@ class SettingsCubit extends Cubit<SettingsState> {
         ),
       );
     } catch (e) {
-      emit(state.copyWith(backupValidationMessage: 'Failed to clear configuration: $e'));
+      emit(
+        state.copyWith(
+          backupValidationMessage: 'Failed to clear configuration: $e',
+        ),
+      );
     }
   }
 

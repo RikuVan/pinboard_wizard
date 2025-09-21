@@ -497,7 +497,9 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
       // Clear clipboard after successful save to prevent reuse
       await Clipboard.setData(const ClipboardData(text: ''));
 
-      Navigator.of(context).pop(bookmarkData);
+      if (mounted) {
+        Navigator.of(context).pop(bookmarkData);
+      }
     } catch (e) {
       setState(() => _isSubmitting = false);
       if (context.mounted) {

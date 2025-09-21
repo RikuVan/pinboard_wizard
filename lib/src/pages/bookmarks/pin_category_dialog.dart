@@ -74,8 +74,7 @@ class _PinCategoryDialogState extends State<PinCategoryDialog> {
               children: [
                 MacosCheckbox(
                   value: _useCategory,
-                  onChanged: (value) =>
-                      setState(() => _useCategory = value ?? false),
+                  onChanged: (value) => setState(() => _useCategory = value),
                 ),
                 const SizedBox(width: 8),
                 const Text('Use category'),
@@ -117,13 +116,13 @@ class _PinCategoryDialogState extends State<PinCategoryDialog> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: MacosColors.controlAccentColor.withOpacity(
-                            0.1,
+                          color: MacosColors.controlAccentColor.withValues(
+                            alpha: 0.1,
                           ),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: MacosColors.controlAccentColor.withOpacity(
-                              0.3,
+                            color: MacosColors.controlAccentColor.withValues(
+                              alpha: 0.3,
                             ),
                             width: 0.5,
                           ),

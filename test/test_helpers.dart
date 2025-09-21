@@ -474,7 +474,7 @@ class NoteTestData {
     return List.generate(count, (index) {
       return Note(
         id: 'note_${index + 1}',
-        hash: 'hash${index}${DateTime.now().millisecondsSinceEpoch}',
+        hash: 'hash$index${DateTime.now().millisecondsSinceEpoch}',
         title: 'Test Note ${index + 1}',
         length: 50 + (index * 25),
         createdAt: DateTime(2023, 1, index + 1),
