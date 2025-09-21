@@ -18,8 +18,8 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.35.3"
-          channel: "stable"
+          channel: stable
+          flutter-version-file: pubspec.yaml
 
       - name: Get dependencies
         run: flutter pub get
@@ -45,6 +45,9 @@ jobs:
         run: |
           cd release
           echo "sha256=$(shasum -a 256 pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+
+      - name: Verify GitHub CLI
+        run: gh --version
 
       - name: Upload release asset
         env:
