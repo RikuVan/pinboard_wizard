@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.35.3"
+          channel: "stable"
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build macOS app
+        run: flutter build macos --release
+
+      - name: Create app bundle directory
+        run: |
+          mkdir -p release/Pinboard\ Wizard.app
+          cp -R build/macos/Build/Products/Release/pinboard_wizard.app/* release/Pinboard\ Wizard.app/
+
+      - name: Create tarball
+        run: |
+          cd release
+          tar -czf pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz "Pinboard Wizard.app"
+
+      - name: Calculate SHA256
+        id: sha256
+        run: |
+          cd release
+          echo "sha256=$(shasum -a 256 pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: release/pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz
+          asset_name: pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz
+          asset_content_type: application/gzip
