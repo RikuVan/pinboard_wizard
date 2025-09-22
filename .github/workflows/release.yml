@@ -27,6 +27,13 @@ jobs:
       - name: Run tests
         run: flutter test
 
+      - name: Decode signing certificate
+        run: |
+          echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "" build.keychain
+          security import certificate.p12 -k ~/Library/Keychains/build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security list-keychain -s build.keychain
+
       - name: Build macOS app
         run: flutter build macos --release
 
@@ -35,16 +42,50 @@ jobs:
           mkdir -p release/Pinboard\ Wizard.app
           cp -R build/macos/Build/Products/Release/pinboard_wizard.app/* release/Pinboard\ Wizard.app/
 
+      - name: Get signing identity
+        id: sign_identity
+        run: |
+          IDENTITY=$(security find-identity -p codesigning -v | grep "Developer ID Application" | head -n1 | awk -F\" '{print $2}')
+          echo "SIGN_IDENTITY=$IDENTITY" >> $GITHUB_ENV
+
+      - name: Sign app
+        run: |
+          codesign --deep --force --verify \
+            --sign "$SIGN_IDENTITY" \
+            release/Pinboard\ Wizard.app
+
+      - name: Verify code signature
+        run: |
+          codesign --verify --deep --strict --verbose=2 "release/Pinboard Wizard.app"
+          spctl --verbose=4 --assess --type execute "release/Pinboard Wizard.app"
+
       - name: Create tarball
         run: |
           cd release
           tar -czf pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz "Pinboard Wizard.app"
 
+      - name: Notarize app
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: |
+          cd release
+          xcrun notarytool submit pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --wait
+
+      - name: Staple notarization ticket
+        run: xcrun stapler staple "release/Pinboard Wizard.app"
+
       - name: Calculate SHA256
         id: sha256
         run: |
           cd release
-          echo "sha256=$(shasum -a 256 pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+          HASH=$(shasum -a 256 pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz | cut -d ' ' -f 1)
+          echo "SHA256=$HASH" >> $GITHUB_ENV
 
       - name: Verify GitHub CLI
         run: gh --version
@@ -61,10 +102,16 @@ jobs:
         run: |
           VERSION="${{ github.event.release.tag_name }}"
           DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${VERSION}/pinboard-wizard-${VERSION}-macos.tar.gz"
+          SHA256="$SHA256"
 
           gh api repos/RikuVan/homebrew-formulae/dispatches \
             -X POST \
             -H "Accept: application/vnd.github+json" \
             -f event_type=update-cask \
             -f client_payload[version]=$VERSION \
-            -f client_payload[download_url]=$DOWNLOAD_URL
+            -f client_payload[download_url]=$DOWNLOAD_URL \
+            -f client_payload[sha256]=$SHA256
+
+      - name: Cleanup keychain
+        if: always()
+        run: security delete-keychain build.keychain || true
