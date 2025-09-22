@@ -48,9 +48,10 @@ jobs:
           IDENTITY=$(security find-identity -p codesigning -v | grep "Developer ID Application" | head -n1 | awk -F\" '{print $2}')
           echo "SIGN_IDENTITY=$IDENTITY" >> $GITHUB_ENV
 
-      - name: Sign app
+      - name: Sign app (with Hardened Runtime)
         run: |
-          codesign --deep --force --verify \
+          codesign --deep --force --verify --verbose=2 \
+            --options runtime \
             --sign "$SIGN_IDENTITY" \
             release/Pinboard\ Wizard.app
 
@@ -59,10 +60,10 @@ jobs:
           codesign --verify --deep --strict --verbose=2 "release/Pinboard Wizard.app"
           spctl --verbose=4 --assess --type execute "release/Pinboard Wizard.app"
 
-      - name: Create tarball
+      - name: Prepare notarization zip
         run: |
           cd release
-          tar -czf pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz "Pinboard Wizard.app"
+          zip -r "Pinboard Wizard.zip" "Pinboard Wizard.app"
 
       - name: Notarize app
         env:
@@ -72,14 +73,12 @@ jobs:
         run: |
           set -e
           cd release
-          # Submit for notarization and wait for completion
-          xcrun notarytool submit pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz \
+          xcrun notarytool submit "Pinboard Wizard.zip" \
             --apple-id "$APPLE_ID" \
             --team-id "$APPLE_TEAM_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
             --wait
-          # Verify the notarization status
-          xcrun notarytool info pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz \
+          xcrun notarytool info "Pinboard Wizard.zip" \
             --apple-id "$APPLE_ID" \
             --team-id "$APPLE_TEAM_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
@@ -87,6 +86,11 @@ jobs:
 
       - name: Staple notarization ticket
         run: xcrun stapler staple "release/Pinboard Wizard.app"
+
+      - name: Create tarball for release
+        run: |
+          cd release
+          tar -czf pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz "Pinboard Wizard.app"
 
       - name: Calculate SHA256
         id: sha256
