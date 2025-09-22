@@ -54,3 +54,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload ${{ github.event.release.tag_name }} release/pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz --clobber
+
+      - name: Trigger cask update workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${VERSION}/pinboard-wizard-${VERSION}-macos.tar.gz"
+
+          gh api repos/RikuVan/homebrew-formulae/dispatches \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -f event_type=update-cask \
+            -f client_payload[version]=$VERSION \
+            -f client_payload[download_url]=$DOWNLOAD_URL
