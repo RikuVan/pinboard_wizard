@@ -70,12 +70,20 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         run: |
+          set -e
           cd release
+          # Submit for notarization and wait for completion
           xcrun notarytool submit pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz \
             --apple-id "$APPLE_ID" \
             --team-id "$APPLE_TEAM_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
             --wait
+          # Verify the notarization status
+          xcrun notarytool info pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            | grep -q '"Status": "Accepted"' || { echo "Notarization failed"; exit 1; }
 
       - name: Staple notarization ticket
         run: xcrun stapler staple "release/Pinboard Wizard.app"
