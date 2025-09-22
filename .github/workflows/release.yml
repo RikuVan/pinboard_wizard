@@ -37,7 +37,7 @@ jobs:
       - name: Build macOS app
         run: flutter build macos --release
 
-      - name: Create app bundle directory
+      - name: Prepare app bundle
         run: |
           mkdir -p release/Pinboard\ Wizard.app
           cp -R build/macos/Build/Products/Release/pinboard_wizard.app/* release/Pinboard\ Wizard.app/
@@ -48,10 +48,10 @@ jobs:
           IDENTITY=$(security find-identity -p codesigning -v | grep "Developer ID Application" | head -n1 | awk -F\" '{print $2}')
           echo "SIGN_IDENTITY=$IDENTITY" >> $GITHUB_ENV
 
-      - name: Sign app (with Hardened Runtime)
+      - name: Sign app with Hardened Runtime and Timestamp
         run: |
           codesign --deep --force --verify --verbose=2 \
-            --options runtime \
+            --options runtime --timestamp \
             --sign "$SIGN_IDENTITY" \
             release/Pinboard\ Wizard.app
 
@@ -64,6 +64,7 @@ jobs:
         run: |
           cd release
           zip -r "Pinboard Wizard.zip" "Pinboard Wizard.app"
+          cd ..
 
       - name: Notarize app
         env:
@@ -72,13 +73,13 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         run: |
           set -e
-          cd release
-          xcrun notarytool submit "Pinboard Wizard.zip" \
+          NOTARIZE_FILE="release/Pinboard Wizard.zip"
+          xcrun notarytool submit "$NOTARIZE_FILE" \
             --apple-id "$APPLE_ID" \
             --team-id "$APPLE_TEAM_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
             --wait
-          xcrun notarytool info "Pinboard Wizard.zip" \
+          xcrun notarytool info "$NOTARIZE_FILE" \
             --apple-id "$APPLE_ID" \
             --team-id "$APPLE_TEAM_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
@@ -89,18 +90,13 @@ jobs:
 
       - name: Create tarball for release
         run: |
-          cd release
-          tar -czf pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz "Pinboard Wizard.app"
+          tar -C release -czf release/pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz "Pinboard Wizard.app"
 
       - name: Calculate SHA256
         id: sha256
         run: |
-          cd release
-          HASH=$(shasum -a 256 pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz | cut -d ' ' -f 1)
+          HASH=$(shasum -a 256 release/pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz | cut -d ' ' -f 1)
           echo "SHA256=$HASH" >> $GITHUB_ENV
-
-      - name: Verify GitHub CLI
-        run: gh --version
 
       - name: Upload release asset
         env:
