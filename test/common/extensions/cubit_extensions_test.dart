@@ -94,7 +94,6 @@ void main() {
 
     test('safeEmit vs regular emit behavior comparison', () {
       // Arrange
-      const state1 = TestState('state1');
       const state2 = TestState('state2');
 
       // Act - both should work when cubit is open

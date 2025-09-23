@@ -7,7 +7,6 @@ import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
 import 'package:pinboard_wizard/src/pages/settings/state/settings_cubit.dart';
-import 'package:pinboard_wizard/src/pages/settings/state/settings_state.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
 
