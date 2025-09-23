@@ -27,12 +27,17 @@ jobs:
       - name: Run tests
         run: flutter test
 
-      - name: Decode signing certificate
+      - name: Decode and import signing certificate
         run: |
+          set -euo pipefail
           echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
           security create-keychain -p "" build.keychain
-          security import certificate.p12 -k ~/Library/Keychains/build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security list-keychain -s build.keychain
+          security import certificate.p12 \
+            -k ~/Library/Keychains/build.keychain \
+            -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign
+          security unlock-keychain -p "" build.keychain
+          security list-keychains -s build.keychain
 
       - name: Build macOS app
         run: flutter build macos --release
@@ -48,12 +53,26 @@ jobs:
           IDENTITY=$(security find-identity -p codesigning -v | grep "Developer ID Application" | head -n1 | awk -F\" '{print $2}')
           echo "SIGN_IDENTITY=$IDENTITY" >> $GITHUB_ENV
 
-      - name: Sign app with Hardened Runtime and Timestamp
+      - name: Sign frameworks and app
         run: |
+          set -euo pipefail
+          APP="release/Pinboard Wizard.app"
+          ID="$SIGN_IDENTITY"
+
+          # Sign all frameworks
+          find "$APP/Contents/Frameworks" -type d -name "*.framework" -maxdepth 1 | while read -r framework; do
+            echo "Signing framework: $framework"
+            codesign --force --options runtime --sign "$ID" "$framework"
+          done
+
+          # Sign the main binary
+          codesign --force --options runtime --sign "$ID" "$APP/Contents/MacOS/pinboard_wizard"
+
+          # Sign the app bundle itself
           codesign --deep --force --verify --verbose=2 \
-            --options runtime --timestamp \
-            --sign "$SIGN_IDENTITY" \
-            release/Pinboard\ Wizard.app
+            --options runtime \
+            --sign "$ID" \
+            "$APP"
 
       - name: Verify code signature
         run: |
@@ -72,7 +91,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         run: |
-          set -e
+          set -euo pipefail
           NOTARIZE_FILE="release/Pinboard Wizard.zip"
           xcrun notarytool submit "$NOTARIZE_FILE" \
             --apple-id "$APPLE_ID" \
