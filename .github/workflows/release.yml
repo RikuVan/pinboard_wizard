@@ -11,6 +11,11 @@ jobs:
   build-macos:
     runs-on: macos-latest
 
+    env:
+      # Ensure these secrets are defined in your repository settings
+      MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+      MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,6 +35,10 @@ jobs:
       - name: Decode and import signing certificate
         run: |
           set -euo pipefail
+          # Validate variables
+          : "${MACOS_CERTIFICATE:?MACOS_CERTIFICATE not set}"
+          : "${MACOS_CERTIFICATE_PASSWORD:?MACOS_CERTIFICATE_PASSWORD not set}"
+
           echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
           security create-keychain -p "" build.keychain
           security import certificate.p12 \
@@ -50,20 +59,28 @@ jobs:
       - name: Get signing identity
         id: sign_identity
         run: |
+          set -euo pipefail
           IDENTITY=$(security find-identity -p codesigning -v | grep "Developer ID Application" | head -n1 | awk -F\" '{print $2}')
+          if [ -z "$IDENTITY" ]; then
+            echo "No signing identity found!"
+            exit 1
+          fi
           echo "SIGN_IDENTITY=$IDENTITY" >> $GITHUB_ENV
 
       - name: Sign frameworks and app
         run: |
           set -euo pipefail
           APP="release/Pinboard Wizard.app"
+          : "${SIGN_IDENTITY:?SIGN_IDENTITY not set}"
           ID="$SIGN_IDENTITY"
 
           # Sign all frameworks
-          find "$APP/Contents/Frameworks" -type d -name "*.framework" -maxdepth 1 | while read -r framework; do
-            echo "Signing framework: $framework"
-            codesign --force --options runtime --sign "$ID" "$framework"
-          done
+          if [ -d "$APP/Contents/Frameworks" ]; then
+            find "$APP/Contents/Frameworks" -type d -name "*.framework" -maxdepth 1 | while read -r framework; do
+              echo "Signing framework: $framework"
+              codesign --force --options runtime --sign "$ID" "$framework"
+            done
+          fi
 
           # Sign the main binary
           codesign --force --options runtime --sign "$ID" "$APP/Contents/MacOS/pinboard_wizard"
@@ -92,6 +109,10 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         run: |
           set -euo pipefail
+          : "${APPLE_ID:?APPLE_ID not set}"
+          : "${APPLE_TEAM_ID:?APPLE_TEAM_ID not set}"
+          : "${APPLE_APP_SPECIFIC_PASSWORD:?APPLE_APP_SPECIFIC_PASSWORD not set}"
+
           NOTARIZE_FILE="release/Pinboard Wizard.zip"
           xcrun notarytool submit "$NOTARIZE_FILE" \
             --apple-id "$APPLE_ID" \

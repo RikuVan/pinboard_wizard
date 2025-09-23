@@ -2,6 +2,21 @@
 
 A powerful, native macOS client for [Pinboard.in](https://pinboard.in) built with Flutter. Designed for power users who want curated bookmark collections, AI-enhanced management, and secure cloud backups.
 
+## Installation
+
+### Homebrew (Recommended)
+
+Install Pinboard Wizard using Homebrew:
+
+```bash
+brew tap rikuvan/formulae
+brew install --cask pinboard-wizard
+```
+
+### Manual Download
+
+Download the latest release from the [releases page](https://github.com/RikuVan/pinboard_wizard/releases).
+
 ## What Sets This Apart
 
 **Pinboard Wizard isn't just another bookmark manager.** It's designed for users who:
@@ -10,17 +25,13 @@ A powerful, native macOS client for [Pinboard.in](https://pinboard.in) built wit
 
 Traditional bookmark managers treat all bookmarks equally. We hack Pinboard's tagging system to create a **pin-based curation system**:
 
-- **Pin with categories**: `pin:work`, `pin:reading`, `pin:tools`
-- **Dynamic grouping**: Your pinned bookmarks auto-organize by category
-- **Quick access**: Instantly find your most important bookmarks
-- **Smart formatting**: `pin:work-projects` becomes "Work Projects" automatically
+- **Pin with categories**: find your most important bookmarks by pinning them, optionally under a category like `pin:work`, `pin:reading`, `pin:tools`
 
 ### 🤖 **Want AI-Enhanced Bookmarks (Cost-Controlled)**
 
 Skip expensive AI subscription services. Bring your own OpenAI API key and pay only for what you use:
 
 - **Automatic metadata**: AI generates titles, descriptions, and tags from URLs
-- **Smart suggestions**: Content-aware tagging recommendations
 - **Your costs, your control**: Usually costs pennies per month
 - **No vendor lock-in**: Your data stays in Pinboard, AI is optional
 
@@ -30,32 +41,13 @@ Your bookmarks are precious. Keep them safe with AWS S3 integration:
 
 - **Direct S3 backup**: Export to your own AWS bucket
 - **Full control**: You own your data and backup location
-- **Automated exports**: Schedule regular backup jobs
 - **Disaster recovery**: Import from S3 if needed
 
 ---
 
-**Perfect for**: Developers, researchers, content curators, and anyone who treats bookmarks as a serious productivity tool.
+**Perfect for**: Developers and power users.
 
 ## Features
-
-### 🔖 **Bookmark Management**
-
-- View, search, and organize all your Pinboard bookmarks
-- Add new bookmarks with rich metadata (title, description, tags)
-- Edit existing bookmarks inline
-- **Categorized pinning**: Pin bookmarks with categories (`pin:work`, `pin:reading`)
-- **Smart grouping**: Pinned bookmarks auto-organize by category
-- Delete bookmarks with confirmation
-- Real-time search across titles, descriptions, and tags
-- Filter by unread status and pinned bookmarks
-
-### 🏷️ **Smart Tagging**
-
-- Visual tag browser with click-to-filter
-- Auto-completion for existing tags
-- **Category-based organization**: `pin:work-tools` → "Work Tools" section
-- Dedicated pinned bookmarks view with intelligent grouping
 
 #### How Pin Categories Work
 
