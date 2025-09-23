@@ -308,7 +308,7 @@ void main() {
             descriptionMaxLength: 150,
             maxTags: 3,
             openAiValidationStatus: ValidationStatus.valid,
-            openAiValidationMessage: 'Valid',
+            openAiValidationMessage: 'Valid API key - connection successful',
             jinaValidationStatus: ValidationStatus.validating,
           ),
           const SettingsState(
@@ -321,7 +321,7 @@ void main() {
             descriptionMaxLength: 150,
             maxTags: 3,
             openAiValidationStatus: ValidationStatus.valid,
-            openAiValidationMessage: 'Valid',
+            openAiValidationMessage: 'Valid API key - connection successful',
             jinaValidationStatus: ValidationStatus.valid,
             jinaValidationMessage: 'Valid',
           ),
@@ -493,7 +493,7 @@ void main() {
           const SettingsState(
             openAiApiKey: 'sk-test',
             openAiValidationStatus: ValidationStatus.valid,
-            openAiValidationMessage: 'Valid',
+            openAiValidationMessage: 'Valid API key - connection successful',
           ),
         ],
       );

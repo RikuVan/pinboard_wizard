@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
-import 'package:pinboard_wizard/src/common/extensions/cubit_extensions.dart';
+
 import 'package:pinboard_wizard/src/pages/settings/state/settings_state.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
@@ -33,9 +33,16 @@ class SettingsCubit extends Cubit<SettingsState> {
   final BackupService _backupService;
   Timer? _debounceTimer;
 
+  /// Safely emit a state, checking if the cubit is not closed
+  void _safeEmit(SettingsState newState) {
+    if (!isClosed) {
+      emit(newState);
+    }
+  }
+
   /// Initialize and load current settings
   Future<void> loadSettings() async {
-    safeEmit(state.copyWith(status: SettingsStatus.loading));
+    _safeEmit(state.copyWith(status: SettingsStatus.loading));
 
     try {
       // Load Pinboard credentials
@@ -51,7 +58,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       await _backupService.loadConfiguration();
       final s3Config = _backupService.s3Config;
 
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           status: SettingsStatus.loaded,
           pinboardApiKey: pinboardApiKey,
@@ -75,7 +82,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       // Always validate Jina (empty key is valid for free tier)
       _validateJinaKey(aiSettings.webScraping.jinaApiKey ?? '');
     } catch (e) {
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           status: SettingsStatus.error,
           errorMessage: 'Failed to load settings: $e',
@@ -86,7 +93,7 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   /// Update Pinboard API key
   void updatePinboardApiKey(String apiKey) {
-    safeEmit(
+    _safeEmit(
       state.copyWith(
         pinboardApiKey: apiKey,
         pinboardValidationStatus: ValidationStatus.initial,
@@ -99,7 +106,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> savePinboardApiKey() async {
     final apiKey = state.pinboardApiKey.trim();
     if (!_credentialsService.isValidApiKey(apiKey)) {
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           errorMessage: 'Invalid API key. Expected: username:hexstring',
         ),
@@ -107,16 +114,18 @@ class SettingsCubit extends Cubit<SettingsState> {
       return;
     }
 
-    safeEmit(state.copyWith(status: SettingsStatus.saving, errorMessage: null));
+    _safeEmit(
+      state.copyWith(status: SettingsStatus.saving, errorMessage: null),
+    );
 
     try {
       await _credentialsService.saveCredentials(apiKey);
 
       // Test the connection and update validation status
-      safeEmit(state.copyWith(isPinboardTesting: true));
+      _safeEmit(state.copyWith(isPinboardTesting: true));
       final connectionOk = await _pinboardService.testConnection();
 
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           status: SettingsStatus.loaded,
           isPinboardTesting: false,
@@ -132,7 +141,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         ),
       );
     } catch (e) {
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           status: SettingsStatus.error,
           isPinboardTesting: false,
@@ -146,7 +155,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> clearPinboardApiKey() async {
     try {
       await _credentialsService.clearCredentials();
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           pinboardApiKey: '',
           pinboardValidationStatus: ValidationStatus.initial,
@@ -155,7 +164,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         ),
       );
     } catch (e) {
-      safeEmit(state.copyWith(errorMessage: 'Failed to clear: $e'));
+      _safeEmit(state.copyWith(errorMessage: 'Failed to clear: $e'));
     }
   }
 
@@ -163,9 +172,9 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> setAiEnabled(bool enabled) async {
     try {
       await _aiSettingsService.setAiEnabled(enabled);
-      safeEmit(state.copyWith(isAiEnabled: enabled));
+      _safeEmit(state.copyWith(isAiEnabled: enabled));
     } catch (e) {
-      safeEmit(
+      _safeEmit(
         state.copyWith(errorMessage: 'Failed to update AI settings: $e'),
       );
     }
@@ -173,7 +182,7 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   /// Update OpenAI API key
   void updateOpenAiApiKey(String apiKey) {
-    safeEmit(
+    _safeEmit(
       state.copyWith(
         openAiApiKey: apiKey,
         openAiValidationStatus: ValidationStatus.initial,
@@ -190,7 +199,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       if (apiKey.isNotEmpty) {
         await _validateOpenAiKey(apiKey);
       } else {
-        safeEmit(
+        _safeEmit(
           state.copyWith(
             openAiValidationStatus: ValidationStatus.initial,
             openAiValidationMessage: null,
@@ -198,7 +207,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         );
       }
     } catch (e) {
-      safeEmit(state.copyWith(errorMessage: 'Failed to save OpenAI key: $e'));
+      _safeEmit(state.copyWith(errorMessage: 'Failed to save OpenAI key: $e'));
     }
   }
 
@@ -206,7 +215,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> clearOpenAiKey() async {
     try {
       await _aiSettingsService.setOpenAiApiKey(null);
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           openAiApiKey: '',
           openAiValidationStatus: ValidationStatus.initial,
@@ -214,7 +223,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         ),
       );
     } catch (e) {
-      safeEmit(state.copyWith(errorMessage: 'Failed to clear OpenAI key: $e'));
+      _safeEmit(state.copyWith(errorMessage: 'Failed to clear OpenAI key: $e'));
     }
   }
 
@@ -228,7 +237,7 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   /// Update Jina API key
   void updateJinaApiKey(String apiKey) {
-    safeEmit(
+    _safeEmit(
       state.copyWith(
         jinaApiKey: apiKey,
         jinaValidationStatus: ValidationStatus.initial,
@@ -245,7 +254,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       // Always validate Jina key since empty is valid (free tier)
       await _validateJinaKey(apiKey);
     } catch (e) {
-      safeEmit(state.copyWith(errorMessage: 'Failed to save Jina key: $e'));
+      _safeEmit(state.copyWith(errorMessage: 'Failed to save Jina key: $e'));
     }
   }
 
@@ -253,7 +262,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> clearJinaKey() async {
     try {
       await _aiSettingsService.setJinaApiKey(null);
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           jinaApiKey: '',
           jinaValidationStatus: ValidationStatus.initial,
@@ -261,7 +270,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         ),
       );
     } catch (e) {
-      safeEmit(state.copyWith(errorMessage: 'Failed to clear Jina key: $e'));
+      _safeEmit(state.copyWith(errorMessage: 'Failed to clear Jina key: $e'));
     }
   }
 
@@ -275,7 +284,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> clearAllAiSettings() async {
     try {
       await _aiSettingsService.clearAllAiSettings();
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           openAiApiKey: '',
           openAiValidationStatus: ValidationStatus.initial,
@@ -286,7 +295,9 @@ class SettingsCubit extends Cubit<SettingsState> {
         ),
       );
     } catch (e) {
-      safeEmit(state.copyWith(errorMessage: 'Failed to clear AI settings: $e'));
+      _safeEmit(
+        state.copyWith(errorMessage: 'Failed to clear AI settings: $e'),
+      );
     }
   }
 
@@ -294,9 +305,9 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> setDescriptionMaxLength(int length) async {
     try {
       await _aiSettingsService.setDescriptionMaxLength(length);
-      safeEmit(state.copyWith(descriptionMaxLength: length));
+      _safeEmit(state.copyWith(descriptionMaxLength: length));
     } catch (e) {
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           errorMessage: 'Failed to update description max length: $e',
         ),
@@ -308,20 +319,20 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> setMaxTags(int maxTags) async {
     try {
       await _aiSettingsService.setMaxTags(maxTags);
-      safeEmit(state.copyWith(maxTags: maxTags));
+      _safeEmit(state.copyWith(maxTags: maxTags));
     } catch (e) {
-      safeEmit(state.copyWith(errorMessage: 'Failed to update max tags: $e'));
+      _safeEmit(state.copyWith(errorMessage: 'Failed to update max tags: $e'));
     }
   }
 
   /// Clear error message
   void clearError() {
-    safeEmit(state.copyWith(errorMessage: null));
+    _safeEmit(state.copyWith(errorMessage: null));
   }
 
   /// Private method to validate OpenAI API key
   Future<void> _validateOpenAiKey(String apiKey) async {
-    safeEmit(
+    _safeEmit(
       state.copyWith(
         openAiValidationStatus: ValidationStatus.validating,
         openAiValidationMessage: null,
@@ -332,18 +343,20 @@ class SettingsCubit extends Cubit<SettingsState> {
       final result = await _aiSettingsService.testOpenAiConnection(apiKey);
 
       if (!isClosed) {
-        safeEmit(
+        _safeEmit(
           state.copyWith(
             openAiValidationStatus: result.isValid
                 ? ValidationStatus.valid
                 : ValidationStatus.invalid,
-            openAiValidationMessage: result.message,
+            openAiValidationMessage: result.isValid
+                ? 'Valid API key - connection successful'
+                : result.message,
           ),
         );
       }
     } catch (e) {
       if (!isClosed) {
-        safeEmit(
+        _safeEmit(
           state.copyWith(
             openAiValidationStatus: ValidationStatus.invalid,
             openAiValidationMessage: 'Error testing API key: $e',
@@ -355,7 +368,7 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   /// Private method to validate Jina API key
   Future<void> _validateJinaKey(String apiKey) async {
-    safeEmit(
+    _safeEmit(
       state.copyWith(
         jinaValidationStatus: ValidationStatus.validating,
         jinaValidationMessage: null,
@@ -368,7 +381,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       );
 
       if (!isClosed) {
-        safeEmit(
+        _safeEmit(
           state.copyWith(
             jinaValidationStatus: result.isValid
                 ? ValidationStatus.valid
@@ -379,7 +392,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       }
     } catch (e) {
       if (!isClosed) {
-        safeEmit(
+        _safeEmit(
           state.copyWith(
             jinaValidationStatus: ValidationStatus.invalid,
             jinaValidationMessage: 'Error testing connection: $e',
@@ -391,7 +404,7 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   /// Listen to authentication changes from CredentialsService
   void _onAuthChanged() {
-    safeEmit(
+    _safeEmit(
       state.copyWith(
         isPinboardAuthenticated:
             _credentialsService.isAuthenticatedNotifier.value,
@@ -402,7 +415,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   /// Listen to AI settings changes from AiSettingsService
   void _onAiSettingsChanged() {
     final aiSettings = _aiSettingsService.settings;
-    safeEmit(
+    _safeEmit(
       state.copyWith(
         isAiEnabled: aiSettings.isEnabled,
         descriptionMaxLength: aiSettings.openai.descriptionMaxLength,
@@ -433,7 +446,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       validationStatus = ValidationStatus.valid;
     }
 
-    safeEmit(
+    _safeEmit(
       state.copyWith(
         s3Config: backupService.s3Config,
         backupValidationStatus: validationStatus,
@@ -449,7 +462,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     try {
       await _backupService.saveConfiguration(config);
     } catch (e) {
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           backupValidationStatus: ValidationStatus.invalid,
           backupValidationMessage: 'Failed to save configuration: $e',
@@ -461,7 +474,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   /// Validate S3 configuration
   Future<void> validateS3Config() async {
     if (!state.s3Config.isValid) {
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           backupValidationStatus: ValidationStatus.invalid,
           backupValidationMessage: 'Please fill in all required fields',
@@ -470,7 +483,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       return;
     }
 
-    safeEmit(
+    _safeEmit(
       state.copyWith(
         backupValidationStatus: ValidationStatus.validating,
         backupValidationMessage: 'Validating S3 configuration...',
@@ -480,7 +493,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     try {
       final isValid = await _backupService.validateConfiguration();
 
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           backupValidationStatus: isValid
               ? ValidationStatus.valid
@@ -492,7 +505,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         ),
       );
     } catch (e) {
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           backupValidationStatus: ValidationStatus.invalid,
           backupValidationMessage: 'Validation failed: $e',
@@ -504,7 +517,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   /// Validate S3 configuration with provided values
   Future<void> validateS3ConfigWithValues(S3Config config) async {
     if (!config.isValid) {
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           backupValidationStatus: ValidationStatus.invalid,
           backupValidationMessage: 'Please fill in all required fields',
@@ -514,20 +527,16 @@ class SettingsCubit extends Cubit<SettingsState> {
     }
 
     // Save the config first
-    safeEmit(state.copyWith(s3Config: config));
+    _safeEmit(state.copyWith(s3Config: config));
     await _saveS3Config(config);
 
-    safeEmit(
-      state.copyWith(
-        backupValidationStatus: ValidationStatus.validating,
-        backupValidationMessage: 'Validating S3 configuration...',
-      ),
-    );
+    // Then perform the backup
+    await performBackup();
 
     try {
       final isValid = await _backupService.validateConfiguration();
 
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           backupValidationStatus: isValid
               ? ValidationStatus.valid
@@ -539,7 +548,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         ),
       );
     } catch (e) {
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           backupValidationStatus: ValidationStatus.invalid,
           backupValidationMessage: 'Validation failed: $e',
@@ -554,20 +563,22 @@ class SettingsCubit extends Cubit<SettingsState> {
       return;
     }
 
-    safeEmit(state.copyWith(isBackupInProgress: true, lastBackupMessage: null));
+    _safeEmit(
+      state.copyWith(isBackupInProgress: true, lastBackupMessage: null),
+    );
 
     try {
       final success = await _backupService.backupBookmarks();
 
       if (success) {
-        safeEmit(
+        _safeEmit(
           state.copyWith(
             isBackupInProgress: false,
             lastBackupMessage: _backupService.lastBackupMessage,
           ),
         );
       } else {
-        safeEmit(
+        _safeEmit(
           state.copyWith(
             isBackupInProgress: false,
             backupValidationMessage: _backupService.lastError,
@@ -575,7 +586,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         );
       }
     } catch (e) {
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           isBackupInProgress: false,
           backupValidationMessage: 'Backup failed: $e',
@@ -591,7 +602,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     }
 
     // Save the config first
-    safeEmit(state.copyWith(s3Config: config));
+    _safeEmit(state.copyWith(s3Config: config));
     await _saveS3Config(config);
 
     // Then perform the backup
@@ -602,7 +613,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> clearBackupConfig() async {
     try {
       await _backupService.clearConfiguration();
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           s3Config: const S3Config(),
           backupValidationStatus: ValidationStatus.initial,
@@ -611,7 +622,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         ),
       );
     } catch (e) {
-      safeEmit(
+      _safeEmit(
         state.copyWith(
           backupValidationMessage: 'Failed to clear configuration: $e',
         ),
