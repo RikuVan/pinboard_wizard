@@ -12,7 +12,6 @@ jobs:
     runs-on: macos-latest
 
     env:
-      # Ensure these secrets are defined in your repository settings
       MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
       MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
 
@@ -35,7 +34,6 @@ jobs:
       - name: Decode and import signing certificate
         run: |
           set -euo pipefail
-          # Validate variables
           : "${MACOS_CERTIFICATE:?MACOS_CERTIFICATE not set}"
           : "${MACOS_CERTIFICATE_PASSWORD:?MACOS_CERTIFICATE_PASSWORD not set}"
 
@@ -67,28 +65,19 @@ jobs:
           fi
           echo "SIGN_IDENTITY=$IDENTITY" >> $GITHUB_ENV
 
-      - name: Sign frameworks and app
+      - name: Sign app (optimized)
         run: |
           set -euo pipefail
           APP="release/Pinboard Wizard.app"
           : "${SIGN_IDENTITY:?SIGN_IDENTITY not set}"
-          ID="$SIGN_IDENTITY"
 
-          # Sign all frameworks
-          if [ -d "$APP/Contents/Frameworks" ]; then
-            find "$APP/Contents/Frameworks" -type d -name "*.framework" -maxdepth 1 | while read -r framework; do
-              echo "Signing framework: $framework"
-              codesign --force --options runtime --sign "$ID" "$framework"
-            done
-          fi
+          # Sign main binary
+          codesign --force --options runtime --sign "$SIGN_IDENTITY" "$APP/Contents/MacOS/pinboard_wizard"
 
-          # Sign the main binary
-          codesign --force --options runtime --sign "$ID" "$APP/Contents/MacOS/pinboard_wizard"
-
-          # Sign the app bundle itself
+          # Sign app bundle (deep-signs frameworks and helpers automatically)
           codesign --deep --force --verify --verbose=2 \
             --options runtime \
-            --sign "$ID" \
+            --sign "$SIGN_IDENTITY" \
             "$APP"
 
       - name: Verify code signature
