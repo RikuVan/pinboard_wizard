@@ -6,8 +6,9 @@ import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
 
 class AuthGate extends StatefulWidget {
   final Widget child;
+  final VoidCallback? onNavigateToSettings;
 
-  const AuthGate({super.key, required this.child});
+  const AuthGate({super.key, required this.child, this.onNavigateToSettings});
 
   @override
   State<AuthGate> createState() => _AuthGateState();
@@ -58,10 +59,7 @@ class _AuthGateState extends State<AuthGate> {
             const SizedBox(height: 24),
             PushButton(
               controlSize: ControlSize.large,
-              onPressed: () {
-                // This will be handled by the main app navigation
-                // The user can navigate to settings through the sidebar
-              },
+              onPressed: widget.onNavigateToSettings,
               child: const Text('Go to Settings'),
             ),
           ],

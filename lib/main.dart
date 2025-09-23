@@ -157,14 +157,17 @@ class _PinboardWizardState extends State<PinboardWizard> {
                     },
                   ),
                   child: ContentArea(
-                    builder: (context, _) => AuthGate(
-                      child: [
-                        const PinnedPage(),
-                        const BookmarksPage(),
-                        const NotesPage(),
-                        const SettingsPage(),
-                      ][pageIndex],
-                    ),
+                    builder: (context, _) => pageIndex == 3
+                        ? const SettingsPage() // Always show Settings page when selected
+                        : AuthGate(
+                            onNavigateToSettings: () =>
+                                setState(() => pageIndex = 3),
+                            child: [
+                              const PinnedPage(),
+                              const BookmarksPage(),
+                              const NotesPage(),
+                            ][pageIndex],
+                          ),
                   ),
                 ),
               ),
