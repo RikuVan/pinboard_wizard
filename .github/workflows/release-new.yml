@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    env:
+      MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+      MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Install release_flutter
+        run: flutter pub global activate release_flutter
+
+      - name: Build macOS app
+        run: |
+          flutter build macos --release \
+            --build-name=${{ github.event.release.tag_name }} \
+            --build-number=${{ github.run_number }}
+
+      - name: Prepare keychain and import certificate
+        run: |
+          set -euo pipefail
+          echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
+          KEYCHAIN_PASSWORD="build-temp-password"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security import certificate.p12 -k ~/Library/Keychains/build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          rm -f certificate.p12
+
+      - name: Sign and notarize macOS app
+        run: |
+          APP_PATH="build/macos/Build/Products/Release/pinboard_wizard.app"
+
+          flutter pub global run release_flutter:macos_sign \
+            --app-path "$APP_PATH" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID"
+
+          flutter pub global run release_flutter:macos_notarize \
+            --app-path "$APP_PATH" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD"
+
+      - name: Staple notarization ticket
+        run: |
+          xcrun stapler staple "build/macos/Build/Products/Release/pinboard_wizard.app"
+
+      - name: Create tarball for release
+        run: |
+          mkdir -p release
+          cp -R build/macos/Build/Products/Release/pinboard_wizard.app release/Pinboard\ Wizard.app
+          tar -C release -czf release/pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz "Pinboard Wizard.app"
+
+      - name: Calculate SHA256
+        id: sha256
+        run: |
+          HASH=$(shasum -a 256 release/pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz | cut -d ' ' -f 1)
+          echo "SHA256=$HASH" >> $GITHUB_ENV
+
+      - name: Upload release asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} release/pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz --clobber
+
+      - name: Trigger cask update workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${VERSION}/pinboard-wizard-${VERSION}-macos.tar.gz"
+          SHA256="$SHA256"
+
+          gh api repos/RikuVan/homebrew-formulae/dispatches \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -f event_type=update-cask \
+            -f client_payload[version]=$VERSION \
+            -f client_payload[download_url]=$DOWNLOAD_URL \
+            -f client_payload[sha256]=$SHA256
+
+      - name: Cleanup keychain
+        if: always()
+        run: |
+          security default-keychain -s login.keychain || true
+          security delete-keychain build.keychain || true
