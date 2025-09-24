@@ -31,5 +31,5 @@ jobs:
       - name: Run tests
         run: flutter test --coverage
 
-      - name: Build macOS app
-        run: flutter build macos --debug --dart-define=CI=true
+      # Note: We skip building the macOS app in CI as it requires code signing certificates
+      # The release workflow handles the actual build and signing process

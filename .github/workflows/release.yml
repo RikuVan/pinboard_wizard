@@ -10,6 +10,7 @@ permissions:
 jobs:
   build-macos:
     runs-on: macos-latest
+    timeout-minutes: 30
 
     env:
       MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
@@ -41,21 +42,46 @@ jobs:
           : "${MACOS_CERTIFICATE_PASSWORD:?MACOS_CERTIFICATE_PASSWORD not set}"
 
           echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
-          security create-keychain -p "" build.keychain
+
+          # Create keychain with password to avoid interactive prompts
+          KEYCHAIN_PASSWORD="build-temp-password"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+
+          # Import certificate
           security import certificate.p12 \
             -k ~/Library/Keychains/build.keychain \
             -P "$MACOS_CERTIFICATE_PASSWORD" \
             -T /usr/bin/codesign
-          security unlock-keychain -p "" build.keychain
-          security list-keychains -s build.keychain
+
+          # Set key partition list to avoid password prompts during signing
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+
+          # Include other keychains in search path
+          security list-keychains -s build.keychain login.keychain /Library/Keychains/System.keychain
+
+          rm -f certificate.p12
+
+      - name: Configure Xcode project for CI
+        run: |
+          # Temporarily set the correct development team and disable automatic signing for CI build
+          sed -i '' "s/DEVELOPMENT_TEAM = 2KQDYWP72S;/DEVELOPMENT_TEAM = $APPLE_TEAM_ID;/g" macos/Runner.xcodeproj/project.pbxproj
+          sed -i '' "s/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g" macos/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/"CODE_SIGN_IDENTITY\[sdk=macosx\*\]" = "Apple Development";//g' macos/Runner.xcodeproj/project.pbxproj
+          echo "Updated development team to: $APPLE_TEAM_ID"
+          echo "Set code signing to manual for CI"
 
       - name: Build macOS app
-        run: flutter build macos --release
+        run: |
+          flutter build macos --release \
+            --build-name=${{ github.event.release.tag_name }} \
+            --build-number=${{ github.run_number }}
 
       - name: Prepare app bundle
         run: |
-          mkdir -p release/Pinboard\ Wizard.app
-          cp -R build/macos/Build/Products/Release/pinboard_wizard.app/* release/Pinboard\ Wizard.app/
+          mkdir -p release
+          cp -R build/macos/Build/Products/Release/pinboard_wizard.app "release/Pinboard Wizard.app"
 
       - name: Get signing identity
         id: sign_identity
@@ -64,33 +90,45 @@ jobs:
           IDENTITY=$(security find-identity -p codesigning -v | grep "Developer ID Application" | head -n1 | awk -F\" '{print $2}')
           if [ -z "$IDENTITY" ]; then
             echo "No signing identity found!"
+            security find-identity -p codesigning -v
             exit 1
           fi
+          echo "Using identity: $IDENTITY"
           echo "SIGN_IDENTITY=$IDENTITY" >> $GITHUB_ENV
 
-      - name: Sign app (optimized)
+      - name: Sign app (frameworks + main binary + app bundle)
         run: |
           set -euo pipefail
           APP="release/Pinboard Wizard.app"
           : "${SIGN_IDENTITY:?SIGN_IDENTITY not set}"
 
-          # Sign main binary
-          codesign --force --options runtime --sign "$SIGN_IDENTITY" "$APP/Contents/MacOS/pinboard_wizard"
+          echo "Signing frameworks..."
+          if [ -d "$APP/Contents/Frameworks" ]; then
+            # Only sign actual executables inside frameworks
+            while IFS= read -r file; do
+              echo "Signing $file"
+              codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$file"
+            done < <(find "$APP/Contents/Frameworks" -type f -perm +111)
+          fi
 
-          # Sign app bundle (deep-signs frameworks and helpers automatically)
-          codesign --deep --force --verify --verbose=2 \
-            --options runtime \
-            --sign "$SIGN_IDENTITY" \
+          echo "Signing main binary..."
+          codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" \
+            "$APP/Contents/MacOS/pinboard_wizard"
+
+          echo "Signing app bundle..."
+          codesign --deep --force --options runtime --timestamp --sign "$SIGN_IDENTITY" \
             "$APP"
 
       - name: Verify code signature
         run: |
+          echo "Verifying code signature..."
           codesign --verify --deep --strict --verbose=2 "release/Pinboard Wizard.app"
           spctl --verbose=4 --assess --type execute "release/Pinboard Wizard.app"
 
       - name: Prepare notarization zip
         run: |
           cd release
+          rm -f "Pinboard Wizard.zip"
           zip -r "Pinboard Wizard.zip" "Pinboard Wizard.app"
           cd ..
 
@@ -101,24 +139,31 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         run: |
           set -euo pipefail
-          : "${APPLE_ID:?APPLE_ID not set}"
-          : "${APPLE_TEAM_ID:?APPLE_TEAM_ID not set}"
-          : "${APPLE_APP_SPECIFIC_PASSWORD:?APPLE_APP_SPECIFIC_PASSWORD not set}"
-
           NOTARIZE_FILE="release/Pinboard Wizard.zip"
+
+          echo "Submitting to Apple Notary service..."
           xcrun notarytool submit "$NOTARIZE_FILE" \
             --apple-id "$APPLE_ID" \
             --team-id "$APPLE_TEAM_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
             --wait
+
+          echo "Checking notarization status..."
           xcrun notarytool info "$NOTARIZE_FILE" \
             --apple-id "$APPLE_ID" \
             --team-id "$APPLE_TEAM_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-            | grep -q '"Status": "Accepted"' || { echo "Notarization failed"; exit 1; }
+            | grep -q 'status: Accepted' || { echo "Notarization failed"; exit 1; }
 
       - name: Staple notarization ticket
-        run: xcrun stapler staple "release/Pinboard Wizard.app"
+        run: |
+          echo "Stapling notarization ticket..."
+          xcrun stapler staple "release/Pinboard Wizard.app"
+
+      - name: Verify stapled app
+        run: |
+          echo "Verifying stapled app..."
+          spctl --verbose=4 --assess --type execute "release/Pinboard Wizard.app"
 
       - name: Create tarball for release
         run: |
@@ -154,4 +199,6 @@ jobs:
 
       - name: Cleanup keychain
         if: always()
-        run: security delete-keychain build.keychain || true
+        run: |
+          security default-keychain -s login.keychain || true
+          security delete-keychain build.keychain || true
