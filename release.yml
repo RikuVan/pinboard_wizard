@@ -38,34 +38,45 @@ jobs:
       - name: Decode and import signing certificate
         run: |
           set -euo pipefail
+          : "${MACOS_CERTIFICATE:?MACOS_CERTIFICATE not set}"
+          : "${MACOS_CERTIFICATE_PASSWORD:?MACOS_CERTIFICATE_PASSWORD not set}"
+
           echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
 
+          # Create keychain with password to avoid interactive prompts
           KEYCHAIN_PASSWORD="build-temp-password"
           security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
 
+          # Import certificate
           security import certificate.p12 \
             -k ~/Library/Keychains/build.keychain \
             -P "$MACOS_CERTIFICATE_PASSWORD" \
             -T /usr/bin/codesign
 
+          # Set key partition list to avoid password prompts during signing
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+
+          # Include other keychains in search path
           security list-keychains -s build.keychain login.keychain /Library/Keychains/System.keychain
+
           rm -f certificate.p12
 
       - name: Configure Xcode project for CI
         run: |
-          # Set manual signing for Flutter CI build
+          # Temporarily set the correct development team and disable automatic signing for CI build
           sed -i '' "s/DEVELOPMENT_TEAM = 2KQDYWP72S;/DEVELOPMENT_TEAM = $APPLE_TEAM_ID;/g" macos/Runner.xcodeproj/project.pbxproj
           sed -i '' "s/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g" macos/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/"CODE_SIGN_IDENTITY\[sdk=macosx\*\]" = "Apple Development";//g' macos/Runner.xcodeproj/project.pbxproj
-          echo "Patched Xcode project for CI manual signing"
+          echo "Updated development team to: $APPLE_TEAM_ID"
+          echo "Set code signing to manual for CI"
 
       - name: Build macOS app
-        run: flutter build macos --release \
-          --build-name=${{ github.event.release.tag_name }} \
-          --build-number=${{ github.run_number }}
+        run: |
+          flutter build macos --release \
+            --build-name=${{ github.event.release.tag_name }} \
+            --build-number=${{ github.run_number }}
 
       - name: Prepare app bundle
         run: |
@@ -91,26 +102,22 @@ jobs:
           APP="release/Pinboard Wizard.app"
           : "${SIGN_IDENTITY:?SIGN_IDENTITY not set}"
 
-          echo "Signing app at: $APP"
-
-          # Check if frameworks directory exists and sign them
+          echo "Signing frameworks..."
           if [ -d "$APP/Contents/Frameworks" ]; then
-            echo "Found frameworks directory"
-            find "$APP/Contents/Frameworks" -type d -name "*.framework" | while read -r framework; do
-              echo "Signing framework: $framework"
-              codesign --force --options runtime --sign "$SIGN_IDENTITY" "$framework"
-            done
-          else
-            echo "No frameworks directory found"
+            # Only sign actual executables inside frameworks
+            while IFS= read -r file; do
+              echo "Signing $file"
+              codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$file"
+            done < <(find "$APP/Contents/Frameworks" -type f -perm +111)
           fi
 
-          # Sign main binary
           echo "Signing main binary..."
-          codesign --force --options runtime --sign "$SIGN_IDENTITY" "$APP/Contents/MacOS/pinboard_wizard"
+          codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" \
+            "$APP/Contents/MacOS/pinboard_wizard"
 
-          # Sign entire app bundle with deep signing
           echo "Signing app bundle..."
-          codesign --deep --force --options runtime --sign "$SIGN_IDENTITY" "$APP" --verbose
+          codesign --deep --force --options runtime --timestamp --sign "$SIGN_IDENTITY" \
+            "$APP"
 
       - name: Verify code signature
         run: |
@@ -175,9 +182,23 @@ jobs:
           gh release upload ${{ github.event.release.tag_name }} release/pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz --clobber
 
       - name: Trigger cask update workflow
-        if: success()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ github.event.release.tag_name }}"
-          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${VERSION}/pinboard-wizard-
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${VERSION}/pinboard-wizard-${VERSION}-macos.tar.gz"
+          SHA256="$SHA256"
+
+          gh api repos/RikuVan/homebrew-formulae/dispatches \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -f event_type=update-cask \
+            -f client_payload[version]=$VERSION \
+            -f client_payload[download_url]=$DOWNLOAD_URL \
+            -f client_payload[sha256]=$SHA256
+
+      - name: Cleanup keychain
+        if: always()
+        run: |
+          security default-keychain -s login.keychain || true
+          security delete-keychain build.keychain || true
