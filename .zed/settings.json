@@ -3,8 +3,10 @@
     "Dart": {
       "language_servers": ["dart"],
       "format_on_save": "on",
-      "formatter": "dart_format",
-      "code_actions_on_format": ["source.fixAll", "source.organizeImports"]
+      "code_actions_on_format": {
+        "source.fixAll": true,
+        "source.organizeImports": true
+      }
     }
   },
   "lsp": {
