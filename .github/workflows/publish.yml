@@ -95,10 +95,10 @@ jobs:
           echo "Signing app bundle..."
           codesign --deep --force --verify --verbose=2 --options runtime --sign "$IDENTITY" "$APP_PATH"
 
-          # Verify signature
+          # Verify signature (but not with spctl yet - that requires notarization)
           echo "Verifying code signature..."
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-          spctl --verbose=4 --assess --type execute "$APP_PATH"
+          echo "✅ Code signature valid (notarization still required for spctl verification)"
 
       - name: Create zip for notarization
         run: |
