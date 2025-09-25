@@ -75,7 +75,13 @@ jobs:
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          python3 scripts/configure_xcode_signing.py
+          echo "⚙️ Attempting to configure Xcode project for CI signing..."
+          if python3 scripts/configure_xcode_signing.py; then
+              echo "✅ Xcode project configured successfully"
+          else
+              echo "⚠️  Xcode project configuration failed - will rely on manual signing during codesign step"
+              echo "This may work if the certificate identity matches the project settings"
+          fi
 
       - name: Build macOS app
         run: |
