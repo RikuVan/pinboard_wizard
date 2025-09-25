@@ -71,17 +71,10 @@ jobs:
           echo "✅ Certificate setup complete. Available identities:"
           security find-identity -v -p codesigning
 
-      - name: Configure Xcode project for CI signing
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - name: Skip Xcode project modification
         run: |
-          echo "⚙️ Attempting to configure Xcode project for CI signing..."
-          if python3 scripts/configure_xcode_signing.py; then
-              echo "✅ Xcode project configured successfully"
-          else
-              echo "⚠️  Xcode project configuration failed - will rely on manual signing during codesign step"
-              echo "This may work if the certificate identity matches the project settings"
-          fi
+          echo "⚠️  Skipping Xcode project modification to avoid corruption"
+          echo "Will rely on --force flag during codesign to override project settings"
 
       - name: Build macOS app
         run: |
