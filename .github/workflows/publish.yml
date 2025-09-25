@@ -75,7 +75,6 @@ jobs:
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          chmod +x scripts/configure_xcode_signing.py
           python3 scripts/configure_xcode_signing.py
 
       - name: Build macOS app
