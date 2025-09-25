@@ -125,8 +125,30 @@ jobs:
           APP_NAME=$(basename "$APP_PATH" .app)
           ZIP_PATH="$APP_NAME.zip"
 
+          # Verify credentials first
+          echo "🔍 Verifying Apple ID and Team ID association..."
+          echo "Apple ID: $APPLE_ID"
+          echo "Team ID: $APPLE_TEAM_ID"
+
+          # Test credentials with a simple history call
+          if ! xcrun notarytool history --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" --output-format json | head -1 > /dev/null 2>&1; then
+              echo "❌ Failed to verify credentials. Common issues:"
+              echo "1. Apple ID '$APPLE_ID' is not associated with Team ID '$APPLE_TEAM_ID'"
+              echo "2. App-specific password is incorrect"
+              echo "3. Team ID format is wrong (should be 10 characters like 'ABC1234DEF')"
+              echo ""
+              echo "To debug:"
+              echo "1. Go to https://developer.apple.com/account"
+              echo "2. Verify your Team ID under 'Membership' section"
+              echo "3. Ensure the Apple ID has access to this team"
+              echo "4. Regenerate app-specific password at https://appleid.apple.com"
+              exit 1
+          fi
+
+          echo "✅ Credentials verified successfully"
+
           # Submit to Apple Notary service
-          echo "Submitting to Apple Notary service..."
+          echo "📤 Submitting to Apple Notary service..."
           xcrun notarytool submit "$ZIP_PATH" \
               --apple-id "$APPLE_ID" \
               --team-id "$APPLE_TEAM_ID" \
