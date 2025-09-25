@@ -197,6 +197,20 @@ jobs:
             -f client_payload[download_url]=$DOWNLOAD_URL \
             -f client_payload[sha256]=$SHA256
 
+      - name: Trigger cask update workflow
+        if: always()
+        continue-on-error: true
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.CASK_DISPATCH_PAT }} # PAT in app repo
+          repository: RikuVan/homebrew-formulae
+          event-type: update-cask
+          client-payload: |-
+            {
+              "version": "${{ github.event.release.tag_name }}",
+              "download_url": "https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz"
+            }
+
       - name: Cleanup keychain
         if: always()
         run: |
