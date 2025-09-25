@@ -71,10 +71,12 @@ jobs:
           echo "✅ Certificate setup complete. Available identities:"
           security find-identity -v -p codesigning
 
-      - name: Skip Xcode project modification
+      - name: Configure Xcode project for CI signing
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          echo "⚠️  Skipping Xcode project modification to avoid corruption"
-          echo "Will rely on --force flag during codesign to override project settings"
+          chmod +x scripts/safe_xcode_config.sh
+          ./scripts/safe_xcode_config.sh
 
       - name: Build macOS app
         run: |
