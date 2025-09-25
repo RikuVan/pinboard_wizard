@@ -13,21 +13,22 @@ jobs:
     steps:
       - name: Clean runner environment
         run: |
+          set -euo pipefail
           echo "🧹 Cleaning runner environment..."
 
-          # Remove any existing keychains
+          # Remove any existing non-default keychains
           security list-keychains -d user | grep -o '[^"]*\.keychain' | while read keychain; do
-              if [[ "$keychain" != "login.keychain" && "$keychain" != "System.keychain" ]]; then
-                  echo "Removing keychain: $keychain"
-                  security delete-keychain "$keychain" 2>/dev/null || true
-              fi
+            if [[ "$keychain" != "login.keychain" && "$keychain" != "System.keychain" ]]; then
+              echo "Removing keychain: $keychain"
+              security delete-keychain "$keychain" 2>/dev/null || true
+            fi
           done
 
           # Clean Flutter cache
           rm -rf ~/.pub-cache 2>/dev/null || true
           rm -rf ~/flutter/.pub-cache 2>/dev/null || true
 
-          # Clean any leftover certificate files
+          # Clean any leftover certificate / artifact files
           rm -f *.p12 *.zip *.dmg 2>/dev/null || true
 
           echo "✅ Runner environment cleaned"
@@ -41,161 +42,194 @@ jobs:
           flutter-version-file: pubspec.yaml
           channel: "stable"
 
-      - name: Install dependencies
-        run: flutter pub get
-
       - name: Import Code Signing Certificate
         env:
-          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }} # base64(.p12)
           MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
         run: |
-          echo "🔐 Setting up code signing certificate..."
+          set -euo pipefail
           echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
 
-          echo "📱 Creating and configuring keychain..."
           security create-keychain -p "" build.keychain
-          security default-keychain -s build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
           security unlock-keychain -p "" build.keychain
 
-          echo "📦 Importing certificate..."
-          security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -A
+          # Ensure build.keychain is searched by codesign
+          security list-keychains -d user -s build.keychain login.keychain
+          security default-keychain -s build.keychain
+
+          # Import P12 and explicitly allow codesign to use the key
+          security import certificate.p12 \
+            -k build.keychain \
+            -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 \
+            -T /usr/bin/codesign -T /usr/bin/security
+
+          # Partition list (modern requirement)
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
 
-          echo "🧹 Cleaning up certificate file..."
-          rm certificate.p12
+          rm -f certificate.p12
 
-          echo "✅ Certificate setup complete. Available identities:"
-          security find-identity -v -p codesigning
+          echo "Identities in build.keychain (codesigning):"
+          security find-identity -p codesigning -v build.keychain || true
 
-      - name: Build macOS app (unsigned)
+      - name: Extract Team ID from imported cert
         run: |
-          echo "🏗️ Building macOS app without signing..."
-          # Use xcodebuild directly with signing disabled
+          set -euo pipefail
+          # Try via certificate subject (handles 'OU = ...' and 'OU=...')
+          TEAM_ID=$(security find-certificate -a -c "Developer ID Application" -p build.keychain \
+            | openssl x509 -noout -subject -nameopt RFC2253 \
+            | sed -n 's/.*OU *= *\([^,]*\).*/\1/p' \
+            | head -1)
+
+          # Fallback: parse from identity line "Developer ID Application: … (TEAMID)"
+          if [[ -z "${TEAM_ID:-}" ]]; then
+            IDENTITY_LINE=$(security find-identity -p codesigning -v build.keychain \
+              | awk -F\" '/Developer ID Application/ {print $2; exit}')
+            TEAM_ID=$(awk -F'[()]' '{print $2}' <<< "$IDENTITY_LINE" || true)
+          fi
+
+          if [[ -z "${TEAM_ID:-}" ]]; then
+            echo "❌ Could not derive Team ID from cert or identity"
+            echo "Diagnostics:"
+            security find-identity -p codesigning -v build.keychain || true
+            security find-certificate -a -c "Developer ID Application" -Z build.keychain || true
+            exit 1
+          fi
+
+          echo "TEAM_ID_FROM_CERT=$TEAM_ID" >> "$GITHUB_ENV"
+          echo "✅ Team ID from cert: $TEAM_ID"
+
+      - name: Prepare Flutter ephemeral files
+        run: |
+          set -euo pipefail
+          flutter --version
           flutter precache --macos
-          cd macos
-          xcodebuild -scheme Runner -configuration Release \
+          flutter pub get
+          mkdir -p macos/Flutter/ephemeral
+          : > macos/Flutter/ephemeral/FlutterInputs.xcfilelist
+          : > macos/Flutter/ephemeral/FlutterOutputs.xcfilelist
+
+      - name: Build macOS app (unsigned via xcodebuild)
+        run: |
+          set -euo pipefail
+          echo "🏗️ Building macOS app without signing..."
+
+          # CocoaPods (ensure workspace is up to date)
+          (cd macos && pod install)
+
+          # Point Xcode's Run Script to the Flutter SDK & app path
+          FLUTTER_ROOT="$(dirname "$(dirname "$(which flutter)")")"
+          export FLUTTER_ROOT
+          export FLUTTER_APPLICATION_PATH="$GITHUB_WORKSPACE"
+
+          xcodebuild \
+            -workspace macos/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
             -destination 'platform=macOS' \
+            -derivedDataPath macos/build \
             CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM="" \
-            -archivePath ../build/Runner.xcarchive \
-            archive
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            FLUTTER_ROOT="$FLUTTER_ROOT" \
+            FLUTTER_APPLICATION_PATH="$FLUTTER_APPLICATION_PATH"
 
-          # Extract the app from the archive
-          echo "📦 Extracting app from archive..."
-          mkdir -p ../build/macos/Build/Products/Release
-          cp -r ../build/Runner.xcarchive/Products/Applications/*.app ../build/macos/Build/Products/Release/
-          echo "✅ Build complete - app bundle is unsigned and ready for manual signing"
+          APP_PATH=$(echo macos/build/Build/Products/Release/*.app | head -1)
+          if [[ -z "${APP_PATH:-}" || ! -d "$APP_PATH" ]]; then
+            echo "❌ .app not found"; exit 1
+          fi
+          echo "APP_PATH=$APP_PATH" >> "$GITHUB_ENV"
+          echo "Built app: $APP_PATH"
 
-      - name: Code sign the app
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - name: Code sign the app (Developer ID Application)
         run: |
-          APP_PATH=$(find build/macos/Build/Products/Release -name "*.app")
+          set -euo pipefail
+          APP_PATH="${{ env.APP_PATH }}"
+          TEAM_ID="${{ env.TEAM_ID_FROM_CERT }}"
 
-          # Get signing identity
-          IDENTITY=$(security find-identity -p codesigning -v | grep "Developer ID Application" | head -n1 | awk -F\" '{print $2}')
+          # Select identity that matches the extracted Team ID
+          IDENTITY=$(security find-identity -p codesigning -v build.keychain \
+            | awk -v team="($TEAM_ID)" -F\" '/Developer ID Application/ && $0 ~ team {print $2; exit}')
+          if [[ -z "$IDENTITY" ]]; then
+            echo "❌ No 'Developer ID Application' identity for team $TEAM_ID in build.keychain."
+            security find-identity -p codesigning -v build.keychain || true
+            exit 1
+          fi
           echo "Using identity: $IDENTITY"
 
-          # Sign frameworks first
-          echo "Signing frameworks..."
-          for framework in "$APP_PATH/Contents/Frameworks"/*.framework; do
-              if [ -d "$framework" ]; then
-                  echo "Signing $framework"
-                  codesign --force --options runtime --sign "$IDENTITY" "$framework"
-              fi
-          done
+          ENTITLEMENTS="macos/Runner/Runner.entitlements"
+          [[ -f "$ENTITLEMENTS" ]] || ENTITLEMENTS=""
 
-          # Sign main binary
-          echo "Signing main binary..."
-          BINARY_PATH=$(find "$APP_PATH/Contents/MacOS" -type f -perm +111 | head -1)
-          codesign --force --options runtime --sign "$IDENTITY" "$BINARY_PATH"
+          # Sign nested frameworks
+          if [[ -d "$APP_PATH/Contents/Frameworks" ]]; then
+            find "$APP_PATH/Contents/Frameworks" -type d -name "*.framework" -print0 \
+              | while IFS= read -r -d '' f; do
+                  codesign --keychain build.keychain --force --options runtime --timestamp \
+                    ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} --sign "$IDENTITY" "$f"
+                done
+            find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.so" \) -print0 \
+              | while IFS= read -r -d '' f; do
+                  codesign --keychain build.keychain --force --options runtime --timestamp \
+                    ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} --sign "$IDENTITY" "$f"
+                done
+          fi
 
-          # Sign app bundle
-          echo "Signing app bundle..."
-          codesign --deep --force --verify --verbose=2 --options runtime --sign "$IDENTITY" "$APP_PATH"
+          # Sign all executables (helpers, main binary, etc.)
+          find "$APP_PATH/Contents" \( -path "*/MacOS/*" -o -path "*/Helpers/*" \) -type f -perm -111 -print0 \
+            | while IFS= read -r -d '' f; do
+                codesign --keychain build.keychain --force --options runtime --timestamp \
+                  ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} --sign "$IDENTITY" "$f"
+              done
 
-          # Verify signature (but not with spctl yet - that requires notarization)
-          echo "Verifying code signature..."
+          # Bundle last
+          codesign --keychain build.keychain --deep --force --verify --verbose=2 --options runtime --timestamp \
+            ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} --sign "$IDENTITY" "$APP_PATH"
+
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-          echo "✅ Code signature valid (notarization still required for spctl verification)"
 
       - name: Create zip for notarization
         run: |
-          APP_PATH=$(find build/macos/Build/Products/Release -name "*.app")
+          set -euo pipefail
+          APP_PATH="${{ env.APP_PATH }}"
           APP_NAME=$(basename "$APP_PATH" .app)
-          echo "📦 Creating zip for notarization..."
-          echo "App path: $APP_PATH"
-          echo "App name: $APP_NAME"
-
-          cd build/macos/Build/Products/Release
-          zip -r "../../../../../$APP_NAME.zip" "$(basename "$APP_PATH")"
-          cd ../../../../../
-
-          echo "📁 Zip created: $APP_NAME.zip ($(du -h "$APP_NAME.zip" | cut -f1))"
-          echo "✅ Ready for notarization"
+          (cd "$(dirname "$APP_PATH")" && zip -r "$GITHUB_WORKSPACE/$APP_NAME.zip" "$APP_NAME.app")
+          echo "ZIP_PATH=$GITHUB_WORKSPACE/$APP_NAME.zip" >> "$GITHUB_ENV"
+          echo "📦 Zip created: $GITHUB_WORKSPACE/$APP_NAME.zip"
 
       - name: Notarize app
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          APP_PATH=$(find build/macos/Build/Products/Release -name "*.app")
-          APP_NAME=$(basename "$APP_PATH" .app)
-          ZIP_PATH="$APP_NAME.zip"
+          set -euo pipefail
+          APP_PATH="${{ env.APP_PATH }}"
+          ZIP_PATH="${{ env.ZIP_PATH }}"
+          TEAM_ID="${{ env.TEAM_ID_FROM_CERT }}"
 
-          # Verify credentials first
-          echo "🔍 Verifying Apple ID and Team ID association..."
-          echo "Apple ID: $APPLE_ID"
-          echo "Team ID: $APPLE_TEAM_ID"
-
-          # Test credentials with a simple history call
-          if ! xcrun notarytool history --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" --output-format json | head -1 > /dev/null 2>&1; then
-              echo "❌ Failed to verify credentials. Common issues:"
-              echo "1. Apple ID '$APPLE_ID' is not associated with Team ID '$APPLE_TEAM_ID'"
-              echo "2. App-specific password is incorrect"
-              echo "3. Team ID format is wrong (should be 10 characters like 'ABC1234DEF')"
-              echo ""
-              echo "To debug:"
-              echo "1. Go to https://developer.apple.com/account"
-              echo "2. Verify your Team ID under 'Membership' section"
-              echo "3. Ensure the Apple ID has access to this team"
-              echo "4. Regenerate app-specific password at https://appleid.apple.com"
-              exit 1
-          fi
-
-          echo "✅ Credentials verified successfully"
-
-          # Submit to Apple Notary service
-          echo "📤 Submitting to Apple Notary service..."
+          echo "Submitting with Apple ID: $APPLE_ID and Team ID: $TEAM_ID"
           xcrun notarytool submit "$ZIP_PATH" \
-              --apple-id "$APPLE_ID" \
-              --team-id "$APPLE_TEAM_ID" \
-              --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-              --wait
+            --apple-id "$APPLE_ID" \
+            --team-id "$TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --wait
 
-          # Staple notarization ticket
-          echo "📎 Stapling notarization ticket..."
+          echo "Stapling ticket..."
           xcrun stapler staple "$APP_PATH"
-          echo "✅ Stapling complete"
 
-          # Verify stapled app and Gatekeeper approval
-          echo "🛡️ Verifying Gatekeeper approval..."
-          if spctl --verbose=4 --assess --type execute "$APP_PATH"; then
-              echo "✅ SUCCESS: App is approved by macOS Gatekeeper!"
-              echo "🔒 Users will be able to run this app without security warnings"
-          else
-              echo "❌ FAILED: App is NOT approved by Gatekeeper"
-              echo "⚠️ Users will see security warnings when trying to run this app"
-              exit 1
-          fi
+          echo "Gatekeeper assessment..."
+          spctl --verbose=4 --assess --type execute "$APP_PATH"
+          echo "✅ Notarized and approved"
 
       - name: Create DMG (optional - for direct distribution)
         run: |
-          APP_PATH=$(find build/macos/Build/Products/Release -name "*.app")
+          set -euo pipefail
+          APP_PATH="${{ env.APP_PATH }}"
           APP_NAME=$(basename "$APP_PATH" .app)
           hdiutil create -volname "$APP_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "$APP_NAME.dmg"
+          echo "✅ DMG created: $APP_NAME.dmg"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
