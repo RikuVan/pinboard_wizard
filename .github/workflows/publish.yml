@@ -11,6 +11,31 @@ jobs:
     runs-on: macos-latest
 
     steps:
+      - name: Clean runner environment
+        run: |
+          echo "🧹 Cleaning runner environment..."
+
+          # Remove any existing keychains
+          security list-keychains -d user | grep -o '[^"]*\.keychain' | while read keychain; do
+              if [[ "$keychain" != "login.keychain" && "$keychain" != "System.keychain" ]]; then
+                  echo "Removing keychain: $keychain"
+                  security delete-keychain "$keychain" 2>/dev/null || true
+              fi
+          done
+
+          # Clean Flutter cache
+          rm -rf ~/.pub-cache 2>/dev/null || true
+          rm -rf ~/flutter/.pub-cache 2>/dev/null || true
+
+          # Clean any previous build artifacts
+          rm -rf build/ 2>/dev/null || true
+          rm -rf .dart_tool/ 2>/dev/null || true
+
+          # Clean any leftover certificate files
+          rm -f *.p12 *.zip *.dmg 2>/dev/null || true
+
+          echo "✅ Runner environment cleaned"
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -50,18 +75,8 @@ jobs:
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          echo "⚙️ Configuring Xcode project for CI signing..."
-          echo "📋 Original settings:"
-          grep -E "(CODE_SIGN_STYLE|DEVELOPMENT_TEAM|CODE_SIGN_IDENTITY)" macos/Runner.xcodeproj/project.pbxproj | head -5
-
-          # Set manual signing for Flutter CI build
-          sed -i '' "s/DEVELOPMENT_TEAM = 2KQDYWP72S;/DEVELOPMENT_TEAM = $APPLE_TEAM_ID;/g" macos/Runner.xcodeproj/project.pbxproj
-          sed -i '' "s/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g" macos/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/"CODE_SIGN_IDENTITY\[sdk=macosx\*\]" = "Apple Development";//g' macos/Runner.xcodeproj/project.pbxproj
-
-          echo "📝 Updated settings:"
-          grep -E "(CODE_SIGN_STYLE|DEVELOPMENT_TEAM|CODE_SIGN_IDENTITY)" macos/Runner.xcodeproj/project.pbxproj | head -5
-          echo "✅ Xcode project patched for CI manual signing"
+          chmod +x scripts/configure_xcode_signing.py
+          python3 scripts/configure_xcode_signing.py
 
       - name: Build macOS app
         run: |
@@ -156,8 +171,9 @@ jobs:
               --wait
 
           # Staple notarization ticket
-          echo "Stapling notarization ticket..."
+          echo "📎 Stapling notarization ticket..."
           xcrun stapler staple "$APP_PATH"
+          echo "✅ Stapling complete"
 
           # Verify stapled app and Gatekeeper approval
           echo "🛡️ Verifying Gatekeeper approval..."
