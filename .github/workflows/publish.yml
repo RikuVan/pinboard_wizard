@@ -211,15 +211,6 @@ jobs:
             exit 1
           fi
 
-      - name: Create zip for notarization
-        run: |
-          set -euo pipefail
-          APP_PATH="${{ env.APP_PATH }}"
-          APP_NAME=$(basename "$APP_PATH" .app)
-          (cd "$(dirname "$APP_PATH")" && zip -r "$GITHUB_WORKSPACE/$APP_NAME.zip" "$APP_NAME.app")
-          echo "ZIP_PATH=$GITHUB_WORKSPACE/$APP_NAME.zip" >> "$GITHUB_ENV"
-          echo "📦 Zip created: $GITHUB_WORKSPACE/$APP_NAME.zip"
-
       - name: Notarize app
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -230,19 +221,48 @@ jobs:
           ZIP_PATH="${{ env.ZIP_PATH }}"
           TEAM_ID="${{ env.TEAM_ID_FROM_CERT }}"
 
-          echo "Submitting with Apple ID: $APPLE_ID and Team ID: $TEAM_ID"
+          # Ensure jq is available
+          command -v jq >/dev/null 2>&1 || brew install jq
+
+          echo "Submitting with Apple ID: $APPLE_ID"
+          echo "Team ID (from cert OU): $TEAM_ID"
+
           xcrun notarytool submit "$ZIP_PATH" \
             --apple-id "$APPLE_ID" \
             --team-id "$TEAM_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-            --wait
+            --wait \
+            --output-format json > notary-submit.json
+
+          echo "Notary submit response:"
+          cat notary-submit.json
+
+          STATUS=$(jq -r '.status // empty' notary-submit.json)
+          SUBMISSION_ID=$(jq -r '.id // empty' notary-submit.json)
+
+          if [ -z "$STATUS" ] || [ -z "$SUBMISSION_ID" ]; then
+            echo "❌ Could not parse status/id from notary-submit.json"
+            exit 1
+          fi
+
+          if [ "$STATUS" != "Accepted" ]; then
+            echo "Notarization status: $STATUS (id: $SUBMISSION_ID). Fetching log..."
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --apple-id "$APPLE_ID" \
+              --team-id "$TEAM_ID" \
+              --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+              --output-format json > notary-log.json || true
+            # Pretty-print if possible
+            jq '.' notary-log.json || cat notary-log.json || true
+            exit 1
+          fi
 
           echo "Stapling ticket..."
           xcrun stapler staple "$APP_PATH"
 
           echo "Gatekeeper assessment..."
           spctl --verbose=4 --assess --type execute "$APP_PATH"
-          echo "✅ Notarized and approved"
+          echo "Notarized and approved"
 
       - name: Create DMG (optional - for direct distribution)
         run: |
