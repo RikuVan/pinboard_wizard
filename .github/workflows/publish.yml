@@ -26,11 +26,6 @@ jobs:
           # Clean Flutter cache
           rm -rf ~/.pub-cache 2>/dev/null || true
           rm -rf ~/flutter/.pub-cache 2>/dev/null || true
-
-          # Clean any previous build artifacts
-          rm -rf build/ 2>/dev/null || true
-          rm -rf .dart_tool/ 2>/dev/null || true
-
           # Clean any leftover certificate files
           rm -f *.p12 *.zip *.dmg 2>/dev/null || true
 
@@ -71,12 +66,16 @@ jobs:
           echo "✅ Certificate setup complete. Available identities:"
           security find-identity -v -p codesigning
 
-      - name: Configure Xcode project for CI signing
+      - name: Configure Xcode project for CI
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          chmod +x scripts/safe_xcode_config.sh
-          ./scripts/safe_xcode_config.sh
+          # Temporarily set the correct development team and disable automatic signing for CI build
+          sed -i '' "s/DEVELOPMENT_TEAM = 2KQDYWP72S;/DEVELOPMENT_TEAM = $APPLE_TEAM_ID;/g" macos/Runner.xcodeproj/project.pbxproj
+          sed -i '' "s/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g" macos/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/"CODE_SIGN_IDENTITY\[sdk=macosx\*\]" = "Apple Development";//g' macos/Runner.xcodeproj/project.pbxproj
+          echo "Updated development team to: $APPLE_TEAM_ID"
+          echo "Set code signing to manual for CI"
 
       - name: Build macOS app
         run: |
