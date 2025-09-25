@@ -204,6 +204,15 @@ jobs:
             exit 1
           fi
 
+      - name: Create zip for notarization
+        run: |
+          set -euo pipefail
+          APP_PATH="${{ env.APP_PATH }}"
+          APP_NAME=$(basename "$APP_PATH" .app)
+          (cd "$(dirname "$APP_PATH")" && zip -r "$GITHUB_WORKSPACE/$APP_NAME.zip" "$APP_NAME.app")
+          echo "ZIP_PATH=$GITHUB_WORKSPACE/$APP_NAME.zip" >> "$GITHUB_ENV"
+          echo "📦 Zip created: $GITHUB_WORKSPACE/$APP_NAME.zip"
+
       - name: Notarize app
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
