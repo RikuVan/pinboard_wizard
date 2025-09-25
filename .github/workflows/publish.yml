@@ -209,9 +209,14 @@ jobs:
           set -euo pipefail
           APP_PATH="${{ env.APP_PATH }}"
           APP_NAME=$(basename "$APP_PATH" .app)
-          (cd "$(dirname "$APP_PATH")" && zip -r "$GITHUB_WORKSPACE/$APP_NAME.zip" "$APP_NAME.app")
-          echo "ZIP_PATH=$GITHUB_WORKSPACE/$APP_NAME.zip" >> "$GITHUB_ENV"
-          echo "📦 Zip created: $GITHUB_WORKSPACE/$APP_NAME.zip"
+          ZIP_PATH="$GITHUB_WORKSPACE/${APP_NAME}.zip"
+
+          # Create a zip suitable for notarization (preserves resource forks, etc.)
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
+
+          echo "ZIP_PATH=$ZIP_PATH" >> "$GITHUB_ENV"
+          echo "📦 Zip created: $ZIP_PATH"
+          ls -lh "$ZIP_PATH"
 
       - name: Notarize app
         env:
