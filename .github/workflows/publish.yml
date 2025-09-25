@@ -144,12 +144,13 @@ jobs:
           echo "APP_PATH=$APP_PATH" >> "$GITHUB_ENV"
           echo "Built app: $APP_PATH"
 
-      - name: Code sign the app (Developer ID Application)
+      - name: Code sign the app
         run: |
           set -euo pipefail
           APP_PATH="${{ env.APP_PATH }}"
           TEAM_ID="${{ env.TEAM_ID_FROM_CERT }}"
 
+          # Pick the Developer ID identity for the same team as the cert we imported
           IDENTITY=$(security find-identity -p codesigning -v build.keychain \
             | awk -v team="($TEAM_ID)" -F\" '/Developer ID Application/ && $0 ~ team {print $2; exit}')
           if [[ -z "$IDENTITY" ]]; then
@@ -159,42 +160,34 @@ jobs:
           fi
           echo "Using identity: $IDENTITY"
 
+          # Optional: set Release entitlements (must NOT include get-task-allow)
           ENTITLEMENTS="macos/Runner/Runner.entitlements"
           [[ -f "$ENTITLEMENTS" ]] || ENTITLEMENTS=""
 
-          sign() {
-            local target="$1"
-            codesign --keychain build.keychain --force --options runtime --timestamp \
-              ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} \
-              --sign "$IDENTITY" "$target"
-          }
-
-          # 1) Frameworks + dylibs
+          echo "Signing frameworks..."
           if [[ -d "$APP_PATH/Contents/Frameworks" ]]; then
-            find "$APP_PATH/Contents/Frameworks" -type d -name "*.framework" -print0 \
-              | while IFS= read -r -d '' f; do sign "$f"; done
-            find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.so" \) -print0 \
-              | while IFS= read -r -d '' f; do sign "$f"; done
+            for framework in "$APP_PATH/Contents/Frameworks"/*.framework; do
+              [[ -d "$framework" ]] || continue
+              echo "→ $framework"
+              codesign --keychain build.keychain --force --options runtime --timestamp \
+                ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} \
+                --sign "$IDENTITY" "$framework"
+            done
           fi
 
-          # 2) Plug-ins, bundles, XPCs, appex – sign their inner executable
-          find "$APP_PATH/Contents" -type d \( -name "*.bundle" -o -name "*.plugin" -o -name "*.xpc" -o -name "*.appex" \) -print0 \
-            | while IFS= read -r -d '' b; do
-                exe="$b/Contents/MacOS/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$b/Contents/Info.plist" 2>/dev/null || true)"
-                if [[ -n "${exe:-}" && -f "$exe" ]]; then sign "$exe"; fi
-                # also sign the container dir (Apple sometimes expects it)
-                sign "$b"
-              done
+          echo "Signing main binary..."
+          MAIN_BIN=$(find "$APP_PATH/Contents/MacOS" -type f -perm -111 | head -1)
+          if [[ -z "${MAIN_BIN:-}" ]]; then echo "❌ Main binary not found"; exit 1; fi
+          codesign --keychain build.keychain --force --options runtime --timestamp \
+            ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} \
+            --sign "$IDENTITY" "$MAIN_BIN"
 
-          # 3) All executables in MacOS/ and Helpers/
-          find "$APP_PATH/Contents" \( -path "*/MacOS/*" -o -path "*/Helpers/*" \) -type f -perm -111 -print0 \
-            | while IFS= read -r -d '' f; do sign "$f"; done
-
-          # 4) Sign the .app last
+          echo "Signing app bundle..."
           codesign --keychain build.keychain --deep --force --verify --verbose=2 --options runtime --timestamp \
-            ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} --sign "$IDENTITY" "$APP_PATH"
+            ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} \
+            --sign "$IDENTITY" "$APP_PATH"
 
-          echo "🔍 Verifying signatures..."
+          echo "Verifying signature..."
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 
       - name: Check entitlements on main binary (debug guard)
