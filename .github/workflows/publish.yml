@@ -137,9 +137,16 @@ jobs:
           echo "Stapling notarization ticket..."
           xcrun stapler staple "$APP_PATH"
 
-          # Verify stapled app
-          echo "Verifying stapled app..."
-          spctl --verbose=4 --assess --type execute "$APP_PATH"
+          # Verify stapled app and Gatekeeper approval
+          echo "🛡️ Verifying Gatekeeper approval..."
+          if spctl --verbose=4 --assess --type execute "$APP_PATH"; then
+              echo "✅ SUCCESS: App is approved by macOS Gatekeeper!"
+              echo "🔒 Users will be able to run this app without security warnings"
+          else
+              echo "❌ FAILED: App is NOT approved by Gatekeeper"
+              echo "⚠️ Users will see security warnings when trying to run this app"
+              exit 1
+          fi
 
       - name: Create DMG (optional - for direct distribution)
         run: |
