@@ -70,10 +70,21 @@ jobs:
       - name: Build macOS app (unsigned)
         run: |
           echo "🏗️ Building macOS app without signing..."
-          # Prevent Xcode from signing during the Flutter build
-          export CODE_SIGNING_ALLOWED=NO
-          export CODE_SIGN_IDENTITY=""
-          flutter build macos --release
+          # Use xcodebuild directly with signing disabled
+          flutter precache --macos
+          cd macos
+          xcodebuild -scheme Runner -configuration Release \
+            -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            -archivePath ../build/Runner.xcarchive \
+            archive
+
+          # Extract the app from the archive
+          echo "📦 Extracting app from archive..."
+          mkdir -p ../build/macos/Build/Products/Release
+          cp -r ../build/Runner.xcarchive/Products/Applications/*.app ../build/macos/Build/Products/Release/
           echo "✅ Build complete - app bundle is unsigned and ready for manual signing"
 
       - name: Code sign the app
