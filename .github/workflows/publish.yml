@@ -150,7 +150,6 @@ jobs:
           APP_PATH="${{ env.APP_PATH }}"
           TEAM_ID="${{ env.TEAM_ID_FROM_CERT }}"
 
-          # Select identity that matches the extracted Team ID
           IDENTITY=$(security find-identity -p codesigning -v build.keychain \
             | awk -v team="($TEAM_ID)" -F\" '/Developer ID Application/ && $0 ~ team {print $2; exit}')
           if [[ -z "$IDENTITY" ]]; then
@@ -163,32 +162,54 @@ jobs:
           ENTITLEMENTS="macos/Runner/Runner.entitlements"
           [[ -f "$ENTITLEMENTS" ]] || ENTITLEMENTS=""
 
-          # Sign nested frameworks
+          sign() {
+            local target="$1"
+            codesign --keychain build.keychain --force --options runtime --timestamp \
+              ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} \
+              --sign "$IDENTITY" "$target"
+          }
+
+          # 1) Frameworks + dylibs
           if [[ -d "$APP_PATH/Contents/Frameworks" ]]; then
             find "$APP_PATH/Contents/Frameworks" -type d -name "*.framework" -print0 \
-              | while IFS= read -r -d '' f; do
-                  codesign --keychain build.keychain --force --options runtime --timestamp \
-                    ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} --sign "$IDENTITY" "$f"
-                done
+              | while IFS= read -r -d '' f; do sign "$f"; done
             find "$APP_PATH/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.so" \) -print0 \
-              | while IFS= read -r -d '' f; do
-                  codesign --keychain build.keychain --force --options runtime --timestamp \
-                    ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} --sign "$IDENTITY" "$f"
-                done
+              | while IFS= read -r -d '' f; do sign "$f"; done
           fi
 
-          # Sign all executables (helpers, main binary, etc.)
-          find "$APP_PATH/Contents" \( -path "*/MacOS/*" -o -path "*/Helpers/*" \) -type f -perm -111 -print0 \
-            | while IFS= read -r -d '' f; do
-                codesign --keychain build.keychain --force --options runtime --timestamp \
-                  ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} --sign "$IDENTITY" "$f"
+          # 2) Plug-ins, bundles, XPCs, appex – sign their inner executable
+          find "$APP_PATH/Contents" -type d \( -name "*.bundle" -o -name "*.plugin" -o -name "*.xpc" -o -name "*.appex" \) -print0 \
+            | while IFS= read -r -d '' b; do
+                exe="$b/Contents/MacOS/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$b/Contents/Info.plist" 2>/dev/null || true)"
+                if [[ -n "${exe:-}" && -f "$exe" ]]; then sign "$exe"; fi
+                # also sign the container dir (Apple sometimes expects it)
+                sign "$b"
               done
 
-          # Bundle last
+          # 3) All executables in MacOS/ and Helpers/
+          find "$APP_PATH/Contents" \( -path "*/MacOS/*" -o -path "*/Helpers/*" \) -type f -perm -111 -print0 \
+            | while IFS= read -r -d '' f; do sign "$f"; done
+
+          # 4) Sign the .app last
           codesign --keychain build.keychain --deep --force --verify --verbose=2 --options runtime --timestamp \
             ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} --sign "$IDENTITY" "$APP_PATH"
 
+          echo "🔍 Verifying signatures..."
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
+      - name: Check entitlements on main binary (debug guard)
+        run: |
+          set -euo pipefail
+          APP_PATH="${{ env.APP_PATH }}"
+          MAIN_BIN=$(find "$APP_PATH/Contents/MacOS" -type f -perm -111 | head -1)
+          echo "Main binary: $MAIN_BIN"
+          echo "Entitlements:"
+          codesign -d --entitlements :- "$MAIN_BIN" 2>/dev/null || true
+          # Hard fail if get-task-allow is present/true (not allowed for Dev ID)
+          if codesign -d --entitlements :- "$MAIN_BIN" 2>/dev/null | grep -q "get-task-allow"; then
+            echo "❌ com.apple.security.get-task-allow present. Remove it for Release/Dev ID."
+            exit 1
+          fi
 
       - name: Create zip for notarization
         run: |
