@@ -163,9 +163,17 @@ jobs:
           fi
           echo "Using identity: $IDENTITY"
 
-          # Optional: set Release entitlements (must NOT include get-task-allow)
-          ENTITLEMENTS="macos/Runner/Release.entitlements"
-          [[ -f "$ENTITLEMENTS" ]] || ENTITLEMENTS=""
+          # Resolve entitlements with proper team ID substitution
+          ENTITLEMENTS=""
+          if [[ -f "macos/Runner/Release.entitlements" ]]; then
+            echo "🔧 Resolving entitlements for Team ID: $TEAM_ID"
+            RESOLVED_ENTITLEMENTS="$(pwd)/resolved_entitlements.plist"
+            ./scripts/resolve_entitlements.sh "macos/Runner/Release.entitlements" "$TEAM_ID" "$RESOLVED_ENTITLEMENTS"
+            ENTITLEMENTS="$RESOLVED_ENTITLEMENTS"
+            echo "📋 Using resolved entitlements: $ENTITLEMENTS"
+          else
+            echo "⚠️  No Release.entitlements found, signing without entitlements"
+          fi
 
           echo "Signing frameworks..."
           if [[ -d "$APP_PATH/Contents/Frameworks" ]]; then
@@ -198,13 +206,17 @@ jobs:
           set -euo pipefail
           APP_PATH="${{ env.APP_PATH }}"
           MAIN_BIN=$(find "$APP_PATH/Contents/MacOS" -type f -perm -111 | head -1)
-          echo "Main binary: $MAIN_BIN"
-          echo "Entitlements:"
-          codesign -d --entitlements :- "$MAIN_BIN" 2>/dev/null || true
+          echo "🔍 Checking entitlements on main binary: $MAIN_BIN"
+          echo ""
+          echo "📋 Actual entitlements applied:"
+          codesign -d --entitlements :- "$MAIN_BIN" 2>/dev/null || echo "No entitlements found"
+          echo ""
           # Hard fail if get-task-allow is present/true (not allowed for Dev ID)
           if codesign -d --entitlements :- "$MAIN_BIN" 2>/dev/null | grep -q "get-task-allow"; then
             echo "❌ com.apple.security.get-task-allow present. Remove it for Release/Dev ID."
             exit 1
+          else
+            echo "✅ No debug entitlements found (get-task-allow not present)"
           fi
 
       - name: Create zip for notarization
