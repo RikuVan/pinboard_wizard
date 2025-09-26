@@ -11,8 +11,6 @@
 	<key>com.apple.security.network.client</key>
 	<true/>
 	<key>keychain-access-groups</key>
-	<array>
-		<string>$(AppIdentifierPrefix)dev.richardvancamp.pinboardWizard</string>
-	</array>
+  </array>
 </dict>
 </plist>
