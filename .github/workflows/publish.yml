@@ -164,7 +164,7 @@ jobs:
           echo "Using identity: $IDENTITY"
 
           # Optional: set Release entitlements (must NOT include get-task-allow)
-          ENTITLEMENTS="macos/Runner/Runner.entitlements"
+          ENTITLEMENTS="macos/Runner/Release.entitlements"
           [[ -f "$ENTITLEMENTS" ]] || ENTITLEMENTS=""
 
           echo "Signing frameworks..."
