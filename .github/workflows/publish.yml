@@ -296,8 +296,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Get zip filename for cask update
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          ZIP_FILENAME=$(basename "${{ env.ZIP_PATH }}")
+          echo "ZIP_FILENAME=$ZIP_FILENAME" >> "$GITHUB_ENV"
+
       - name: Trigger cask update workflow
-        if: always()
+        if: startsWith(github.ref, 'refs/tags/')
         continue-on-error: true
         uses: peter-evans/repository-dispatch@v3
         with:
@@ -306,8 +312,8 @@ jobs:
           event-type: update-cask
           client-payload: |-
             {
-              "version": "${{ github.event.release.tag_name }}",
-              "download_url": "https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/pinboard-wizard-${{ github.event.release.tag_name }}-macos.tar.gz"
+              "version": "${{ github.ref_name }}",
+              "download_url": "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/${{ env.ZIP_FILENAME }}"
             }
 
       - name: Cleanup keychain
