@@ -12,7 +12,7 @@
 	<true/>
 	<key>keychain-access-groups</key>
   <array>
-		<string>$(AppIdentifierPrefix)dev.richardvancamp.pinboardWizard</string>
+		<string>Y4BC88SNUY.dev.richardvancamp.pinboardWizard</string>
 	</array>
 </dict>
 </plist>
