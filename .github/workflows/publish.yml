@@ -103,6 +103,16 @@ jobs:
           echo "TEAM_ID_FROM_CERT=$TEAM_ID" >> "$GITHUB_ENV"
           echo "✅ Team ID from cert: $TEAM_ID"
 
+      - name: Inject provisioning profile
+        env:
+          MACOS_PROVISION_PROFILE: ${{ secrets.MACOS_PROVISION_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          echo "🔑 Decoding provisioning profile..."
+          echo "$MACOS_PROVISION_PROFILE" | base64 --decode > ./Pinboard_Wizard_Profile.provisionprofile
+          echo "✅ Provisioning profile decoded"
+          echo "PROVISION_PROFILE_PATH=$(pwd)/Pinboard_Wizard_Profile.provisionprofile" >> "$GITHUB_ENV"
+
       - name: Prepare Flutter ephemeral files
         run: |
           set -euo pipefail
@@ -159,6 +169,18 @@ jobs:
           fi
           echo "APP_PATH=$APP_PATH" >> "$GITHUB_ENV"
           echo "Built app: $APP_PATH"
+
+      - name: Embed provisioning profile into .app
+        run: |
+          set -euo pipefail
+          APP_PATH="${{ env.APP_PATH }}"
+          PROFILE_PATH="${{ env.PROVISION_PROFILE_PATH }}"
+          if [[ ! -f "$PROFILE_PATH" ]]; then
+            echo "❌ Provisioning profile not found at $PROFILE_PATH"; exit 1
+          fi
+          echo "📦 Embedding provisioning profile into $APP_PATH..."
+            cp "$PROFILE_PATH" "$APP_PATH/Contents/embedded.provisionprofile"
+            echo "✅ Provisioning profile embedded"
 
       - name: Verify framework embedding
         run: |
