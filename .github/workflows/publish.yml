@@ -147,6 +147,32 @@ jobs:
           echo "APP_PATH=$APP_PATH" >> "$GITHUB_ENV"
           echo "Built app: $APP_PATH"
 
+      - name: Verify framework embedding
+        run: |
+          set -euo pipefail
+          APP_PATH="${{ env.APP_PATH }}"
+          echo "🔍 Checking for required frameworks..."
+
+          # First, list all frameworks found
+          echo "📋 All frameworks found in $APP_PATH/Contents/Frameworks:"
+          if [[ -d "$APP_PATH/Contents/Frameworks" ]]; then
+            ls -la "$APP_PATH/Contents/Frameworks/" | grep -E "\.framework|\.dylib" || echo "No frameworks or dylibs found"
+          else
+            echo "Frameworks directory not found"
+          fi
+          echo ""
+
+          # Then check for required frameworks
+          REQUIRED_FRAMEWORKS=("FlutterMacOS.framework" "appkit_ui_element_colors.framework")
+          for framework in "${REQUIRED_FRAMEWORKS[@]}"; do
+            if [[ -d "$APP_PATH/Contents/Frameworks/$framework" ]]; then
+              echo "✅ Found: $framework"
+            else
+              echo "❌ Missing: $framework"
+              exit 1
+            fi
+          done
+
       - name: Code sign the app
         run: |
           set -euo pipefail
