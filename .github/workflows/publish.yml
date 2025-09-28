@@ -113,13 +113,26 @@ jobs:
           : > macos/Flutter/ephemeral/FlutterInputs.xcfilelist
           : > macos/Flutter/ephemeral/FlutterOutputs.xcfilelist
 
+      - name: Resolve Swift Package Manager dependencies
+        run: |
+          set -euo pipefail
+          echo "🔧 Resolving Swift Package Manager dependencies..."
+
+          # CocoaPods (ensure workspace is up to date)
+          (cd macos && pod install)
+
+          # Resolve SPM packages
+          xcodebuild -resolvePackageDependencies \
+            -workspace macos/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release
+
+          echo "✅ SPM dependencies resolved"
+
       - name: Build macOS app (unsigned via xcodebuild)
         run: |
           set -euo pipefail
           echo "🏗️ Building macOS app without signing..."
-
-          # CocoaPods (ensure workspace is up to date)
-          (cd macos && pod install)
 
           # Point Xcode's Run Script to the Flutter SDK & app path
           FLUTTER_ROOT="$(dirname "$(dirname "$(which flutter)")")"
