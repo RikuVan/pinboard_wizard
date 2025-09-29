@@ -2,6 +2,20 @@
 
 A powerful, native macOS client for [Pinboard.in](https://pinboard.in) built with Flutter. Designed for power users who want curated bookmark collections, AI-enhanced management, and secure cloud backups.
 
+## Screenshots
+
+### Bookmarks Management
+
+![Bookmarks](docs/screenshots/bookmarks.png)
+
+### Pin-Based Curation System
+
+![Pinned Bookmarks](docs/screenshots/pinned-bookmarks.png)
+
+### Notes Organization
+
+![Notes](docs/screenshots/notes.png)
+
 ## Installation
 
 ### Homebrew (Recommended)
@@ -10,8 +24,51 @@ Install Pinboard Wizard using Homebrew:
 
 ```bash
 brew tap rikuvan/formulae
-brew install --cask pinboard-wizard
+brew install --cask rikuvan/formulae/pinboard-wizard
 ```
+
+## Setup
+
+After installation, you'll need to configure Pinboard Wizard with your API credentials:
+
+1. Launch Pinboard Wizard
+2. On first run, you'll be prompted to enter your Pinboard API token
+3. Get your API token from: https://pinboard.in/settings/password
+4. Copy and paste the token into the app
+
+For additional configuration options and services integration, visit: https://pinboard.in/api/
+
+The app will sync your bookmarks and be ready to use once the API token is configured.
+
+## Homebrew Management
+
+Check installed version:
+
+```bash
+# Check version via Homebrew
+brew list --cask --versions rikuvan/formulae/pinboard-wizard
+
+# Or check cask info (shows installed + latest available)
+brew info --cask rikuvan/formulae/pinboard-wizard
+```
+
+Upgrade to latest version:
+
+```bash
+brew upgrade --cask rikuvan/formulae/pinboard-wizard
+```
+
+Uninstall Pinboard Wizard:
+
+```bash
+# Regular uninstall - removes only the main app
+brew uninstall --cask rikuvan/formulae/pinboard-wizard
+
+# Zap - removes app + ALL associated data/settings
+brew uninstall --zap --cask rikuvan/formulae/pinboard-wizard
+```
+
+**Use `--zap` for complete removal** including preferences, caches, and all configuration files - useful for troubleshooting or clean reinstalls.
 
 ### Manual Download
 
@@ -27,13 +84,13 @@ Traditional bookmark managers treat all bookmarks equally. We hack Pinboard's ta
 
 - **Pin with categories**: find your most important bookmarks by pinning them, optionally under a category like `pin:work`, `pin:reading`, `pin:tools`
 
-### 🤖 **Want AI-Enhanced Bookmarks (Cost-Controlled)**
+### 🤖 **Want Smart Content Extraction**
 
-Skip expensive AI subscription services. Bring your own OpenAI API key and pay only for what you use:
+Multiple content extraction options to fit your needs:
 
-- **Automatic metadata**: AI generates titles, descriptions, and tags from URLs
-- **Your costs, your control**: Usually costs pennies per month
-- **No vendor lock-in**: Your data stays in Pinboard, AI is optional
+- **Free extraction**: Built-in Pina service (add API key, no account needed) extracts titles, descriptions, and content
+- **AI enhancement**: Optional OpenAI integration for intelligent tagging and summaries (bring your own key, ~$0.50-2/month)
+- **No vendor lock-in**: Your data stays in Pinboard, all enhancements are optional
 
 ### ☁️ **Want Secure Cloud Backup Options**
 
@@ -72,12 +129,11 @@ The pin categorization system transforms Pinboard's simple tagging into a powerf
 - **Grouped display**: Pinned page shows bookmarks organized by category
 - **Easy management**: Update categories or remove pins entirely
 
-### 🤖 **AI Integration** (Bring Your Own Key)
+### 🤖 **Content Extraction & AI**
 
-- **Cost-effective AI**: Use your own OpenAI API key (typically pennies/month)
-- **Smart metadata extraction**: Auto-generate titles, descriptions, tags from URLs
-- **Content analysis**: AI reads page content for intelligent suggestions
-- **No subscriptions**: Pay only for what you use, when you use it
+- **Pina integration**: Free content extraction (API key required, no account needed)
+- **OpenAI integration**: Optional AI tagging and summaries (bring your own key, ~$0.50-2/month)
+- **Smart metadata**: Auto-generate titles, descriptions, and tags from URLs
 
 ### ⌨️ **Keyboard Shortcuts**
 
@@ -107,11 +163,40 @@ The pin categorization system transforms Pinboard's simple tagging into a powerf
 - **Full data control**: You own your backup location and access
 - **JSON format**: Standard format for maximum compatibility
 
-## Getting Started
+## First-Time Setup
+
+1. Launch Pinboard Wizard
+2. Navigate to **Settings** (⌘+4)
+3. Enter your Pinboard API token (get it from [https://pinboard.in/settings/password](https://pinboard.in/settings/password))
+4. Test the connection
+5. Start browsing your bookmarks!
+
+![Pinboard Settings](docs/screenshots/pinboard-settings.png)
+
+### Optional: Enhanced Content Extraction
+
+**Pina Setup (Free):**
+
+1. Go to **Settings** → **Content Extraction**
+2. Add your Pina API key (no account required)
+3. Enable automatic content extraction for new bookmarks
+
+**AI Features Setup (Optional):**
+
+1. Get your OpenAI API key from [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+2. Go to **Settings** → **AI Settings**
+3. Enter your OpenAI API key
+4. Configure preferred model (GPT-3.5-turbo recommended)
+
+![AI Settings](docs/screenshots/ai-settings.png)
+
+**Cost estimate**: AI features typically €0-3/month for moderate usage
+
+## Development
 
 ### Prerequisites
 
-- macOS 10.14+ (Mojave or later)
+- macOS 15.0+ (Sequoia or later)
 - [Flutter](https://flutter.dev/docs/get-started/install) 3.0+ installed
 - Xcode Command Line Tools
 - A [Pinboard.in](https://pinboard.in) account with API token
@@ -148,28 +233,6 @@ The pin categorization system transforms Pinboard's simple tagging into a powerf
 | `make format`  | Format all Dart files      |
 | `make clean`   | Clean build artifacts      |
 | `make doctor`  | Check Flutter installation |
-
-### First-Time Setup
-
-1. Launch the app using `make run`
-2. Navigate to **Settings** (⌘+4)
-3. Enter your Pinboard API token (get it from [https://pinboard.in/settings/password](https://pinboard.in/settings/password))
-4. Test the connection
-5. Start browsing your bookmarks!
-
-### Optional: AI Features Setup (Cost-Controlled)
-
-To enable AI-powered bookmark analysis with your own OpenAI key:
-
-1. Get your OpenAI API key from [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
-2. Go to **Settings** → **AI Settings**
-3. Enable AI features
-4. Enter your OpenAI API key
-5. Configure your preferred model (GPT-3.5-turbo recommended for cost efficiency)
-
-**Cost estimate**: Typically $0.50-$2.00/month for moderate usage (hundreds of bookmarks)
-
-## Development
 
 ### Project Structure
 
@@ -241,6 +304,8 @@ User settings are stored in the macOS app container. The app handles:
 - AI service configuration and usage tracking
 - UI preferences
 - AWS S3 backup settings
+
+![Backup Settings](docs/screenshots/backup-settings.png)
 
 ## Troubleshooting
 
