@@ -1,7 +1,7 @@
 name: pinboard_wizard
 description: "A MacOS client for pinboard"
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 0.6.0
+version: 0.6.1
 
 environment:
   sdk: ^3.10.4
