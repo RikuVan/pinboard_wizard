@@ -4,8 +4,8 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 0.6.0
 
 environment:
-  sdk: ^3.9.2
-  flutter: 3.35.3
+  sdk: ^3.10.4
+  flutter: 3.38.5
 
 dependencies:
   flutter:
@@ -14,26 +14,26 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  macos_ui: ^2.2.0
+  macos_ui: ^2.2.2
   provider: ^6.1.5+1
   json_annotation: ^4.9.0
   equatable: ^2.0.7
-  flutter_secure_storage: ^9.2.4
+  flutter_secure_storage: ^10.0.0
   http: ^1.1.0
   url_launcher: ^6.2.5
-  get_it: ^8.2.0
+  get_it: ^9.2.0
   flutter_html: ^3.0.0-beta.2
   bloc: ^9.0.0
   flutter_bloc: ^9.1.1
   intl: ^0.20.2
   package_info_plus: ^9.0.0
-  openai_dart: ^0.5.5
+  openai_dart: ^0.6.1
   aws_s3_upload_lite: ^0.1.6
+  json_serializable: 6.11.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  json_serializable: ^6.11.1
   build_runner: ^2.7.1
   flutter_lints: ^6.0.0
   mockito: ^5.4.4
