@@ -1,12 +1,15 @@
 import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
-
+import 'package:pinboard_wizard/src/github/github_auth_service.dart';
+import 'package:pinboard_wizard/src/github/models/models.dart';
 import 'package:pinboard_wizard/src/pages/settings/state/settings_state.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
+import 'package:uuid/uuid.dart';
 
 class SettingsCubit extends Cubit<SettingsState> {
   SettingsCubit({
@@ -14,10 +17,12 @@ class SettingsCubit extends Cubit<SettingsState> {
     required PinboardService pinboardService,
     required AiSettingsService aiSettingsService,
     required BackupService backupService,
+    required GitHubAuthService githubAuthService,
   }) : _credentialsService = credentialsService,
        _pinboardService = pinboardService,
        _aiSettingsService = aiSettingsService,
        _backupService = backupService,
+       _githubAuthService = githubAuthService,
        super(const SettingsState()) {
     // Listen to authentication changes
     _credentialsService.isAuthenticatedNotifier.addListener(_onAuthChanged);
@@ -25,12 +30,15 @@ class SettingsCubit extends Cubit<SettingsState> {
     _aiSettingsService.addListener(_onAiSettingsChanged);
     // Listen to backup service changes
     _backupService.addListener(_onBackupServiceChanged);
+    // Listen to GitHub auth changes
+    _githubAuthService.addListener(_onGitHubAuthChanged);
   }
 
   final CredentialsService _credentialsService;
   final PinboardService _pinboardService;
   final AiSettingsService _aiSettingsService;
   final BackupService _backupService;
+  final GitHubAuthService _githubAuthService;
   Timer? _debounceTimer;
 
   /// Safely emit a state, checking if the cubit is not closed
@@ -58,6 +66,10 @@ class SettingsCubit extends Cubit<SettingsState> {
       await _backupService.loadConfiguration();
       final s3Config = _backupService.s3Config;
 
+      // Load GitHub settings
+      final githubConfig = await _githubAuthService.getConfig();
+      final githubToken = await _githubAuthService.getToken();
+
       _safeEmit(
         state.copyWith(
           status: SettingsStatus.loaded,
@@ -72,6 +84,10 @@ class SettingsCubit extends Cubit<SettingsState> {
               ? ValidationStatus.valid
               : ValidationStatus.initial,
           maxTags: aiSettings.openai.maxTags,
+          githubConfig: githubConfig,
+          githubToken: githubToken ?? '',
+          isGitHubAuthenticated: _githubAuthService.isAuthenticated,
+          tokenExpiryWarning: _githubAuthService.currentWarning,
         ),
       );
 
@@ -630,12 +646,204 @@ class SettingsCubit extends Cubit<SettingsState> {
     }
   }
 
+  // ========== GitHub Notes Configuration ==========
+
+  /// Load GitHub configuration from storage
+  Future<void> loadGitHubConfig() async {
+    try {
+      final config = await _githubAuthService.getConfig();
+      final token = await _githubAuthService.getToken();
+
+      _safeEmit(
+        state.copyWith(
+          githubConfig: config,
+          githubToken: token ?? '',
+          isGitHubAuthenticated: _githubAuthService.isAuthenticated,
+          tokenExpiryWarning: _githubAuthService.currentWarning,
+        ),
+      );
+    } catch (e) {
+      _safeEmit(
+        state.copyWith(errorMessage: 'Failed to load GitHub config: $e'),
+      );
+    }
+  }
+
+  /// Save GitHub configuration
+  Future<void> saveGitHubConfig({
+    required String owner,
+    required String repo,
+    required String token,
+    String branch = 'main',
+    String notesPath = 'notes/',
+    required TokenType tokenType,
+    DateTime? tokenExpiry,
+  }) async {
+    if (owner.trim().isEmpty || repo.trim().isEmpty || token.trim().isEmpty) {
+      _safeEmit(
+        state.copyWith(
+          githubValidationStatus: ValidationStatus.invalid,
+          githubValidationMessage: 'Owner, repo, and token are required',
+        ),
+      );
+      return;
+    }
+
+    _safeEmit(
+      state.copyWith(
+        status: SettingsStatus.saving,
+        githubValidationStatus: ValidationStatus.validating,
+        githubValidationMessage: null,
+      ),
+    );
+
+    try {
+      // Generate or get device ID
+      final currentConfig = await _githubAuthService.getConfig();
+      final deviceId = currentConfig?.deviceId ?? const Uuid().v4();
+
+      final config = GitHubNotesConfig(
+        owner: owner.trim(),
+        repo: repo.trim(),
+        branch: branch.trim().isEmpty ? 'main' : branch.trim(),
+        notesPath: notesPath.trim().isEmpty ? 'notes/' : notesPath.trim(),
+        deviceId: deviceId,
+        tokenType: tokenType,
+        tokenExpiry: tokenExpiry,
+        isConfigured: true,
+      );
+
+      await _githubAuthService.saveCredentials(
+        config: config,
+        token: token.trim(),
+      );
+
+      _safeEmit(
+        state.copyWith(
+          status: SettingsStatus.loaded,
+          githubConfig: config,
+          githubToken: token.trim(),
+          isGitHubAuthenticated: true,
+          githubValidationStatus: ValidationStatus.valid,
+          githubValidationMessage: 'GitHub configuration saved successfully',
+          tokenExpiryWarning: _githubAuthService.currentWarning,
+        ),
+      );
+    } catch (e) {
+      _safeEmit(
+        state.copyWith(
+          status: SettingsStatus.error,
+          githubValidationStatus: ValidationStatus.invalid,
+          githubValidationMessage: 'Failed to save GitHub configuration: $e',
+        ),
+      );
+    }
+  }
+
+  /// Update just the GitHub token (for renewal)
+  Future<void> updateGitHubToken(String token, {DateTime? newExpiry}) async {
+    if (token.trim().isEmpty) {
+      _safeEmit(
+        state.copyWith(
+          githubValidationStatus: ValidationStatus.invalid,
+          githubValidationMessage: 'Token cannot be empty',
+        ),
+      );
+      return;
+    }
+
+    _safeEmit(state.copyWith(status: SettingsStatus.saving));
+
+    try {
+      await _githubAuthService.updateToken(token.trim(), newExpiry: newExpiry);
+
+      _safeEmit(
+        state.copyWith(
+          status: SettingsStatus.loaded,
+          githubToken: token.trim(),
+          isGitHubAuthenticated: true,
+          githubValidationStatus: ValidationStatus.valid,
+          githubValidationMessage: 'Token updated successfully',
+          tokenExpiryWarning: _githubAuthService.currentWarning,
+        ),
+      );
+    } catch (e) {
+      _safeEmit(
+        state.copyWith(
+          status: SettingsStatus.error,
+          githubValidationStatus: ValidationStatus.invalid,
+          githubValidationMessage: 'Failed to update token: $e',
+        ),
+      );
+    }
+  }
+
+  /// Clear GitHub configuration
+  Future<void> clearGitHubConfig() async {
+    _safeEmit(state.copyWith(status: SettingsStatus.saving));
+
+    try {
+      await _githubAuthService.clearCredentials();
+
+      _safeEmit(
+        state.copyWith(
+          status: SettingsStatus.loaded,
+          githubConfig: null,
+          githubToken: '',
+          isGitHubAuthenticated: false,
+          githubValidationStatus: ValidationStatus.initial,
+          githubValidationMessage: null,
+          tokenExpiryWarning: null,
+        ),
+      );
+    } catch (e) {
+      _safeEmit(
+        state.copyWith(
+          status: SettingsStatus.error,
+          githubValidationMessage: 'Failed to clear configuration: $e',
+        ),
+      );
+    }
+  }
+
+  /// Check token expiry
+  Future<void> checkGitHubTokenExpiry() async {
+    try {
+      await _githubAuthService.checkTokenExpiry();
+      _safeEmit(
+        state.copyWith(
+          tokenExpiryWarning: _githubAuthService.currentWarning,
+          isGitHubAuthenticated: _githubAuthService.isAuthenticated,
+        ),
+      );
+    } catch (e) {
+      // Silently fail - this is a background check
+    }
+  }
+
+  /// Dismiss token expiry warning
+  void dismissGitHubTokenWarning() {
+    _githubAuthService.dismissTokenWarning();
+    _safeEmit(state.copyWith(tokenExpiryWarning: null));
+  }
+
+  /// Listen to GitHub auth changes
+  void _onGitHubAuthChanged() {
+    _safeEmit(
+      state.copyWith(
+        isGitHubAuthenticated: _githubAuthService.isAuthenticated,
+        tokenExpiryWarning: _githubAuthService.currentWarning,
+      ),
+    );
+  }
+
   @override
   Future<void> close() {
     _debounceTimer?.cancel();
     _credentialsService.isAuthenticatedNotifier.removeListener(_onAuthChanged);
     _aiSettingsService.removeListener(_onAiSettingsChanged);
     _backupService.removeListener(_onBackupServiceChanged);
+    _githubAuthService.removeListener(_onGitHubAuthChanged);
     return super.close();
   }
 }

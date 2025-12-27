@@ -2,10 +2,12 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings.dart';
+import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
+import 'package:pinboard_wizard/src/github/github_auth_service.dart';
+import 'package:pinboard_wizard/src/github/models/models.dart';
 import 'package:pinboard_wizard/src/pages/settings/state/settings_cubit.dart';
 import 'package:pinboard_wizard/src/pages/settings/state/settings_state.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
@@ -189,6 +191,82 @@ class MockBackupService extends Mock implements BackupService {
       super.noSuchMethod(Invocation.method(#dispose, []), returnValue: null);
 }
 
+class MockGitHubAuthService extends Mock implements GitHubAuthService {
+  @override
+  bool get isAuthenticated => super.noSuchMethod(
+    Invocation.getter(#isAuthenticated),
+    returnValue: false,
+  );
+
+  @override
+  TokenExpiryWarning? get currentWarning =>
+      super.noSuchMethod(Invocation.getter(#currentWarning), returnValue: null);
+
+  @override
+  Future<void> initialize() => super.noSuchMethod(
+    Invocation.method(#initialize, []),
+    returnValue: Future<void>.value(),
+  );
+
+  @override
+  Future<GitHubNotesConfig?> getConfig() => super.noSuchMethod(
+    Invocation.method(#getConfig, []),
+    returnValue: Future.value(null),
+  );
+
+  @override
+  Future<String?> getToken() => super.noSuchMethod(
+    Invocation.method(#getToken, []),
+    returnValue: Future.value(null),
+  );
+
+  @override
+  Future<void> checkTokenExpiry() => super.noSuchMethod(
+    Invocation.method(#checkTokenExpiry, []),
+    returnValue: Future<void>.value(),
+  );
+
+  @override
+  Future<void> saveCredentials({
+    required GitHubNotesConfig config,
+    required String token,
+  }) => super.noSuchMethod(
+    Invocation.method(#saveCredentials, [], {#config: config, #token: token}),
+    returnValue: Future<void>.value(),
+  );
+
+  @override
+  Future<void> updateToken(String token, {DateTime? newExpiry}) =>
+      super.noSuchMethod(
+        Invocation.method(#updateToken, [token], {#newExpiry: newExpiry}),
+        returnValue: Future<void>.value(),
+      );
+
+  @override
+  Future<void> clearCredentials() => super.noSuchMethod(
+    Invocation.method(#clearCredentials, []),
+    returnValue: Future<void>.value(),
+  );
+
+  @override
+  void dismissTokenWarning() => super.noSuchMethod(
+    Invocation.method(#dismissTokenWarning, []),
+    returnValue: null,
+  );
+
+  @override
+  void addListener(VoidCallback listener) => super.noSuchMethod(
+    Invocation.method(#addListener, [listener]),
+    returnValue: null,
+  );
+
+  @override
+  void removeListener(VoidCallback listener) => super.noSuchMethod(
+    Invocation.method(#removeListener, [listener]),
+    returnValue: null,
+  );
+}
+
 void main() {
   group('SettingsCubit', () {
     late SettingsCubit settingsCubit;
@@ -196,6 +274,7 @@ void main() {
     late MockPinboardService mockPinboardService;
     late MockAiSettingsService mockAiSettingsService;
     late MockBackupService mockBackupService;
+    late MockGitHubAuthService mockGitHubAuthService;
     late ValueNotifier<bool> mockAuthNotifier;
 
     setUp(() {
@@ -203,6 +282,7 @@ void main() {
       mockPinboardService = MockPinboardService();
       mockAiSettingsService = MockAiSettingsService();
       mockBackupService = MockBackupService();
+      mockGitHubAuthService = MockGitHubAuthService();
       mockAuthNotifier = ValueNotifier<bool>(false);
 
       when(
@@ -211,12 +291,17 @@ void main() {
       when(mockAiSettingsService.settings).thenReturn(const AiSettings());
       when(mockBackupService.s3Config).thenReturn(const S3Config());
       when(mockBackupService.loadConfiguration()).thenAnswer((_) async {});
+      when(mockGitHubAuthService.getConfig()).thenAnswer((_) async => null);
+      when(mockGitHubAuthService.getToken()).thenAnswer((_) async => null);
+      when(mockGitHubAuthService.isAuthenticated).thenReturn(false);
+      when(mockGitHubAuthService.currentWarning).thenReturn(null);
 
       settingsCubit = SettingsCubit(
         credentialsService: mockCredentialsService,
         pinboardService: mockPinboardService,
         aiSettingsService: mockAiSettingsService,
         backupService: mockBackupService,
+        githubAuthService: mockGitHubAuthService,
       );
     });
 

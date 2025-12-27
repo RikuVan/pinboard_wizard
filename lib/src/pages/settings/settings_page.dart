@@ -1,19 +1,21 @@
 import 'dart:async';
-import 'package:flutter/cupertino.dart';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
-import 'package:pinboard_wizard/src/service_locator.dart';
-import 'package:pinboard_wizard/src/pages/settings/state/settings_cubit.dart';
-import 'package:pinboard_wizard/src/pages/settings/state/settings_state.dart';
-import 'package:pinboard_wizard/src/common/widgets/validated_secret_field.dart';
-import 'package:pinboard_wizard/src/common/extensions/theme_extensions.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
+import 'package:pinboard_wizard/src/common/extensions/theme_extensions.dart';
+import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
+import 'package:pinboard_wizard/src/common/widgets/validated_secret_field.dart';
+import 'package:pinboard_wizard/src/github/github_auth_service.dart';
+import 'package:pinboard_wizard/src/github/models/models.dart';
+import 'package:pinboard_wizard/src/pages/settings/state/settings_cubit.dart';
+import 'package:pinboard_wizard/src/pages/settings/state/settings_state.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
+import 'package:pinboard_wizard/src/service_locator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -27,6 +29,7 @@ class SettingsPage extends StatelessWidget {
         pinboardService: locator.get<PinboardService>(),
         aiSettingsService: locator.get<AiSettingsService>(),
         backupService: locator.get<BackupService>(),
+        githubAuthService: locator.get<GitHubAuthService>(),
       )..loadSettings(),
       child: const _SettingsPageView(),
     );
@@ -49,13 +52,22 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
   final TextEditingController _s3RegionController = TextEditingController();
   final TextEditingController _s3BucketNameController = TextEditingController();
   final TextEditingController _s3FilePathController = TextEditingController();
+  final TextEditingController _githubOwnerController = TextEditingController();
+  final TextEditingController _githubRepoController = TextEditingController();
+  final TextEditingController _githubBranchController = TextEditingController();
+  final TextEditingController _githubNotesPathController =
+      TextEditingController();
+  final TextEditingController _githubTokenController = TextEditingController();
+  final TextEditingController _githubTokenExpiryController =
+      TextEditingController();
   late MacosTabController _tabController;
   Timer? _s3DebounceTimer;
+  TokenType _githubTokenType = TokenType.fineGrained;
 
   @override
   void initState() {
     super.initState();
-    _tabController = MacosTabController(length: 3);
+    _tabController = MacosTabController(length: 4);
     _apiKeyController.addListener(_onApiKeyChanged);
     _openaiKeyController.addListener(_onOpenAiKeyChanged);
     _jinaKeyController.addListener(_onJinaKeyChanged);
@@ -74,6 +86,12 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
     _s3RegionController.dispose();
     _s3BucketNameController.dispose();
     _s3FilePathController.dispose();
+    _githubOwnerController.dispose();
+    _githubRepoController.dispose();
+    _githubBranchController.dispose();
+    _githubNotesPathController.dispose();
+    _githubTokenController.dispose();
+    _githubTokenExpiryController.dispose();
     _tabController.dispose();
     _s3DebounceTimer?.cancel();
     super.dispose();
@@ -124,6 +142,23 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           _s3BucketNameController.text = state.s3Config.bucketName;
           _s3FilePathController.text = state.s3Config.filePath;
         }
+        // Load GitHub configuration only once when settings are loaded
+        if (state.status == SettingsStatus.loaded &&
+            _githubOwnerController.text.isEmpty &&
+            _githubRepoController.text.isEmpty &&
+            state.githubConfig != null) {
+          _githubOwnerController.text = state.githubConfig!.owner;
+          _githubRepoController.text = state.githubConfig!.repo;
+          _githubBranchController.text = state.githubConfig!.branch;
+          _githubNotesPathController.text = state.githubConfig!.notesPath;
+          _githubTokenController.text = state.githubToken;
+          _githubTokenType = state.githubConfig!.tokenType;
+          if (state.githubConfig!.tokenExpiry != null) {
+            _githubTokenExpiryController.text = state.githubConfig!.tokenExpiry!
+                .toIso8601String()
+                .split('T')[0];
+          }
+        }
       },
       builder: (context, state) {
         return Padding(
@@ -152,11 +187,13 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                     MacosTab(label: 'Pinboard'),
                     MacosTab(label: 'AI Settings'),
                     MacosTab(label: 'Backups'),
+                    MacosTab(label: 'GitHub Notes'),
                   ],
                   children: [
                     _buildPinboardTab(context, state),
                     _buildAiTab(context, state),
                     _buildBackupTab(context, state),
+                    _buildGitHubTab(context, state),
                   ],
                 ),
               ),
@@ -722,21 +759,21 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: state.isBackupValidating
-                  ? MacosColors.systemBlueColor.withOpacity(0.1)
+                  ? MacosColors.systemBlueColor.withValues(alpha: 0.1)
                   : state.isBackupValid
-                  ? MacosColors.systemGreenColor.withOpacity(0.1)
+                  ? MacosColors.systemGreenColor.withValues(alpha: 0.1)
                   : state.isBackupInvalid
-                  ? MacosColors.systemRedColor.withOpacity(0.1)
-                  : MacosColors.systemGrayColor.withOpacity(0.05),
+                  ? MacosColors.systemRedColor.withValues(alpha: 0.1)
+                  : MacosColors.systemGrayColor.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: state.isBackupValidating
-                    ? MacosColors.systemBlueColor.withOpacity(0.3)
+                    ? MacosColors.systemBlueColor.withValues(alpha: 0.3)
                     : state.isBackupValid
-                    ? MacosColors.systemGreenColor.withOpacity(0.3)
+                    ? MacosColors.systemGreenColor.withValues(alpha: 0.3)
                     : state.isBackupInvalid
-                    ? MacosColors.systemRedColor.withOpacity(0.3)
-                    : MacosColors.systemGrayColor.withOpacity(0.2),
+                    ? MacosColors.systemRedColor.withValues(alpha: 0.3)
+                    : MacosColors.systemGrayColor.withValues(alpha: 0.2),
               ),
             ),
             child: Row(
@@ -885,10 +922,10 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: MacosColors.systemGreenColor.withOpacity(0.1),
+                color: MacosColors.systemGreenColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: MacosColors.systemGreenColor.withOpacity(0.3),
+                  color: MacosColors.systemGreenColor.withValues(alpha: 0.3),
                 ),
               ),
               child: Column(
@@ -969,6 +1006,311 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           Text(
             'This will export all your bookmarks as a timestamped JSON file and upload it to your S3 bucket. The backup includes bookmark metadata and is compressed for efficiency.',
             style: TextStyle(fontSize: 11, color: context.helperTextColor),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGitHubTab(BuildContext context, SettingsState state) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'GitHub Notes Configuration',
+            style: MacosTheme.of(context).typography.title1,
+          ),
+          const SizedBox(height: 12),
+
+          // Status indicator
+          Row(
+            children: [
+              const Text('Status:'),
+              const SizedBox(width: 8),
+              Row(
+                children: [
+                  MacosIcon(
+                    state.isGitHubAuthenticated
+                        ? CupertinoIcons.check_mark_circled_solid
+                        : CupertinoIcons.exclamationmark_triangle,
+                    color: state.isGitHubAuthenticated
+                        ? MacosColors.systemGreenColor
+                        : MacosColors.systemGrayColor,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    state.isGitHubAuthenticated
+                        ? 'Configured'
+                        : 'Not configured',
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Token expiry warning banner
+          if (state.tokenExpiryWarning != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color:
+                    state.tokenExpiryWarning!.severity == WarningSeverity.high
+                    ? MacosColors.systemRedColor.withValues(alpha: 0.1)
+                    : MacosColors.systemOrangeColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color:
+                      state.tokenExpiryWarning!.severity == WarningSeverity.high
+                      ? MacosColors.systemRedColor
+                      : MacosColors.systemOrangeColor,
+                ),
+              ),
+              child: Row(
+                children: [
+                  MacosIcon(
+                    CupertinoIcons.exclamationmark_triangle_fill,
+                    color:
+                        state.tokenExpiryWarning!.severity ==
+                            WarningSeverity.high
+                        ? MacosColors.systemRedColor
+                        : MacosColors.systemOrangeColor,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(state.tokenExpiryWarning!.message)),
+                  PushButton(
+                    controlSize: ControlSize.small,
+                    onPressed: () => context
+                        .read<SettingsCubit>()
+                        .dismissGitHubTokenWarning(),
+                    child: const Text('Dismiss'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Repository Configuration
+          Text(
+            'Repository Settings',
+            style: MacosTheme.of(context).typography.headline,
+          ),
+          const SizedBox(height: 8),
+
+          Text(
+            'GitHub Owner/Organization',
+            style: MacosTheme.of(context).typography.body,
+          ),
+          const SizedBox(height: 4),
+          MacosTextField(
+            controller: _githubOwnerController,
+            placeholder: 'username or org-name',
+          ),
+          const SizedBox(height: 12),
+
+          Text(
+            'Repository Name',
+            style: MacosTheme.of(context).typography.body,
+          ),
+          const SizedBox(height: 4),
+          MacosTextField(
+            controller: _githubRepoController,
+            placeholder: 'personal-notes',
+          ),
+          const SizedBox(height: 12),
+
+          Text(
+            'Branch (Optional)',
+            style: MacosTheme.of(context).typography.body,
+          ),
+          const SizedBox(height: 4),
+          MacosTextField(
+            controller: _githubBranchController,
+            placeholder: 'main',
+          ),
+          const SizedBox(height: 12),
+
+          Text(
+            'Notes Path (Optional)',
+            style: MacosTheme.of(context).typography.body,
+          ),
+          const SizedBox(height: 4),
+          MacosTextField(
+            controller: _githubNotesPathController,
+            placeholder: 'notes/',
+          ),
+          const SizedBox(height: 24),
+
+          // Token Configuration
+          Row(
+            children: [
+              Text(
+                'Personal Access Token',
+                style: MacosTheme.of(context).typography.headline,
+              ),
+              const SizedBox(width: 8),
+              MacosIconButton(
+                icon: const MacosIcon(CupertinoIcons.link, size: 14),
+                onPressed: () =>
+                    _launchUrl('https://github.com/settings/tokens?type=beta'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Token Type Selection
+          Row(
+            children: [
+              const Text('Token Type:'),
+              const SizedBox(width: 12),
+              MacosRadioButton<TokenType>(
+                value: TokenType.fineGrained,
+                groupValue: _githubTokenType,
+                onChanged: (value) {
+                  setState(() {
+                    _githubTokenType = value!;
+                  });
+                },
+              ),
+              const SizedBox(width: 4),
+              const Text('Fine-Grained (Recommended)'),
+              const SizedBox(width: 16),
+              MacosRadioButton<TokenType>(
+                value: TokenType.classic,
+                groupValue: _githubTokenType,
+                onChanged: (value) {
+                  setState(() {
+                    _githubTokenType = value!;
+                  });
+                },
+              ),
+              const SizedBox(width: 4),
+              const Text('Classic'),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          ValidatedSecretField(
+            controller: _githubTokenController,
+            placeholder: 'ghp_xxxxxxxxxxxxxxxxxxxx',
+            helperText:
+                'Generate a GitHub Personal Access Token with Contents: Read/Write permissions',
+            isValidating: false,
+            isValid: null,
+          ),
+          const SizedBox(height: 12),
+
+          // Token Expiry Date
+          Text(
+            'Token Expiry Date (Optional)',
+            style: MacosTheme.of(context).typography.body,
+          ),
+          const SizedBox(height: 4),
+          MacosTextField(
+            controller: _githubTokenExpiryController,
+            placeholder: 'YYYY-MM-DD',
+          ),
+          Text(
+            'Enter the expiration date of your token for monitoring',
+            style: TextStyle(fontSize: 11, color: context.helperTextColor),
+          ),
+          const SizedBox(height: 24),
+
+          // Action Buttons
+          Row(
+            children: [
+              PushButton(
+                controlSize: ControlSize.large,
+                onPressed: () async {
+                  final owner = _githubOwnerController.text.trim();
+                  final repo = _githubRepoController.text.trim();
+                  final token = _githubTokenController.text.trim();
+                  final branch = _githubBranchController.text.trim().isEmpty
+                      ? 'main'
+                      : _githubBranchController.text.trim();
+                  final notesPath =
+                      _githubNotesPathController.text.trim().isEmpty
+                      ? 'notes/'
+                      : _githubNotesPathController.text.trim();
+
+                  DateTime? tokenExpiry;
+                  if (_githubTokenExpiryController.text.trim().isNotEmpty) {
+                    try {
+                      tokenExpiry = DateTime.parse(
+                        _githubTokenExpiryController.text.trim(),
+                      );
+                    } catch (e) {
+                      // Invalid date format - ignore
+                    }
+                  }
+
+                  await context.read<SettingsCubit>().saveGitHubConfig(
+                    owner: owner,
+                    repo: repo,
+                    token: token,
+                    branch: branch,
+                    notesPath: notesPath,
+                    tokenType: _githubTokenType,
+                    tokenExpiry: tokenExpiry,
+                  );
+                },
+                child: const Text('Save'),
+              ),
+              const SizedBox(width: 8),
+              PushButton(
+                controlSize: ControlSize.large,
+                secondary: true,
+                onPressed: () async {
+                  await context.read<SettingsCubit>().clearGitHubConfig();
+                  _githubOwnerController.clear();
+                  _githubRepoController.clear();
+                  _githubBranchController.clear();
+                  _githubNotesPathController.clear();
+                  _githubTokenController.clear();
+                  _githubTokenExpiryController.clear();
+                },
+                child: const Text('Clear'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Validation message
+          if (state.githubValidationMessage != null) ...[
+            Text(
+              state.githubValidationMessage!,
+              style: TextStyle(
+                color: state.isGitHubValid
+                    ? MacosColors.systemGreenColor
+                    : state.isGitHubInvalid
+                    ? MacosColors.systemRedColor
+                    : MacosColors.systemGrayColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Help Section
+          Container(height: 1, color: MacosColors.separatorColor),
+          const SizedBox(height: 16),
+          Text(
+            'Setup Instructions',
+            style: MacosTheme.of(context).typography.headline,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '1. Create a private repository on GitHub for your notes\n'
+            '2. Generate a Fine-Grained Personal Access Token:\n'
+            '   • Go to GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens\n'
+            '   • Repository access: Only select your notes repository\n'
+            '   • Permissions: Contents (Read and write), Metadata (Read-only)\n'
+            '   • Expiration: 180 days recommended\n'
+            '3. Enter the repository details and token above\n'
+            '4. Click Save to configure',
+            style: TextStyle(fontSize: 12, color: context.subtitleTextColor),
           ),
         ],
       ),

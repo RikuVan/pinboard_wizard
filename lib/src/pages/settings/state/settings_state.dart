@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
+import 'package:pinboard_wizard/src/github/models/github_notes_config.dart';
+import 'package:pinboard_wizard/src/github/models/token_expiry_warning.dart';
 
 enum SettingsStatus { initial, loading, loaded, error, saving, testing }
 
@@ -31,6 +33,13 @@ class SettingsState extends Equatable {
     this.backupValidationMessage,
     this.isBackupInProgress = false,
     this.lastBackupMessage,
+    // GitHub notes settings
+    this.githubConfig,
+    this.githubToken = '',
+    this.isGitHubAuthenticated = false,
+    this.githubValidationStatus = ValidationStatus.initial,
+    this.githubValidationMessage,
+    this.tokenExpiryWarning,
   });
 
   final SettingsStatus status;
@@ -61,6 +70,14 @@ class SettingsState extends Equatable {
   final bool isBackupInProgress;
   final String? lastBackupMessage;
 
+  // GitHub notes settings
+  final GitHubNotesConfig? githubConfig;
+  final String githubToken;
+  final bool isGitHubAuthenticated;
+  final ValidationStatus githubValidationStatus;
+  final String? githubValidationMessage;
+  final TokenExpiryWarning? tokenExpiryWarning;
+
   SettingsState copyWith({
     SettingsStatus? status,
     Object? errorMessage = _sentinel,
@@ -83,6 +100,12 @@ class SettingsState extends Equatable {
     Object? backupValidationMessage = _sentinel,
     bool? isBackupInProgress,
     Object? lastBackupMessage = _sentinel,
+    Object? githubConfig = _sentinel,
+    String? githubToken,
+    bool? isGitHubAuthenticated,
+    ValidationStatus? githubValidationStatus,
+    Object? githubValidationMessage = _sentinel,
+    Object? tokenExpiryWarning = _sentinel,
   }) {
     return SettingsState(
       status: status ?? this.status,
@@ -122,6 +145,20 @@ class SettingsState extends Equatable {
       lastBackupMessage: lastBackupMessage == _sentinel
           ? this.lastBackupMessage
           : lastBackupMessage as String?,
+      githubConfig: githubConfig == _sentinel
+          ? this.githubConfig
+          : githubConfig as GitHubNotesConfig?,
+      githubToken: githubToken ?? this.githubToken,
+      isGitHubAuthenticated:
+          isGitHubAuthenticated ?? this.isGitHubAuthenticated,
+      githubValidationStatus:
+          githubValidationStatus ?? this.githubValidationStatus,
+      githubValidationMessage: githubValidationMessage == _sentinel
+          ? this.githubValidationMessage
+          : githubValidationMessage as String?,
+      tokenExpiryWarning: tokenExpiryWarning == _sentinel
+          ? this.tokenExpiryWarning
+          : tokenExpiryWarning as TokenExpiryWarning?,
     );
   }
 
@@ -158,6 +195,13 @@ class SettingsState extends Equatable {
       backupValidationStatus == ValidationStatus.invalid;
   bool get canBackup => isBackupValid && !isBackupInProgress;
 
+  bool get isGitHubValidating =>
+      githubValidationStatus == ValidationStatus.validating;
+  bool get isGitHubValid => githubValidationStatus == ValidationStatus.valid;
+  bool get isGitHubInvalid =>
+      githubValidationStatus == ValidationStatus.invalid;
+  bool get isGitHubConfigured => githubConfig?.isConfigured ?? false;
+
   @override
   List<Object?> get props => [
     status,
@@ -181,5 +225,11 @@ class SettingsState extends Equatable {
     backupValidationMessage,
     isBackupInProgress,
     lastBackupMessage,
+    githubConfig,
+    githubToken,
+    isGitHubAuthenticated,
+    githubValidationStatus,
+    githubValidationMessage,
+    tokenExpiryWarning,
   ];
 }
