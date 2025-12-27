@@ -262,6 +262,86 @@ void dispose()
 - `isAuthenticated` - Whether user has valid credentials
 - `currentWarning` - Active token expiry warning (if any)
 
+#### `GitHubConfigValidator`
+
+Service for validating GitHub configuration and credentials.
+
+**Key Features:**
+
+- Local validation (format checks, no API calls)
+- Remote validation (verifies credentials with GitHub API)
+- Token format validation (prefix, length, character checks)
+- Token expiry date validation
+- Repository and branch name validation
+- Username format validation
+
+**Validation Methods:**
+
+```dart
+// Fast local validation (format checks only)
+ValidationResult validateLocally(GitHubNotesConfig config, String token)
+
+// Complete validation (includes API calls to GitHub)
+Future<ValidationResult> validateRemotely(GitHubNotesConfig config, String token)
+```
+
+**Helper Methods:**
+
+```dart
+// Get token type from prefix
+String? getTokenType(String token)
+
+// Check if token is fine-grained
+bool isFineGrainedToken(String token)
+
+// Check if token is classic
+bool isClassicToken(String token)
+```
+
+**ValidationResult:**
+
+```dart
+class ValidationResult {
+  final bool isValid;
+  final String? errorMessage;
+  final ValidationErrorType? errorType;
+}
+```
+
+**Validation Rules:**
+
+- **Token Format:**
+  - Must start with `ghp_` (classic) or `github_pat_` (fine-grained)
+  - Minimum 40 characters
+  - No spaces allowed
+
+- **Token Expiry Date** (optional):
+  - Must be a valid `DateTime` object
+  - Cannot be in the past
+  - Should not be more than 2 years in the future
+  - Format: Use Dart's `DateTime` class (e.g., `DateTime(2025, 6, 15)`)
+
+- **Owner/Username:**
+  - Alphanumeric characters and hyphens only
+  - Cannot start or end with hyphen
+  - No consecutive hyphens
+  - Maximum 39 characters
+
+- **Repository Name:**
+  - Alphanumeric, hyphens, underscores, periods allowed
+  - No spaces
+  - Maximum 100 characters
+
+- **Branch Name:**
+  - No spaces, `..`, consecutive slashes
+  - Cannot end with `.lock` or `/`
+  - Cannot start with `/`
+
+- **Notes Path:**
+  - No invalid characters: `\ : * ? " < > |`
+  - Cannot contain `..`
+  - Cannot start with `/`
+
 ## Usage Examples
 
 ### 1. Initialize Auth Service
@@ -282,7 +362,42 @@ authService.addListener(() {
 });
 ```
 
-### 2. Save Credentials
+### 2. Validate Configuration
+
+```dart
+final validator = GitHubConfigValidator();
+
+final config = GitHubNotesConfig(
+  owner: 'myusername',
+  repo: 'my-notes',
+  branch: 'main',
+  notesPath: 'notes/',
+  deviceId: 'device-123',
+  tokenType: TokenType.fineGrained,
+  tokenExpiry: DateTime(2025, 12, 31), // Optional: December 31, 2025
+  isConfigured: true,
+);
+
+// Quick local validation (instant)
+final localResult = validator.validateLocally(config, token);
+if (!localResult.isValid) {
+  print('Invalid: ${localResult.errorMessage}');
+  return;
+}
+
+// Full validation with API calls (slower, verifies access)
+final remoteResult = await validator.validateRemotely(config, token);
+if (!remoteResult.isValid) {
+  print('Validation failed: ${remoteResult.errorMessage}');
+  // Show error to user
+  return;
+}
+
+// Configuration is valid, safe to save
+await saveConfig(config, token);
+```
+
+### 3. Save Credentials
 
 ```dart
 final config = GitHubNotesConfig(
@@ -370,6 +485,10 @@ await authService.updateToken(
      - Metadata: Read-only (automatic)
 4. Generate and copy token
 5. Paste into Pinboard Wizard settings
+6. **Optional:** Enter the expiration date in the app
+   - Format: Select date from date picker or enter as YYYY-MM-DD
+   - Example: 2025-12-31 for December 31, 2025
+   - This enables expiry warnings before the token expires
 
 ### Classic Personal Access Token (Not Recommended)
 

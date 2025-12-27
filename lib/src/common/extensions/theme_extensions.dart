@@ -34,7 +34,7 @@ extension ThemeExtensions on BuildContext {
   Color get urlTextColor {
     return MacosTheme.of(this).brightness == Brightness.dark
         ? MacosColors.secondaryLabelColor.resolveFrom(this)
-        : MacosColors.labelColor.withOpacity(0.75);
+        : MacosColors.labelColor.resolveFrom(this).withValues(alpha: 0.75);
   }
 
   /// Returns whether the current theme is dark mode

@@ -1236,6 +1236,10 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                       ? 'notes/'
                       : _githubNotesPathController.text.trim();
 
+                  // Capture context and cubit before any async operations
+                  final dialogContext = context;
+                  final settingsCubit = context.read<SettingsCubit>();
+
                   DateTime? tokenExpiry;
                   if (_githubTokenExpiryController.text.trim().isNotEmpty) {
                     try {
@@ -1243,11 +1247,33 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                         _githubTokenExpiryController.text.trim(),
                       );
                     } catch (e) {
-                      // Invalid date format - ignore
+                      // Show error for invalid date format
+                      if (!mounted) return;
+                      // ignore: use_build_context_synchronously
+                      final navigator = Navigator.of(dialogContext);
+                      // ignore: use_build_context_synchronously
+                      await showMacosAlertDialog(
+                        context: dialogContext,
+                        builder: (builderContext) => MacosAlertDialog(
+                          appIcon: const FlutterLogo(size: 56),
+                          title: const Text('Invalid Date Format'),
+                          message: Text(
+                            'Token expiry date must be in YYYY-MM-DD format.\n\n'
+                            'Example: 2025-12-31\n\n'
+                            'Error: ${e.toString()}',
+                          ),
+                          primaryButton: PushButton(
+                            controlSize: ControlSize.large,
+                            onPressed: () => navigator.pop(),
+                            child: const Text('OK'),
+                          ),
+                        ),
+                      );
+                      return;
                     }
                   }
 
-                  await context.read<SettingsCubit>().saveGitHubConfig(
+                  await settingsCubit.saveGitHubConfig(
                     owner: owner,
                     repo: repo,
                     token: token,

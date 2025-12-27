@@ -37,7 +37,7 @@ class ValidatedSecretField extends StatelessWidget {
             placeholder: placeholder,
             placeholderStyle: TextStyle(
               fontWeight: FontWeight.w400,
-              color: CupertinoColors.placeholderText.withOpacity(0.5),
+              color: CupertinoColors.placeholderText.withValues(alpha: 0.5),
             ),
             obscureText: true,
             clearButtonMode: OverlayVisibilityMode.editing,

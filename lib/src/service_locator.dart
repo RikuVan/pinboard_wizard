@@ -5,6 +5,7 @@ import 'package:pinboard_wizard/src/ai/openai/openai_service.dart';
 import 'package:pinboard_wizard/src/ai/web_scraping/jina_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/github/github_auth_service.dart';
+import 'package:pinboard_wizard/src/github/github_config_validator.dart';
 import 'package:pinboard_wizard/src/github/github_credentials_storage.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/flutter_secure_secrets_storage.dart';
@@ -32,5 +33,8 @@ Future<void> setup() async {
     )
     ..registerLazySingleton<GitHubAuthService>(
       () => GitHubAuthService(storage: locator.get<GitHubCredentialsStorage>()),
+    )
+    ..registerLazySingleton<GitHubConfigValidator>(
+      () => GitHubConfigValidator(),
     );
 }

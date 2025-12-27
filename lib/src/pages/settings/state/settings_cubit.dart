@@ -5,6 +5,7 @@ import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
 import 'package:pinboard_wizard/src/github/github_auth_service.dart';
+import 'package:pinboard_wizard/src/github/github_config_validator.dart';
 import 'package:pinboard_wizard/src/github/models/models.dart';
 import 'package:pinboard_wizard/src/pages/settings/state/settings_state.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
@@ -18,11 +19,14 @@ class SettingsCubit extends Cubit<SettingsState> {
     required AiSettingsService aiSettingsService,
     required BackupService backupService,
     required GitHubAuthService githubAuthService,
+    GitHubConfigValidator? githubConfigValidator,
   }) : _credentialsService = credentialsService,
        _pinboardService = pinboardService,
        _aiSettingsService = aiSettingsService,
        _backupService = backupService,
        _githubAuthService = githubAuthService,
+       _githubConfigValidator =
+           githubConfigValidator ?? GitHubConfigValidator(),
        super(const SettingsState()) {
     // Listen to authentication changes
     _credentialsService.isAuthenticatedNotifier.addListener(_onAuthChanged);
@@ -39,6 +43,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   final AiSettingsService _aiSettingsService;
   final BackupService _backupService;
   final GitHubAuthService _githubAuthService;
+  final GitHubConfigValidator _githubConfigValidator;
   Timer? _debounceTimer;
 
   /// Safely emit a state, checking if the cubit is not closed
@@ -679,21 +684,11 @@ class SettingsCubit extends Cubit<SettingsState> {
     required TokenType tokenType,
     DateTime? tokenExpiry,
   }) async {
-    if (owner.trim().isEmpty || repo.trim().isEmpty || token.trim().isEmpty) {
-      _safeEmit(
-        state.copyWith(
-          githubValidationStatus: ValidationStatus.invalid,
-          githubValidationMessage: 'Owner, repo, and token are required',
-        ),
-      );
-      return;
-    }
-
     _safeEmit(
       state.copyWith(
         status: SettingsStatus.saving,
         githubValidationStatus: ValidationStatus.validating,
-        githubValidationMessage: null,
+        githubValidationMessage: 'Validating configuration...',
       ),
     );
 
@@ -713,6 +708,43 @@ class SettingsCubit extends Cubit<SettingsState> {
         isConfigured: true,
       );
 
+      // Perform local validation first (fast)
+      final localValidation = _githubConfigValidator.validateLocally(
+        config,
+        token.trim(),
+      );
+      if (!localValidation.isValid) {
+        _safeEmit(
+          state.copyWith(
+            status: SettingsStatus.loaded,
+            githubValidationStatus: ValidationStatus.invalid,
+            githubValidationMessage: localValidation.errorMessage,
+          ),
+        );
+        return;
+      }
+
+      // Perform remote validation (makes API calls)
+      _safeEmit(
+        state.copyWith(githubValidationMessage: 'Verifying GitHub access...'),
+      );
+
+      final remoteValidation = await _githubConfigValidator.validateRemotely(
+        config,
+        token.trim(),
+      );
+      if (!remoteValidation.isValid) {
+        _safeEmit(
+          state.copyWith(
+            status: SettingsStatus.loaded,
+            githubValidationStatus: ValidationStatus.invalid,
+            githubValidationMessage: remoteValidation.errorMessage,
+          ),
+        );
+        return;
+      }
+
+      // All validation passed, save the configuration
       await _githubAuthService.saveCredentials(
         config: config,
         token: token.trim(),
@@ -725,7 +757,8 @@ class SettingsCubit extends Cubit<SettingsState> {
           githubToken: token.trim(),
           isGitHubAuthenticated: true,
           githubValidationStatus: ValidationStatus.valid,
-          githubValidationMessage: 'GitHub configuration saved successfully',
+          githubValidationMessage:
+              'GitHub configuration validated and saved successfully',
           tokenExpiryWarning: _githubAuthService.currentWarning,
         ),
       );
@@ -742,19 +775,67 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   /// Update just the GitHub token (for renewal)
   Future<void> updateGitHubToken(String token, {DateTime? newExpiry}) async {
-    if (token.trim().isEmpty) {
-      _safeEmit(
-        state.copyWith(
-          githubValidationStatus: ValidationStatus.invalid,
-          githubValidationMessage: 'Token cannot be empty',
-        ),
-      );
-      return;
-    }
-
-    _safeEmit(state.copyWith(status: SettingsStatus.saving));
+    _safeEmit(
+      state.copyWith(
+        status: SettingsStatus.saving,
+        githubValidationStatus: ValidationStatus.validating,
+        githubValidationMessage: 'Validating token...',
+      ),
+    );
 
     try {
+      final currentConfig = await _githubAuthService.getConfig();
+      if (currentConfig == null) {
+        _safeEmit(
+          state.copyWith(
+            status: SettingsStatus.loaded,
+            githubValidationStatus: ValidationStatus.invalid,
+            githubValidationMessage:
+                'No GitHub configuration found. Please configure GitHub settings first.',
+          ),
+        );
+        return;
+      }
+
+      // Validate token format locally
+      final localValidation = _githubConfigValidator.validateLocally(
+        currentConfig,
+        token.trim(),
+      );
+      if (!localValidation.isValid) {
+        _safeEmit(
+          state.copyWith(
+            status: SettingsStatus.loaded,
+            githubValidationStatus: ValidationStatus.invalid,
+            githubValidationMessage: localValidation.errorMessage,
+          ),
+        );
+        return;
+      }
+
+      // Validate token remotely (check if it works with GitHub)
+      _safeEmit(
+        state.copyWith(
+          githubValidationMessage: 'Verifying token with GitHub...',
+        ),
+      );
+
+      final remoteValidation = await _githubConfigValidator.validateRemotely(
+        currentConfig,
+        token.trim(),
+      );
+      if (!remoteValidation.isValid) {
+        _safeEmit(
+          state.copyWith(
+            status: SettingsStatus.loaded,
+            githubValidationStatus: ValidationStatus.invalid,
+            githubValidationMessage: remoteValidation.errorMessage,
+          ),
+        );
+        return;
+      }
+
+      // Token is valid, update it
       await _githubAuthService.updateToken(token.trim(), newExpiry: newExpiry);
 
       _safeEmit(
@@ -763,7 +844,7 @@ class SettingsCubit extends Cubit<SettingsState> {
           githubToken: token.trim(),
           isGitHubAuthenticated: true,
           githubValidationStatus: ValidationStatus.valid,
-          githubValidationMessage: 'Token updated successfully',
+          githubValidationMessage: 'Token validated and updated successfully',
           tokenExpiryWarning: _githubAuthService.currentWarning,
         ),
       );

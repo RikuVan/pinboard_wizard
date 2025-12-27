@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:pinboard_wizard/src/github/models/github_file.dart';
 import 'package:pinboard_wizard/src/github/models/rate_limit_info.dart';
@@ -108,7 +109,16 @@ class GitHubClient {
        _repo = repo,
        _branch = branch,
        _notesPath = notesPath.endsWith('/') ? notesPath : '$notesPath/',
-       _httpClient = httpClient ?? http.Client();
+       _httpClient = httpClient ?? http.Client() {
+    debugPrint('🔧 GitHubClient initialized:');
+    debugPrint('   Owner: $_owner');
+    debugPrint('   Repo: $_repo');
+    debugPrint('   Branch: $_branch');
+    debugPrint('   Notes Path: $_notesPath');
+    debugPrint(
+      '   Token prefix: ${token.substring(0, token.length > 10 ? 10 : token.length)}...',
+    );
+  }
 
   /// Gets the current rate limit information
   ///
@@ -127,12 +137,43 @@ class GitHubClient {
   /// Throws [GitHubAuthException] if authentication fails.
   /// Throws [GitHubRateLimitException] if rate limit is exceeded.
   Future<List<GitHubFile>> listNotesFiles() async {
+    debugPrint('📂 Listing notes files...');
+
     // Step 1: Get latest commit SHA
-    final commit = await _getLatestCommit();
-    final treeSha = commit['tree']['sha'] as String;
+    final commitResponse = await _getLatestCommit();
+    debugPrint('   Commit response keys: ${commitResponse.keys.toList()}');
+
+    // The tree is nested under commit.tree, not at the top level
+    if (commitResponse['commit'] == null) {
+      debugPrint('   ✗ ERROR: commitResponse["commit"] is null!');
+      debugPrint('   Full commit response: $commitResponse');
+      throw GitHubException('Invalid commit response: missing "commit" field');
+    }
+
+    final commit = commitResponse['commit'] as Map<String, dynamic>;
+    if (commit['tree'] == null) {
+      debugPrint('   ✗ ERROR: commit["tree"] is null!');
+      debugPrint('   Commit object: $commit');
+      throw GitHubException(
+        'Invalid commit response: missing "commit.tree" field',
+      );
+    }
+
+    final commitTree = commit['tree'] as Map<String, dynamic>;
+    if (commitTree['sha'] == null) {
+      debugPrint('   ✗ ERROR: tree["sha"] is null!');
+      debugPrint('   Tree object: $commitTree');
+      throw GitHubException(
+        'Invalid commit response: missing "commit.tree.sha" field',
+      );
+    }
+
+    final treeSha = commitTree['sha'] as String;
+    debugPrint('   Latest commit SHA: ${treeSha.substring(0, 7)}');
 
     // Step 2: Check if tree changed (cached comparison)
     if (_lastTreeSha == treeSha) {
+      debugPrint('   Tree unchanged (cached), returning empty list');
       // No changes since last sync, return empty
       return [];
     }
@@ -141,6 +182,7 @@ class GitHubClient {
     final url = Uri.parse(
       '$_baseUrl/repos/$_owner/$_repo/git/trees/$treeSha?recursive=1',
     );
+    debugPrint('   Fetching tree: $url');
 
     final response = await _get(url);
     final tree = json.decode(response.body) as Map<String, dynamic>;
@@ -148,6 +190,8 @@ class GitHubClient {
     // Step 4: Filter for markdown files in notes path
     final files = <GitHubFile>[];
     final treeList = tree['tree'] as List<dynamic>;
+    debugPrint('   Total tree entries: ${treeList.length}');
+    debugPrint('   Filtering for path prefix: "$_notesPath"');
 
     for (final entry in treeList) {
       final entryMap = entry as Map<String, dynamic>;
@@ -163,8 +207,11 @@ class GitHubClient {
             type: entryMap['type'] as String,
           ),
         );
+        debugPrint('   ✓ Matched: $path');
       }
     }
+
+    debugPrint('   Found ${files.length} markdown files in "$_notesPath"');
 
     // Cache tree SHA for next sync
     _lastTreeSha = treeSha;
@@ -177,9 +224,23 @@ class GitHubClient {
   /// Returns a Map containing commit metadata including tree SHA.
   Future<Map<String, dynamic>> _getLatestCommit() async {
     final url = Uri.parse('$_baseUrl/repos/$_owner/$_repo/commits/$_branch');
+    debugPrint('   Getting latest commit from: $url');
 
     final response = await _get(url);
-    return json.decode(response.body) as Map<String, dynamic>;
+    debugPrint('   Response body length: ${response.body.length} chars');
+    debugPrint(
+      '   Response body preview: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...',
+    );
+
+    final decoded = json.decode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      debugPrint(
+        '   ✗ ERROR: Response is not a Map! Type: ${decoded.runtimeType}',
+      );
+      throw GitHubException('Unexpected response type from GitHub API');
+    }
+
+    return decoded;
   }
 
   /// Gets metadata for a single file.
@@ -395,17 +456,28 @@ class GitHubClient {
 
   /// Builds standard headers for GitHub API requests.
   Map<String, String> _buildHeaders() {
-    return {
+    final headers = {
       'Authorization': 'Bearer $_token',
       'Accept': 'application/vnd.github.v3+json',
       'User-Agent': 'PinboardWizard/1.0',
     };
+
+    debugPrint(
+      '   Request headers: Accept=${headers['Accept']}, User-Agent=${headers['User-Agent']}',
+    );
+    debugPrint(
+      '   Authorization: Bearer ${_token.substring(0, _token.length > 15 ? 15 : _token.length)}...',
+    );
+
+    return headers;
   }
 
   /// Performs a GET request with retry logic.
   Future<http.Response> _get(Uri url) async {
     return withRetry(() async {
+      debugPrint('   GET request to: $url');
       final response = await _httpClient.get(url, headers: _buildHeaders());
+      debugPrint('   Response status: ${response.statusCode}');
       _updateRateLimitInfo(response);
       _handleResponse(response);
       return response;
@@ -525,13 +597,18 @@ class GitHubClient {
   /// Makes a lightweight API call to verify credentials.
   /// Returns true if authentication is valid, false otherwise.
   Future<bool> testAuthentication() async {
+    debugPrint('🔐 Testing authentication...');
     try {
       final url = Uri.parse('$_baseUrl/user');
-      await _get(url);
+      final response = await _get(url);
+      final userData = json.decode(response.body);
+      debugPrint('   ✓ Authenticated as: ${userData['login']}');
       return true;
-    } on GitHubAuthException {
+    } on GitHubAuthException catch (e) {
+      debugPrint('   ✗ Authentication failed: ${e.message}');
       return false;
     } catch (e) {
+      debugPrint('   ✗ Error during authentication: $e');
       // Other errors might indicate network issues, not auth issues
       rethrow;
     }
