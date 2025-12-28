@@ -860,7 +860,7 @@ void main() {
 
   group('GitHubNotesCubit - Deletion', () {
     blocTest<GitHubNotesCubit, GitHubNotesState>(
-      'deleteNote marks note for deletion and clears selection if selected',
+      'deleteNote marks note for deletion and keeps selection to show undo button',
       setUp: () {
         final testNote = Note(
           id: 'note1',
@@ -929,23 +929,20 @@ void main() {
       ),
       act: (cubit) => cubit.deleteNote('note1'),
       expect: () => [
-        // Should clear selection
-        isA<GitHubNotesState>()
-            .having((s) => s.selectedNote, 'selectedNote', isNull)
-            .having((s) => s.noteContent, 'noteContent', isNull),
-        // Then reload with marked for deletion
-        isA<GitHubNotesState>().having(
-          (s) => s.status,
-          'status',
-          GitHubNotesStatus.loading,
-        ),
+        // Should reload with marked for deletion AND keep selection (to show undo button)
         isA<GitHubNotesState>()
             .having((s) => s.status, 'status', GitHubNotesStatus.loaded)
             .having(
               (s) => s.notes.first.markedForDeletion,
               'markedForDeletion',
               true,
-            ),
+            )
+            .having(
+              (s) => s.selectedNote?.markedForDeletion,
+              'selectedNote.markedForDeletion',
+              true,
+            )
+            .having((s) => s.selectedNote?.id, 'selectedNote.id', 'note1'),
       ],
       verify: (cubit) {
         // Should mark note for deletion
@@ -1060,16 +1057,16 @@ void main() {
       ),
       act: (cubit) => cubit.deleteNote('note1'),
       expect: () => [
-        // Should reload notes but keep selection
-        isA<GitHubNotesState>().having(
-          (s) => s.status,
-          'status',
-          GitHubNotesStatus.loading,
-        ),
+        // Should reload notes but keep selection (different note was selected)
         isA<GitHubNotesState>()
             .having((s) => s.status, 'status', GitHubNotesStatus.loaded)
             .having((s) => s.selectedNote?.id, 'selectedNote.id', 'note2')
-            .having((s) => s.noteContent, 'noteContent', 'Other content'),
+            .having((s) => s.noteContent, 'noteContent', 'Other content')
+            .having(
+              (s) => s.notes.first.markedForDeletion,
+              'markedForDeletion',
+              true,
+            ),
       ],
     );
 

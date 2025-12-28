@@ -149,10 +149,66 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
 
     try {
       final localPath = fileService.getLocalPath(note.path);
-      final content = await fileService.readFile(localPath);
-      emit(state.copyWith(noteContent: content, clearErrorMessage: true));
+
+      // If note is marked for deletion, try to restore from trash for viewing
+      if (note.markedForDeletion) {
+        // Check if file exists
+        if (await fileService.fileExists(localPath)) {
+          // File still exists, read it
+          final content = await fileService.readFile(localPath);
+          emit(state.copyWith(noteContent: content, clearErrorMessage: true));
+        } else {
+          // File was moved to trash, try to find and read backup
+          try {
+            final backups = await fileService.listBackups();
+            final filename = localPath.split('/').last;
+            final noteBackups =
+                backups
+                    .where((backup) => backup.path.endsWith('_$filename'))
+                    .toList()
+                  ..sort((a, b) => b.path.compareTo(a.path));
+
+            if (noteBackups.isNotEmpty) {
+              // Read from most recent backup
+              final content = await fileService.readFile(
+                noteBackups.first.path,
+              );
+              emit(
+                state.copyWith(noteContent: content, clearErrorMessage: true),
+              );
+            } else {
+              // No backup found
+              emit(
+                state.copyWith(
+                  noteContent:
+                      '# Note marked for deletion\n\nThis note has been marked for deletion and the file has been moved to trash. Use the "Undo Delete" button to restore it.',
+                  clearErrorMessage: true,
+                ),
+              );
+            }
+          } catch (e) {
+            emit(
+              state.copyWith(
+                noteContent:
+                    '# Note marked for deletion\n\nThis note has been marked for deletion. Use the "Undo Delete" button to restore it.\n\nError reading backup: $e',
+                clearErrorMessage: true,
+              ),
+            );
+          }
+        }
+      } else {
+        // Normal note, read file
+        final content = await fileService.readFile(localPath);
+        emit(state.copyWith(noteContent: content, clearErrorMessage: true));
+      }
     } catch (e) {
-      emit(state.copyWith(errorMessage: 'Failed to load note content: $e'));
+      emit(
+        state.copyWith(
+          noteContent:
+              '# Error loading note\n\nFailed to load note content: $e',
+          clearErrorMessage: true,
+        ),
+      );
     }
   }
 
@@ -389,13 +445,29 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
         ),
       );
 
-      // Clear selection if this note was selected
+      // Reload notes (keep selection so user sees undo button)
+      final notes = await database.getAllNotes();
+      final isOnline = await networkService.isOnline();
+
+      // If this note was selected, re-select it (with updated markedForDeletion state)
+      // to show the undo button. Otherwise keep existing selection.
+      Note? newSelection = state.selectedNote;
       if (state.selectedNote?.id == noteId) {
-        emit(state.copyWith(clearSelectedNote: true, clearNoteContent: true));
+        newSelection = notes.firstWhere(
+          (n) => n.id == noteId,
+          orElse: () => note,
+        );
       }
 
-      // Reload notes
-      await loadNotes();
+      emit(
+        state.copyWith(
+          status: GitHubNotesStatus.loaded,
+          notes: notes,
+          isOnline: isOnline,
+          selectedNote: newSelection,
+          clearErrorMessage: true,
+        ),
+      );
 
       debugPrint('🗑️ Note marked for deletion: ${note.title}');
       debugPrint('   Backup available for 30 days in .trash/');
