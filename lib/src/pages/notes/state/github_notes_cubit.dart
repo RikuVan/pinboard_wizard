@@ -69,7 +69,7 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
           status: GitHubNotesStatus.loaded,
           notes: notes,
           isOnline: isOnline,
-          errorMessage: null,
+          clearErrorMessage: true,
         ),
       );
     } catch (e) {
@@ -120,7 +120,7 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
     try {
       final localPath = fileService.getLocalPath(note.path);
       final content = await fileService.readFile(localPath);
-      emit(state.copyWith(noteContent: content, errorMessage: null));
+      emit(state.copyWith(noteContent: content, clearErrorMessage: true));
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Failed to load note content: $e'));
     }
@@ -128,7 +128,11 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
 
   /// Clear note selection
   void clearSelection() {
-    emit(state.copyWith(selectedNote: null, noteContent: null, isEditing: false));
+    emit(state.copyWith(
+      clearSelectedNote: true,
+      clearNoteContent: true,
+      isEditing: false,
+    ));
   }
 
   /// Start editing the selected note
@@ -193,7 +197,7 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
       await selectNote(updatedNote);
 
       debugPrint('✅ Save complete');
-      emit(state.copyWith(isSaving: false, isEditing: false, errorMessage: null));
+      emit(state.copyWith(isSaving: false, isEditing: false, clearErrorMessage: true));
     } catch (e, stackTrace) {
       debugPrint('❌ Save failed: $e');
       debugPrint('   Stack trace: $stackTrace');
@@ -257,7 +261,7 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
         await selectNote(newNote);
       }
 
-      emit(state.copyWith(isCreating: false, errorMessage: null));
+      emit(state.copyWith(isCreating: false, clearErrorMessage: true));
     } catch (e) {
       emit(state.copyWith(isCreating: false, errorMessage: 'Failed to create note: $e'));
     }
@@ -330,7 +334,7 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
 
   /// Perform full sync: pull from GitHub, then push dirty notes
   Future<void> sync() async {
-    emit(state.copyWith(isSyncing: true, syncResult: null));
+    emit(state.copyWith(isSyncing: true, clearSyncResult: true));
 
     try {
       final isOnline = await networkService.isOnline();
@@ -379,7 +383,7 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
   Future<void> resolveConflictKeepOriginal(Note conflictNote) async {
     try {
       await deleteNote(conflictNote.id);
-      emit(state.copyWith(errorMessage: null));
+      emit(state.copyWith(clearErrorMessage: true));
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Failed to resolve conflict: $e'));
     }

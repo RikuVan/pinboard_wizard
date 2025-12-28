@@ -117,7 +117,9 @@ class GitHubNotesState extends Equatable {
     List<Note>? notes,
     List<Note>? filteredNotes,
     Note? selectedNote,
+    bool clearSelectedNote = false,
     String? noteContent,
+    bool clearNoteContent = false,
     String? searchQuery,
     bool? isSearching,
     bool? isEditing,
@@ -126,23 +128,18 @@ class GitHubNotesState extends Equatable {
     bool? isSyncing,
     bool? isOnline,
     SyncResult? syncResult,
+    bool clearSyncResult = false,
     DateTime? lastSyncTime,
+    bool clearLastSyncTime = false,
     String? errorMessage,
+    bool clearErrorMessage = false,
   }) {
-    // Use a sentinel to distinguish between "not passed" and "passed as null"
-    const unset = Object();
-    final selectedNoteValue = selectedNote ?? unset;
-    final noteContentValue = noteContent ?? unset;
-    final syncResultValue = syncResult ?? unset;
-    final lastSyncTimeValue = lastSyncTime ?? unset;
-    final errorMessageValue = errorMessage ?? unset;
-
     return GitHubNotesState(
       status: status ?? this.status,
       notes: notes ?? this.notes,
       filteredNotes: filteredNotes ?? this.filteredNotes,
-      selectedNote: selectedNoteValue == unset ? this.selectedNote : selectedNote,
-      noteContent: noteContentValue == unset ? this.noteContent : noteContent,
+      selectedNote: clearSelectedNote ? null : (selectedNote ?? this.selectedNote),
+      noteContent: clearNoteContent ? null : (noteContent ?? this.noteContent),
       searchQuery: searchQuery ?? this.searchQuery,
       isSearching: isSearching ?? this.isSearching,
       isEditing: isEditing ?? this.isEditing,
@@ -150,9 +147,9 @@ class GitHubNotesState extends Equatable {
       isCreating: isCreating ?? this.isCreating,
       isSyncing: isSyncing ?? this.isSyncing,
       isOnline: isOnline ?? this.isOnline,
-      syncResult: syncResultValue == unset ? this.syncResult : syncResult,
-      lastSyncTime: lastSyncTimeValue == unset ? this.lastSyncTime : lastSyncTime,
-      errorMessage: errorMessageValue == unset ? this.errorMessage : errorMessage,
+      syncResult: clearSyncResult ? null : (syncResult ?? this.syncResult),
+      lastSyncTime: clearLastSyncTime ? null : (lastSyncTime ?? this.lastSyncTime),
+      errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
     );
   }
 
