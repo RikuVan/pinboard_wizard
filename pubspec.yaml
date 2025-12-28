@@ -29,15 +29,28 @@ dependencies:
   package_info_plus: ^9.0.0
   openai_dart: ^0.6.1
   aws_s3_upload_lite: ^0.1.6
+  uuid: ^4.0.0
   json_serializable: 6.11.2
+  drift: ^2.30.0
+  sqlite3: ^2.9.4
+  sqlite3_flutter_libs: ^0.5.41
+  path: ^1.9.1
+  path_provider: ^2.1.5
+  timeago: ^3.7.1
+  flutter_markdown_plus: ^1.0.6
+  markdown: ^7.2.2
+  flutter_highlight: ^0.7.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   build_runner: ^2.7.1
+  drift_dev: ^2.30.0
   flutter_lints: ^6.0.0
   mockito: ^5.4.4
   bloc_test: ^10.0.0
+  matcher: ^0.12.0
+  mocktail: ^1.0.0
 
 flutter:
   uses-material-design: true

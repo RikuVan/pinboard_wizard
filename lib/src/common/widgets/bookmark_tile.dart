@@ -2,9 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:pinboard_wizard/src/common/extensions/theme_extensions.dart';
 import 'package:pinboard_wizard/src/common/widgets/dialogs.dart';
+import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class BookmarkTile extends StatelessWidget {
@@ -163,7 +163,7 @@ class BookmarkTile extends StatelessWidget {
                                 backgroundColor: MacosColors
                                     .controlBackgroundColor
                                     .resolveFrom(context)
-                                    .withOpacity(0.3),
+                                    .withValues(alpha: 0.3),
                               ),
                             },
                             onLinkTap: (url, attributes, element) {

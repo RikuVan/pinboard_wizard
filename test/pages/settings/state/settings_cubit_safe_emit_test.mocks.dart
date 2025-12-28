@@ -12,6 +12,9 @@ import 'package:pinboard_wizard/src/ai/ai_settings.dart' as _i5;
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart' as _i6;
 import 'package:pinboard_wizard/src/backup/backup_service.dart' as _i14;
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart' as _i7;
+import 'package:pinboard_wizard/src/github/github_auth_service.dart' as _i15;
+import 'package:pinboard_wizard/src/github/models/github_notes_config.dart'
+    as _i16;
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart' as _i8;
 import 'package:pinboard_wizard/src/pinboard/models/credentials.dart' as _i10;
 import 'package:pinboard_wizard/src/pinboard/models/note.dart' as _i12;
@@ -729,6 +732,158 @@ class MockBackupService extends _i1.Mock implements _i14.BackupService {
     Invocation.method(#resetStatus, []),
     returnValueForMissingStub: null,
   );
+
+  @override
+  void addListener(_i13.VoidCallback? listener) => super.noSuchMethod(
+    Invocation.method(#addListener, [listener]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void removeListener(_i13.VoidCallback? listener) => super.noSuchMethod(
+    Invocation.method(#removeListener, [listener]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void dispose() => super.noSuchMethod(
+    Invocation.method(#dispose, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void notifyListeners() => super.noSuchMethod(
+    Invocation.method(#notifyListeners, []),
+    returnValueForMissingStub: null,
+  );
+}
+
+/// A class which mocks [GitHubAuthService].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockGitHubAuthService extends _i1.Mock implements _i15.GitHubAuthService {
+  MockGitHubAuthService() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  bool get isAuthenticated =>
+      (super.noSuchMethod(
+            Invocation.getter(#isAuthenticated),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
+  bool get hasListeners =>
+      (super.noSuchMethod(Invocation.getter(#hasListeners), returnValue: false)
+          as bool);
+
+  @override
+  _i9.Future<void> initialize() =>
+      (super.noSuchMethod(
+            Invocation.method(#initialize, []),
+            returnValue: _i9.Future<void>.value(),
+            returnValueForMissingStub: _i9.Future<void>.value(),
+          )
+          as _i9.Future<void>);
+
+  @override
+  bool isTokenExpiringSoon(_i16.GitHubNotesConfig? config) =>
+      (super.noSuchMethod(
+            Invocation.method(#isTokenExpiringSoon, [config]),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
+  bool isTokenExpired(_i16.GitHubNotesConfig? config) =>
+      (super.noSuchMethod(
+            Invocation.method(#isTokenExpired, [config]),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
+  int? getDaysUntilExpiry(_i16.GitHubNotesConfig? config) =>
+      (super.noSuchMethod(Invocation.method(#getDaysUntilExpiry, [config]))
+          as int?);
+
+  @override
+  _i9.Future<void> checkTokenExpiry() =>
+      (super.noSuchMethod(
+            Invocation.method(#checkTokenExpiry, []),
+            returnValue: _i9.Future<void>.value(),
+            returnValueForMissingStub: _i9.Future<void>.value(),
+          )
+          as _i9.Future<void>);
+
+  @override
+  void dismissTokenWarning() => super.noSuchMethod(
+    Invocation.method(#dismissTokenWarning, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  _i9.Future<bool> handleAuthError(int? statusCode, {String? message}) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #handleAuthError,
+              [statusCode],
+              {#message: message},
+            ),
+            returnValue: _i9.Future<bool>.value(false),
+          )
+          as _i9.Future<bool>);
+
+  @override
+  _i9.Future<void> saveCredentials({
+    required _i16.GitHubNotesConfig? config,
+    required String? token,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#saveCredentials, [], {
+              #config: config,
+              #token: token,
+            }),
+            returnValue: _i9.Future<void>.value(),
+            returnValueForMissingStub: _i9.Future<void>.value(),
+          )
+          as _i9.Future<void>);
+
+  @override
+  _i9.Future<void> updateToken(String? token, {DateTime? newExpiry}) =>
+      (super.noSuchMethod(
+            Invocation.method(#updateToken, [token], {#newExpiry: newExpiry}),
+            returnValue: _i9.Future<void>.value(),
+            returnValueForMissingStub: _i9.Future<void>.value(),
+          )
+          as _i9.Future<void>);
+
+  @override
+  _i9.Future<void> clearCredentials() =>
+      (super.noSuchMethod(
+            Invocation.method(#clearCredentials, []),
+            returnValue: _i9.Future<void>.value(),
+            returnValueForMissingStub: _i9.Future<void>.value(),
+          )
+          as _i9.Future<void>);
+
+  @override
+  _i9.Future<_i16.GitHubNotesConfig?> getConfig() =>
+      (super.noSuchMethod(
+            Invocation.method(#getConfig, []),
+            returnValue: _i9.Future<_i16.GitHubNotesConfig?>.value(),
+          )
+          as _i9.Future<_i16.GitHubNotesConfig?>);
+
+  @override
+  _i9.Future<String?> getToken() =>
+      (super.noSuchMethod(
+            Invocation.method(#getToken, []),
+            returnValue: _i9.Future<String?>.value(),
+          )
+          as _i9.Future<String?>);
 
   @override
   void addListener(_i13.VoidCallback? listener) => super.noSuchMethod(

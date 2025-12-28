@@ -1106,11 +1106,3 @@ class _FlutterWindowDelegate extends NSWindowDelegate {
     super.windowDidExitFullScreen();
   }
 }
-
-
-
-
-
-================================================================
-End of Codebase
-================================================================

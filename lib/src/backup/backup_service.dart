@@ -1,13 +1,13 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:aws_s3_upload_lite/aws_s3_upload_lite.dart';
 import 'package:aws_s3_upload_lite/enum/acl.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:intl/intl.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
 import 'package:pinboard_wizard/src/service_locator.dart';
-import 'package:intl/intl.dart';
 
 enum BackupStatus { idle, configuring, backingUp, success, error }
 
@@ -131,7 +131,7 @@ class BackupService extends ChangeNotifier {
         print('  File Size: ${fileData.length} bytes');
       }
 
-      result = await AwsS3.uploadUint8List(
+      result = await AwsS3.upload(
         accessKey: _s3Config.accessKey,
         secretKey: _s3Config.secretKey,
         file: fileData,
@@ -222,7 +222,7 @@ class BackupService extends ChangeNotifier {
       }
 
       // Upload to S3
-      final result = await AwsS3.uploadUint8List(
+      final result = await AwsS3.upload(
         accessKey: _s3Config.accessKey,
         secretKey: _s3Config.secretKey,
         file: utf8.encode(backupJson),

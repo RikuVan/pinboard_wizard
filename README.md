@@ -1,6 +1,6 @@
 # Pinboard Wizard
 
-A powerful, native macOS client for [Pinboard.in](https://pinboard.in) built with Flutter. Designed for power users who want curated bookmark collections, AI-enhanced management, and secure cloud backups.
+A powerful, native macOS client for [Pinboard.in](https://pinboard.in) built with Flutter. Designed for power users who want curated bookmark collections, AI-enhanced management, and secure cloud backups. It also includes a github backed notes application with local sync.
 
 ## Screenshots
 
@@ -15,6 +15,10 @@ A powerful, native macOS client for [Pinboard.in](https://pinboard.in) built wit
 ### Notes Organization
 
 ![Notes](docs/screenshots/notes.png)
+
+### GitHub-Backed Notes
+
+![GitHub Notes](docs/screenshots/notes.png)
 
 ## Installation
 
@@ -165,11 +169,57 @@ The pin categorization system transforms Pinboard's simple tagging into a powerf
 
 ## First-Time Setup
 
+### Pinboard API Configuration
+
 1. Launch Pinboard Wizard
 2. Navigate to **Settings** (⌘+4)
 3. Enter your Pinboard API token (get it from [https://pinboard.in/settings/password](https://pinboard.in/settings/password))
 4. Test the connection
 5. Start browsing your bookmarks!
+
+### GitHub Notes Configuration
+
+To enable the GitHub-backed notes feature:
+
+1. **Create/Prepare a GitHub Repository**:
+   - Create a new repository for your notes (e.g., `my-notes`)
+   - Repository can be public or private
+   - It will contain your notes as markdown files
+
+2. **Create a GitHub Token**:
+   - Go to https://github.com/settings/tokens
+   - Click **Generate new token** → **Fine-grained personal access token**
+   - Grant access to your notes repository
+   - Required permission: **Contents** (Read & Write)
+   - Copy the token
+
+3. **Configure in Pinboard Wizard**:
+   - Go to **Settings** → **GitHub** tab
+   - Enter your GitHub details:
+     - **Owner**: Your GitHub username
+     - **Repository**: Name of your notes repository
+     - **Branch**: `main` (or your preferred branch)
+     - **Notes Path**: `notes/` (where notes will be stored)
+   - Paste your GitHub token
+   - Click **Save**
+
+### Using Notes
+
+Once configured, you can:
+
+- **Create notes**: Click "New Note" in the Notes tab
+- **Edit notes**: Select and edit notes with markdown support
+- **Search notes**: Full-text search across all notes
+- **Auto-sync**: Notes automatically sync to GitHub every 5 minutes
+- **Offline editing**: Notes work offline and sync when online
+- **Conflict resolution**: Automatic handling if editing on multiple devices
+
+**Sync Status Indicators**:
+
+- ✓ Green checkmark = Synced
+- ⏰ Orange clock = Pending sync
+- ⚠️ Red triangle = Conflict
+- 🗑️ Orange trash = Marked for deletion
 
 ![Pinboard Settings](docs/screenshots/pinboard-settings.png)
 
@@ -192,6 +242,20 @@ The pin categorization system transforms Pinboard's simple tagging into a powerf
 
 **Cost estimate**: AI features typically €0-3/month for moderate usage
 
+## Troubleshooting Notes
+
+### "GitHub credentials not configured"
+
+- Go to Settings → GitHub
+- Complete the configuration steps above
+
+### Notes not syncing
+
+- Check the online status indicator (top toolbar)
+- Verify your GitHub token hasn't expired
+- Check repository permissions
+- Try clicking the Sync button for manual sync
+
 ## Development
 
 ### Prerequisites
@@ -200,6 +264,7 @@ The pin categorization system transforms Pinboard's simple tagging into a powerf
 - [Flutter](https://flutter.dev/docs/get-started/install) 3.0+ installed
 - Xcode Command Line Tools
 - A [Pinboard.in](https://pinboard.in) account with API token
+- (Optional) A GitHub account and token for notes feature
 
 ### Quick Start
 
@@ -334,6 +399,17 @@ User settings are stored in the macOS app container. The app handles:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Features Summary
+
+- **Bookmark Management**: Curate, tag, and organize your Pinboard bookmarks
+- **Pin-Based Curation**: Create custom categories with the `pin:category` tagging system
+- **Content Extraction**: Free extraction via Pina or AI-powered summaries with OpenAI
+- **GitHub-Backed Notes**: Markdown notes synced to your GitHub repository with offline support
+- **AWS S3 Backup**: Export bookmarks to your own AWS bucket for disaster recovery
+- **Native macOS Experience**: Built with macos_ui for authentic macOS feel
+- **Secure Storage**: API credentials stored in macOS Keychain
+- **Auto-Sync**: Notes and backups sync automatically in the background
+
 ## Acknowledgments
 
 - [Pinboard.in](https://pinboard.in) - The excellent bookmarking service
@@ -342,5 +418,42 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - The Flutter community for amazing packages and support
 
 ---
+
+## Local development
+
+## Prerequisites
+
+- macOS 10.15 or later
+- FVM (Flutter Version Manager) installed
+- Xcode installed
+
+## Setup (First Time)
+
+1. **Install FVM** (if not already installed):
+
+   ```bash
+   brew tap leoafarias/fvm
+   brew install fvm
+   ```
+
+2. **Clone and setup**:
+
+   ```bash
+   cd pinboard_wizard
+   fvm use 3.38.5
+   fvm flutter pub get
+   ```
+
+3. **Clean build** (recommended):
+   ```bash
+   fvm flutter clean
+   fvm flutter pub get
+   ```
+
+## Running the App
+
+```bash
+fvm flutter run -d macos
+```
 
 **Made with ❤️ for Pinboard enthusiasts**

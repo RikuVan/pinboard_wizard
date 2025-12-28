@@ -1,9 +1,10 @@
-import 'package:pinboard_wizard/src/pinboard/pinboard_client.dart';
-import 'package:pinboard_wizard/src/pinboard/models/post.dart';
+import 'package:flutter/foundation.dart';
+import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/models/note.dart';
 import 'package:pinboard_wizard/src/pinboard/models/notes_response.dart';
+import 'package:pinboard_wizard/src/pinboard/models/post.dart';
+import 'package:pinboard_wizard/src/pinboard/pinboard_client.dart';
 import 'package:pinboard_wizard/src/pinboard/secrets_storage.dart';
-import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 
 class PinboardService {
   final PinboardClient _client;
@@ -298,35 +299,35 @@ class PinboardService {
 
   /// Debug method to test authentication and diagnose issues
   Future<void> debugAuthentication() async {
-    print('=== PINBOARD SERVICE DEBUG ===');
+    debugPrint('=== PINBOARD SERVICE DEBUG ===');
 
     // First check credentials
     await _credentialsService.debugCredentials();
 
-    print('\n--- Testing API Connection ---');
+    debugPrint('\n--- Testing API Connection ---');
     try {
       final isAuth = await isAuthenticated();
-      print('isAuthenticated(): ${isAuth ? "✅ True" : "❌ False"}');
+      debugPrint('isAuthenticated(): ${isAuth ? "✅ True" : "❌ False"}');
 
       if (isAuth) {
-        print('--- Testing API Token Endpoint ---');
+        debugPrint('--- Testing API Token Endpoint ---');
         final tokenResponse = await _client.getUserApiToken();
-        print('✅ API Token test successful: ${tokenResponse.result}');
+        debugPrint('✅ API Token test successful: ${tokenResponse.result}');
 
-        print('--- Testing Simple GET Request ---');
+        debugPrint('--- Testing Simple GET Request ---');
         final updateTime = await getLastUpdateTime();
-        print('✅ Last update time: $updateTime');
+        debugPrint('✅ Last update time: $updateTime');
       } else {
-        print('❌ Authentication failed - cannot proceed with API tests');
+        debugPrint('❌ Authentication failed - cannot proceed with API tests');
       }
     } catch (e) {
-      print('❌ Authentication test failed: $e');
+      debugPrint('❌ Authentication test failed: $e');
       if (e is PinboardAuthException) {
-        print('   This is an authentication error - check your API token');
+        debugPrint('   This is an authentication error - check your API token');
       }
     }
 
-    print('=== END PINBOARD SERVICE DEBUG ===');
+    debugPrint('=== END PINBOARD SERVICE DEBUG ===');
   }
 
   void dispose() {

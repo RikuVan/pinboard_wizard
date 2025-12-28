@@ -1,11 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
+import 'package:pinboard_wizard/src/github/github_auth_service.dart';
 import 'package:pinboard_wizard/src/pages/settings/state/settings_cubit.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
@@ -17,6 +18,7 @@ import 'settings_cubit_safe_emit_test.mocks.dart';
   PinboardService,
   AiSettingsService,
   BackupService,
+  GitHubAuthService,
 ])
 void main() {
   group('SettingsCubit Safe Emit Tests', () {
@@ -24,6 +26,7 @@ void main() {
     late MockPinboardService mockPinboardService;
     late MockAiSettingsService mockAiSettingsService;
     late MockBackupService mockBackupService;
+    late MockGitHubAuthService mockGitHubAuthService;
     late SettingsCubit settingsCubit;
 
     setUp(() {
@@ -31,6 +34,7 @@ void main() {
       mockPinboardService = MockPinboardService();
       mockAiSettingsService = MockAiSettingsService();
       mockBackupService = MockBackupService();
+      mockGitHubAuthService = MockGitHubAuthService();
 
       // Setup default mock behaviors
       when(
@@ -41,12 +45,17 @@ void main() {
       ).thenReturn(ValueNotifier<bool>(false));
       when(mockAiSettingsService.settings).thenReturn(const AiSettings());
       when(mockBackupService.s3Config).thenReturn(const S3Config());
+      when(mockGitHubAuthService.getConfig()).thenAnswer((_) async => null);
+      when(mockGitHubAuthService.getToken()).thenAnswer((_) async => null);
+      when(mockGitHubAuthService.isAuthenticated).thenReturn(false);
+      when(mockGitHubAuthService.currentWarning).thenReturn(null);
 
       settingsCubit = SettingsCubit(
         credentialsService: mockCredentialsService,
         pinboardService: mockPinboardService,
         aiSettingsService: mockAiSettingsService,
         backupService: mockBackupService,
+        githubAuthService: mockGitHubAuthService,
       );
     });
 
@@ -130,6 +139,7 @@ void main() {
           pinboardService: mockPinboardService,
           aiSettingsService: mockAiSettingsService,
           backupService: mockBackupService,
+          githubAuthService: mockGitHubAuthService,
         );
 
         // Close the cubit

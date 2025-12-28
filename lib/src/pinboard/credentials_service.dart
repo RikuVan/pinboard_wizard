@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:pinboard_wizard/src/pinboard/models/credentials.dart';
 import 'package:pinboard_wizard/src/pinboard/flutter_secure_secrets_storage.dart';
+import 'package:pinboard_wizard/src/pinboard/models/credentials.dart';
 import 'package:pinboard_wizard/src/pinboard/secrets_storage.dart';
 
 class CredentialsService {
@@ -97,23 +97,23 @@ class CredentialsService {
 
   /// Debug method to verify credentials and API key format
   Future<void> debugCredentials() async {
-    print('=== CREDENTIALS DEBUG ===');
+    debugPrint('=== CREDENTIALS DEBUG ===');
     try {
       final credentials = await getCredentials();
       if (credentials == null) {
-        print('❌ No credentials found in storage');
+        debugPrint('❌ No credentials found in storage');
         return;
       }
 
-      print('✅ Credentials found');
-      print(
+      debugPrint('✅ Credentials found');
+      debugPrint(
         'API Key format: ${isValidApiKey(credentials.apiKey) ? "✅ Valid" : "❌ Invalid"}',
       );
-      print(
+      debugPrint(
         'Username extracted: ${getUsernameFromApiKey(credentials.apiKey) ?? "❌ Failed to extract"}',
       );
-      print('API Key length: ${credentials.apiKey.length}');
-      print(
+      debugPrint('API Key length: ${credentials.apiKey.length}');
+      debugPrint(
         'Contains colon: ${credentials.apiKey.contains(":") ? "✅ Yes" : "❌ No"}',
       );
 
@@ -121,12 +121,12 @@ class CredentialsService {
       if (credentials.apiKey.length > 10) {
         final start = credentials.apiKey.substring(0, 5);
         final end = credentials.apiKey.substring(credentials.apiKey.length - 5);
-        print('API Key preview: $start...$end');
+        debugPrint('API Key preview: $start...$end');
       }
     } catch (e) {
-      print('❌ Error accessing credentials: $e');
+      debugPrint('❌ Error accessing credentials: $e');
     }
-    print('=== END CREDENTIALS DEBUG ===');
+    debugPrint('=== END CREDENTIALS DEBUG ===');
   }
 }
 
