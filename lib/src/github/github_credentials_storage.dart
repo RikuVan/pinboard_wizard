@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pinboard_wizard/src/github/models/github_notes_config.dart';
 
@@ -10,6 +11,8 @@ class GitHubCredentialsStorage {
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   /// Read the GitHub notes configuration (without token)
+  ///
+  /// Applies migration: converts legacy default 'notes/' to empty string
   Future<GitHubNotesConfig?> readConfig() async {
     try {
       final configJson = await _secureStorage.read(key: _configKey);

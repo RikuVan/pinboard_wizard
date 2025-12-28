@@ -1137,10 +1137,18 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
             'Notes Path (Optional)',
             style: MacosTheme.of(context).typography.body,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           MacosTextField(
             controller: _githubNotesPathController,
-            placeholder: 'notes/',
+            placeholder: 'Leave empty for root level, or enter: notes/',
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Default: root level (empty). Use "notes/" for subdirectory, or "documents/" for custom path.',
+            style: TextStyle(
+              fontSize: 11,
+              color: CupertinoColors.secondaryLabel,
+            ),
           ),
           const SizedBox(height: 24),
 
@@ -1231,10 +1239,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                   final branch = _githubBranchController.text.trim().isEmpty
                       ? 'main'
                       : _githubBranchController.text.trim();
-                  final notesPath =
-                      _githubNotesPathController.text.trim().isEmpty
-                      ? 'notes/'
-                      : _githubNotesPathController.text.trim();
+                  final notesPath = _githubNotesPathController.text.trim();
 
                   // Capture context and cubit before any async operations
                   final dialogContext = context;

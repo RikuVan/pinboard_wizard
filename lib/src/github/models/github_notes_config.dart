@@ -23,7 +23,8 @@ class GitHubNotesConfig extends Equatable {
   /// Branch to sync from (default: "main")
   final String branch;
 
-  /// Repo path to notes folder (default: "notes/")
+  /// Repo path to notes folder (default: empty string for root level)
+  @JsonKey(defaultValue: '')
   final String notesPath;
 
   /// Unique device identifier for this installation
@@ -42,7 +43,7 @@ class GitHubNotesConfig extends Equatable {
     required this.owner,
     required this.repo,
     this.branch = 'main',
-    this.notesPath = 'notes/',
+    this.notesPath = '',
     required this.deviceId,
     this.tokenType = TokenType.fineGrained,
     this.tokenExpiry,

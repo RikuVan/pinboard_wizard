@@ -1,20 +1,19 @@
 import 'package:flutter/cupertino.dart';
-
 import 'package:flutter/services.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:pinboard_wizard/src/service_locator.dart';
-import 'package:pinboard_wizard/src/theme.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pinboard_wizard/src/auth/auth_gate.dart';
-import 'package:pinboard_wizard/src/pages/bookmarks/bookmarks_page.dart';
-import 'package:pinboard_wizard/src/pages/pinned/pinned_page.dart';
-import 'package:pinboard_wizard/src/pages/notes/notes_page.dart';
-import 'package:pinboard_wizard/src/pages/settings/settings_page.dart';
-import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
+import 'package:pinboard_wizard/src/common/state/bookmark_change_notifier.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
 import 'package:pinboard_wizard/src/common/widgets/keyboard_shortcuts.dart';
-import 'package:pinboard_wizard/src/common/state/bookmark_change_notifier.dart';
+import 'package:pinboard_wizard/src/pages/bookmarks/bookmarks_page.dart';
+import 'package:pinboard_wizard/src/pages/notes/github_notes_page.dart';
+import 'package:pinboard_wizard/src/pages/pinned/pinned_page.dart';
+import 'package:pinboard_wizard/src/pages/settings/settings_page.dart';
+import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
+import 'package:pinboard_wizard/src/service_locator.dart';
+import 'package:pinboard_wizard/src/theme.dart';
 import 'package:provider/provider.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 // Global navigator key for menu navigation
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -165,7 +164,7 @@ class _PinboardWizardState extends State<PinboardWizard> {
                             child: [
                               const PinnedPage(),
                               const BookmarksPage(),
-                              const NotesPage(),
+                              const GitHubNotesPage(),
                             ][pageIndex],
                           ),
                   ),

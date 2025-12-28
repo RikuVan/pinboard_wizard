@@ -251,13 +251,14 @@ void main() {
     });
 
     test(
-      'updateNoteAfterSync should clear dirty flag and update SHA',
+      'updateNoteAfterSync should clear dirty flag, conflict flag, and update SHA',
       () async {
         await db.insertNote(
           NotesCompanion(
             id: const Value('sync-1'),
             path: const Value('notes/sync.md'),
             isDirty: const Value(true),
+            isConflict: const Value(true),
             lastKnownSha: const Value('old-sha'),
           ),
         );
@@ -266,6 +267,7 @@ void main() {
 
         final retrieved = await db.getNoteById('sync-1');
         expect(retrieved!.isDirty, false);
+        expect(retrieved.isConflict, false);
         expect(retrieved.lastKnownSha, 'new-sha');
       },
     );

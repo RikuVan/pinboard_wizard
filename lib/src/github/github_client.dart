@@ -83,6 +83,9 @@ class GitHubClient {
   /// Cache of the last known tree SHA for efficient sync detection
   String? _lastTreeSha;
 
+  /// Cache of files from last tree fetch
+  List<GitHubFile>? _cachedFiles;
+
   /// Cache of ETags for conditional requests
   final Map<String, String> _etagCache = {};
 
@@ -172,10 +175,11 @@ class GitHubClient {
     debugPrint('   Latest commit SHA: ${treeSha.substring(0, 7)}');
 
     // Step 2: Check if tree changed (cached comparison)
-    if (_lastTreeSha == treeSha) {
-      debugPrint('   Tree unchanged (cached), returning empty list');
-      // No changes since last sync, return empty
-      return [];
+    if (_lastTreeSha == treeSha && _cachedFiles != null) {
+      debugPrint(
+        '   Tree unchanged (cached), returning ${_cachedFiles!.length} cached files',
+      );
+      return _cachedFiles!;
     }
 
     // Step 3: Fetch entire tree recursively (one API call)
@@ -193,28 +197,49 @@ class GitHubClient {
     debugPrint('   Total tree entries: ${treeList.length}');
     debugPrint('   Filtering for path prefix: "$_notesPath"');
 
+    // Handle both root level (empty path) and subdirectory paths
+    final pathPrefix = _notesPath.isEmpty || _notesPath == '/'
+        ? ''
+        : _notesPath;
+    final isRootLevel = pathPrefix.isEmpty;
+
+    debugPrint(
+      '   Path prefix: "${pathPrefix.isEmpty ? "(root)" : pathPrefix}"',
+    );
+    debugPrint('   Looking for .md and .markdown files...');
+
     for (final entry in treeList) {
       final entryMap = entry as Map<String, dynamic>;
       final path = entryMap['path'] as String;
+      final type = entryMap['type'] as String;
 
-      if (path.startsWith(_notesPath) &&
-          (path.endsWith('.md') || path.endsWith('.markdown'))) {
+      // Skip directories
+      if (type != 'blob') continue;
+
+      // Check if file is in the correct path and is markdown
+      final isInPath = isRootLevel
+          ? !path.contains('/') // Root level: no slashes
+          : path.startsWith(pathPrefix);
+      final isMarkdown = path.endsWith('.md') || path.endsWith('.markdown');
+
+      if (isInPath && isMarkdown) {
         files.add(
           GitHubFile(
             path: path,
             sha: entryMap['sha'] as String,
             size: entryMap['size'] as int,
-            type: entryMap['type'] as String,
+            type: type,
           ),
         );
         debugPrint('   ✓ Matched: $path');
       }
     }
 
-    debugPrint('   Found ${files.length} markdown files in "$_notesPath"');
+    debugPrint('   Found ${files.length} markdown files');
 
-    // Cache tree SHA for next sync
+    // Cache tree SHA and files for next sync
     _lastTreeSha = treeSha;
+    _cachedFiles = files;
 
     return files;
   }
@@ -321,12 +346,14 @@ class GitHubClient {
 
     final response = await _put(url, body);
     final result = json.decode(response.body) as Map<String, dynamic>;
-    final commit = result['commit'] as Map<String, dynamic>;
+    final contentData = result['content'] as Map<String, dynamic>;
 
     // Clear tree cache since we modified the tree
     _lastTreeSha = null;
+    _cachedFiles = null;
 
-    return commit['sha'] as String;
+    // Return the blob SHA, not the commit SHA
+    return contentData['sha'] as String;
   }
 
   /// Updates an existing file in the repository.
@@ -359,13 +386,15 @@ class GitHubClient {
 
     final response = await _put(url, body);
     final result = json.decode(response.body) as Map<String, dynamic>;
-    final commit = result['commit'] as Map<String, dynamic>;
+    final contentData = result['content'] as Map<String, dynamic>;
 
     // Clear tree cache and ETag cache for this file
     _lastTreeSha = null;
+    _cachedFiles = null;
     _etagCache.remove(path);
 
-    return commit['sha'] as String;
+    // Return the blob SHA, not the commit SHA
+    return contentData['sha'] as String;
   }
 
   /// Deletes a file from the repository.
@@ -399,6 +428,7 @@ class GitHubClient {
 
     // Clear caches
     _lastTreeSha = null;
+    _cachedFiles = null;
     _etagCache.remove(path);
 
     return commit['sha'] as String;
@@ -619,6 +649,7 @@ class GitHubClient {
   /// Useful when you want to force a full sync.
   void clearCache() {
     _lastTreeSha = null;
+    _cachedFiles = null;
     _etagCache.clear();
   }
 

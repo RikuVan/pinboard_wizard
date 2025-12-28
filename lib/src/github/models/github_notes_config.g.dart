@@ -11,7 +11,7 @@ GitHubNotesConfig _$GitHubNotesConfigFromJson(Map<String, dynamic> json) =>
       owner: json['owner'] as String,
       repo: json['repo'] as String,
       branch: json['branch'] as String? ?? 'main',
-      notesPath: json['notesPath'] as String? ?? 'notes/',
+      notesPath: json['notesPath'] as String? ?? '',
       deviceId: json['deviceId'] as String,
       tokenType:
           $enumDecodeNullable(_$TokenTypeEnumMap, json['tokenType']) ??

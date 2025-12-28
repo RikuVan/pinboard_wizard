@@ -41,12 +41,16 @@ void main() {
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4999',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
       when(
-        mockHttpClient.get(Uri.parse('https://api.github.com/user'), headers: anyNamed('headers')),
+        mockHttpClient.get(
+          Uri.parse('https://api.github.com/user'),
+          headers: anyNamed('headers'),
+        ),
       ).thenAnswer((_) async => response);
 
       // Act
@@ -55,7 +59,10 @@ void main() {
       // Assert
       expect(result, true);
       verify(
-        mockHttpClient.get(Uri.parse('https://api.github.com/user'), headers: anyNamed('headers')),
+        mockHttpClient.get(
+          Uri.parse('https://api.github.com/user'),
+          headers: anyNamed('headers'),
+        ),
       ).called(1);
     });
 
@@ -64,7 +71,10 @@ void main() {
       final response = http.Response('{"message": "Bad credentials"}', 401);
 
       when(
-        mockHttpClient.get(Uri.parse('https://api.github.com/user'), headers: anyNamed('headers')),
+        mockHttpClient.get(
+          Uri.parse('https://api.github.com/user'),
+          headers: anyNamed('headers'),
+        ),
       ).thenAnswer((_) async => response);
 
       // Act
@@ -77,11 +87,17 @@ void main() {
     test('testAuthentication throws on network error', () async {
       // Arrange
       when(
-        mockHttpClient.get(Uri.parse('https://api.github.com/user'), headers: anyNamed('headers')),
+        mockHttpClient.get(
+          Uri.parse('https://api.github.com/user'),
+          headers: anyNamed('headers'),
+        ),
       ).thenThrow(SocketException('Network error'));
 
       // Act & Assert
-      expect(() => client.testAuthentication(), throwsA(isA<SocketException>()));
+      expect(
+        () => client.testAuthentication(),
+        throwsA(isA<SocketException>()),
+      );
     });
   });
 
@@ -99,7 +115,8 @@ void main() {
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4999',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
@@ -108,31 +125,61 @@ void main() {
         json.encode({
           'sha': 'tree123',
           'tree': [
-            {'path': 'notes/file1.md', 'sha': 'sha1', 'size': 100, 'type': 'blob'},
-            {'path': 'notes/file2.md', 'sha': 'sha2', 'size': 200, 'type': 'blob'},
-            {'path': 'notes/subfolder/file3.markdown', 'sha': 'sha3', 'size': 150, 'type': 'blob'},
-            {'path': 'notes/not-markdown.txt', 'sha': 'sha4', 'size': 50, 'type': 'blob'},
-            {'path': 'other/file.md', 'sha': 'sha5', 'size': 75, 'type': 'blob'},
+            {
+              'path': 'notes/file1.md',
+              'sha': 'sha1',
+              'size': 100,
+              'type': 'blob',
+            },
+            {
+              'path': 'notes/file2.md',
+              'sha': 'sha2',
+              'size': 200,
+              'type': 'blob',
+            },
+            {
+              'path': 'notes/subfolder/file3.markdown',
+              'sha': 'sha3',
+              'size': 150,
+              'type': 'blob',
+            },
+            {
+              'path': 'notes/not-markdown.txt',
+              'sha': 'sha4',
+              'size': 50,
+              'type': 'blob',
+            },
+            {
+              'path': 'other/file.md',
+              'sha': 'sha5',
+              'size': 75,
+              'type': 'blob',
+            },
           ],
         }),
         200,
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4998',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
       when(
         mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/commits/$branch'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/commits/$branch',
+          ),
           headers: anyNamed('headers'),
         ),
       ).thenAnswer((_) async => commitResponse);
 
       when(
         mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/git/trees/tree123?recursive=1'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/git/trees/tree123?recursive=1',
+          ),
           headers: anyNamed('headers'),
         ),
       ).thenAnswer((_) async => treeResponse);
@@ -162,7 +209,8 @@ void main() {
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4999',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
@@ -170,27 +218,37 @@ void main() {
         json.encode({
           'sha': 'tree123',
           'tree': [
-            {'path': 'notes/file1.md', 'sha': 'sha1', 'size': 100, 'type': 'blob'},
+            {
+              'path': 'notes/file1.md',
+              'sha': 'sha1',
+              'size': 100,
+              'type': 'blob',
+            },
           ],
         }),
         200,
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4998',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
       when(
         mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/commits/$branch'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/commits/$branch',
+          ),
           headers: anyNamed('headers'),
         ),
       ).thenAnswer((_) async => commitResponse1);
 
       when(
         mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/git/trees/tree123?recursive=1'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/git/trees/tree123?recursive=1',
+          ),
           headers: anyNamed('headers'),
         ),
       ).thenAnswer((_) async => treeResponse);
@@ -202,8 +260,9 @@ void main() {
       // Second call with same tree SHA
       final files2 = await client.listNotesFiles();
 
-      // Assert
-      expect(files2.length, 0); // Empty because tree hasn't changed
+      // Assert - should return cached files, not empty
+      expect(files2.length, 1); // Returns cached file since tree hasn't changed
+      expect(files2[0].path, 'notes/file1.md');
     });
   });
 
@@ -225,13 +284,16 @@ void main() {
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4999',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
       when(
         mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/contents/notes/test.md?ref=$branch'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/contents/notes/test.md?ref=$branch',
+          ),
           headers: anyNamed('headers'),
         ),
       ).thenAnswer((_) async => response);
@@ -261,13 +323,16 @@ void main() {
           'etag': 'W/"abc123"',
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4999',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
       when(
         mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/contents/notes/test.md?ref=$branch'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/contents/notes/test.md?ref=$branch',
+          ),
           headers: anyNamed('headers'),
         ),
       ).thenAnswer((_) async => response1);
@@ -282,13 +347,16 @@ void main() {
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4998',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
       when(
         mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/contents/notes/test.md?ref=$branch'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/contents/notes/test.md?ref=$branch',
+          ),
           headers: anyNamed('headers'),
         ),
       ).thenAnswer((_) async => response2);
@@ -317,13 +385,16 @@ void main() {
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4999',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
       when(
         mockHttpClient.put(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/contents/$filePath'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/contents/$filePath',
+          ),
           headers: anyNamed('headers'),
           body: anyNamed('body'),
         ),
@@ -336,13 +407,15 @@ void main() {
         message: 'Create new note',
       );
 
-      // Assert
-      expect(commitSha, 'commit123');
+      // Assert - createFile returns the file/blob SHA, not commit SHA
+      expect(commitSha, 'file123');
 
       // Verify request body
       final captured = verify(
         mockHttpClient.put(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/contents/$filePath'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/contents/$filePath',
+          ),
           headers: captureAnyNamed('headers'),
           body: captureAnyNamed('body'),
         ),
@@ -368,13 +441,16 @@ void main() {
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4999',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
       when(
         mockHttpClient.put(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/contents/$filePath'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/contents/$filePath',
+          ),
           headers: anyNamed('headers'),
           body: anyNamed('body'),
         ),
@@ -386,7 +462,9 @@ void main() {
       // Assert - Verify default message
       final captured = verify(
         mockHttpClient.put(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/contents/$filePath'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/contents/$filePath',
+          ),
           headers: anyNamed('headers'),
           body: captureAnyNamed('body'),
         ),
@@ -414,32 +492,37 @@ void main() {
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4999',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
       when(
         mockHttpClient.put(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/contents/$filePath'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/contents/$filePath',
+          ),
           headers: anyNamed('headers'),
           body: anyNamed('body'),
         ),
       ).thenAnswer((_) async => response);
 
       // Act
-      final commitSha = await client.updateFile(
+      final fileSha = await client.updateFile(
         path: filePath,
         content: content,
         currentSha: currentSha,
         message: 'Update note',
       );
 
-      // Assert
-      expect(commitSha, 'newcommit123');
+      // Assert - updateFile returns the file/blob SHA from content, not commit SHA
+      expect(fileSha, 'newfile123');
 
       final captured = verify(
         mockHttpClient.put(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/contents/$filePath'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/contents/$filePath',
+          ),
           headers: anyNamed('headers'),
           body: captureAnyNamed('body'),
         ),
@@ -462,7 +545,9 @@ void main() {
 
       when(
         mockHttpClient.put(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/contents/$filePath'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/contents/$filePath',
+          ),
           headers: anyNamed('headers'),
           body: anyNamed('body'),
         ),
@@ -470,7 +555,11 @@ void main() {
 
       // Act & Assert
       expect(
-        () => client.updateFile(path: filePath, content: content, currentSha: currentSha),
+        () => client.updateFile(
+          path: filePath,
+          content: content,
+          currentSha: currentSha,
+        ),
         throwsA(isA<GitHubException>()),
       );
     });
@@ -490,13 +579,16 @@ void main() {
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4999',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
       when(
         mockHttpClient.delete(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/contents/$filePath'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/contents/$filePath',
+          ),
           headers: anyNamed('headers'),
           body: anyNamed('body'),
         ),
@@ -509,12 +601,14 @@ void main() {
         message: 'Delete old note',
       );
 
-      // Assert
+      // Assert - deleteFile returns the commit SHA
       expect(commitSha, 'deletecommit123');
 
       final captured = verify(
         mockHttpClient.delete(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/contents/$filePath'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/contents/$filePath',
+          ),
           headers: anyNamed('headers'),
           body: captureAnyNamed('body'),
         ),
@@ -532,20 +626,30 @@ void main() {
       // Arrange
       final response = http.Response('{"message": "Bad credentials"}', 401);
 
-      when(mockHttpClient.get(any, headers: anyNamed('headers'))).thenAnswer((_) async => response);
+      when(
+        mockHttpClient.get(any, headers: anyNamed('headers')),
+      ).thenAnswer((_) async => response);
 
       // Act & Assert
-      expect(() => client.listNotesFiles(), throwsA(isA<GitHubAuthException>()));
+      expect(
+        () => client.listNotesFiles(),
+        throwsA(isA<GitHubAuthException>()),
+      );
     });
 
     test('throws GitHubAuthException on 403', () async {
       // Arrange
       final response = http.Response('{"message": "Forbidden"}', 403);
 
-      when(mockHttpClient.get(any, headers: anyNamed('headers'))).thenAnswer((_) async => response);
+      when(
+        mockHttpClient.get(any, headers: anyNamed('headers')),
+      ).thenAnswer((_) async => response);
 
       // Act & Assert
-      expect(() => client.listNotesFiles(), throwsA(isA<GitHubAuthException>()));
+      expect(
+        () => client.listNotesFiles(),
+        throwsA(isA<GitHubAuthException>()),
+      );
     });
 
     test('throws GitHubRateLimitException on 429', () async {
@@ -561,17 +665,24 @@ void main() {
         },
       );
 
-      when(mockHttpClient.get(any, headers: anyNamed('headers'))).thenAnswer((_) async => response);
+      when(
+        mockHttpClient.get(any, headers: anyNamed('headers')),
+      ).thenAnswer((_) async => response);
 
       // Act & Assert
-      expect(() => client.listNotesFiles(), throwsA(isA<GitHubRateLimitException>()));
+      expect(
+        () => client.listNotesFiles(),
+        throwsA(isA<GitHubRateLimitException>()),
+      );
     });
 
     test('throws GitHubException on 404', () async {
       // Arrange
       final response = http.Response('{"message": "Not Found"}', 404);
 
-      when(mockHttpClient.get(any, headers: anyNamed('headers'))).thenAnswer((_) async => response);
+      when(
+        mockHttpClient.get(any, headers: anyNamed('headers')),
+      ).thenAnswer((_) async => response);
 
       // Act & Assert
       expect(() => client.listNotesFiles(), throwsA(isA<GitHubException>()));
@@ -581,7 +692,9 @@ void main() {
       // Arrange
       final response = http.Response('{"message": "Validation Failed"}', 422);
 
-      when(mockHttpClient.get(any, headers: anyNamed('headers'))).thenAnswer((_) async => response);
+      when(
+        mockHttpClient.get(any, headers: anyNamed('headers')),
+      ).thenAnswer((_) async => response);
 
       // Act & Assert
       expect(() => client.listNotesFiles(), throwsA(isA<GitHubException>()));
@@ -601,13 +714,16 @@ void main() {
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4999',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
       when(
         mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/commits/$branch'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/commits/$branch',
+          ),
           headers: anyNamed('headers'),
         ),
       ).thenAnswer((_) async {
@@ -621,7 +737,9 @@ void main() {
       // Act
       await client.withRetry(() async {
         final response = await mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/commits/$branch'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/commits/$branch',
+          ),
           headers: const {},
         );
         return response;
@@ -640,11 +758,14 @@ void main() {
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4999',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
-      when(mockHttpClient.get(any, headers: anyNamed('headers'))).thenAnswer((_) async {
+      when(mockHttpClient.get(any, headers: anyNamed('headers'))).thenAnswer((
+        _,
+      ) async {
         attemptCount++;
         if (attemptCount < 2) {
           return http.Response('Internal Server Error', 500);
@@ -659,7 +780,10 @@ void main() {
           headers: const {},
         );
         if (response.statusCode >= 500) {
-          throw GitHubException('Server error', statusCode: response.statusCode);
+          throw GitHubException(
+            'Server error',
+            statusCode: response.statusCode,
+          );
         }
         return response;
       });
@@ -673,7 +797,9 @@ void main() {
       // Arrange
       var attemptCount = 0;
 
-      when(mockHttpClient.get(any, headers: anyNamed('headers'))).thenAnswer((_) async {
+      when(mockHttpClient.get(any, headers: anyNamed('headers'))).thenAnswer((
+        _,
+      ) async {
         attemptCount++;
         throw GitHubAuthException('Bad credentials', statusCode: 401);
       });
@@ -681,7 +807,10 @@ void main() {
       // Act & Assert
       expect(
         () => client.withRetry(() async {
-          await mockHttpClient.get(Uri.parse('https://api.github.com/test'), headers: const {});
+          await mockHttpClient.get(
+            Uri.parse('https://api.github.com/test'),
+            headers: const {},
+          );
           throw GitHubAuthException('Bad credentials', statusCode: 401);
         }),
         throwsA(isA<GitHubAuthException>()),
@@ -714,12 +843,16 @@ void main() {
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4500',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
       when(
-        mockHttpClient.get(Uri.parse('https://api.github.com/user'), headers: anyNamed('headers')),
+        mockHttpClient.get(
+          Uri.parse('https://api.github.com/user'),
+          headers: anyNamed('headers'),
+        ),
       ).thenAnswer((_) async => response);
 
       // Act
@@ -752,7 +885,8 @@ void main() {
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4999',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
@@ -760,27 +894,37 @@ void main() {
         json.encode({
           'sha': 'tree123',
           'tree': [
-            {'path': 'notes/file.md', 'sha': 'sha1', 'size': 100, 'type': 'blob'},
+            {
+              'path': 'notes/file.md',
+              'sha': 'sha1',
+              'size': 100,
+              'type': 'blob',
+            },
           ],
         }),
         200,
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4998',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
       when(
         mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/commits/$branch'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/commits/$branch',
+          ),
           headers: anyNamed('headers'),
         ),
       ).thenAnswer((_) async => commitResponse);
 
       when(
         mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/git/trees/tree123?recursive=1'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/git/trees/tree123?recursive=1',
+          ),
           headers: anyNamed('headers'),
         ),
       ).thenAnswer((_) async => treeResponse);
@@ -795,7 +939,9 @@ void main() {
       expect(files.length, 1);
       verify(
         mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/git/trees/tree123?recursive=1'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/git/trees/tree123?recursive=1',
+          ),
           headers: anyNamed('headers'),
         ),
       ).called(2); // Called twice because cache was cleared
@@ -840,13 +986,16 @@ void main() {
         headers: {
           'x-ratelimit-limit': '5000',
           'x-ratelimit-remaining': '4999',
-          'x-ratelimit-reset': '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-ratelimit-reset':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
         },
       );
 
       when(
         mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/commits/$customBranch'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/commits/$customBranch',
+          ),
           headers: anyNamed('headers'),
         ),
       ).thenAnswer((_) async => response);
@@ -854,7 +1003,9 @@ void main() {
       // Act & Assert - Should use custom branch
       await customClient.withRetry(() async {
         final resp = await mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/commits/$customBranch'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/commits/$customBranch',
+          ),
           headers: const {},
         );
         return resp;
@@ -862,7 +1013,9 @@ void main() {
 
       verify(
         mockHttpClient.get(
-          Uri.parse('https://api.github.com/repos/$owner/$repo/commits/$customBranch'),
+          Uri.parse(
+            'https://api.github.com/repos/$owner/$repo/commits/$customBranch',
+          ),
           headers: anyNamed('headers'),
         ),
       ).called(1);

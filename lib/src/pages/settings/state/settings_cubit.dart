@@ -680,7 +680,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     required String repo,
     required String token,
     String branch = 'main',
-    String notesPath = 'notes/',
+    String notesPath = '',
     required TokenType tokenType,
     DateTime? tokenExpiry,
   }) async {
@@ -701,7 +701,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         owner: owner.trim(),
         repo: repo.trim(),
         branch: branch.trim().isEmpty ? 'main' : branch.trim(),
-        notesPath: notesPath.trim().isEmpty ? 'notes/' : notesPath.trim(),
+        notesPath: notesPath.trim(),
         deviceId: deviceId,
         tokenType: tokenType,
         tokenExpiry: tokenExpiry,

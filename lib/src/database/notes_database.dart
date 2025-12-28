@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -82,8 +83,13 @@ class NotesDatabase extends _$NotesDatabase {
   }
 
   /// Get all dirty notes (need sync)
+  /// Excludes notes marked for deletion or in conflict state
   Future<List<Note>> getDirtyNotes() async {
-    return (select(notes)..where((n) => n.isDirty.equals(true))).get();
+    return (select(notes)
+          ..where((n) => n.isDirty.equals(true))
+          ..where((n) => n.markedForDeletion.equals(false))
+          ..where((n) => n.isConflict.equals(false)))
+        .get();
   }
 
   /// Get all conflict notes
@@ -91,11 +97,12 @@ class NotesDatabase extends _$NotesDatabase {
     return (select(notes)..where((n) => n.isConflict.equals(true))).get();
   }
 
-  /// Get notes marked for deletion
+  /// Get notes marked for deletion (excluding conflicts)
   Future<List<Note>> getMarkedForDeletionNotes() async {
-    return (select(
-      notes,
-    )..where((n) => n.markedForDeletion.equals(true))).get();
+    return (select(notes)
+          ..where((n) => n.markedForDeletion.equals(true))
+          ..where((n) => n.isConflict.equals(false)))
+        .get();
   }
 
   /// Insert a new note
@@ -148,13 +155,19 @@ class NotesDatabase extends _$NotesDatabase {
 
   /// Update note metadata after sync
   Future<void> updateNoteAfterSync(String id, String newSha) async {
+    debugPrint('  💾 updateNoteAfterSync: id=$id, newSha=$newSha');
     await (update(notes)..where((n) => n.id.equals(id))).write(
       NotesCompanion(
         lastKnownSha: Value(newSha),
         isDirty: const Value(false),
+        isConflict: const Value(false),
         updatedAt: Value(DateTime.now()),
       ),
     );
+
+    // Verify it was saved
+    final updated = await getNoteById(id);
+    debugPrint('  ✓ Verified saved SHA: ${updated?.lastKnownSha}');
   }
 
   /// Delete a note by ID
