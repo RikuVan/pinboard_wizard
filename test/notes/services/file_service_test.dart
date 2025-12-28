@@ -167,10 +167,10 @@ void main() {
     });
 
     group('getLocalPath', () {
-      test('extracts filename from repository path', () {
+      test('preserves directory structure from repository path', () {
         final localPath = fileService.getLocalPath('notes/my-note.md');
 
-        expect(localPath, equals(path.join(tempDir.path, 'my-note.md')));
+        expect(localPath, equals(path.join(tempDir.path, 'notes', 'my-note.md')));
       });
 
       test('handles simple filename', () {
@@ -179,16 +179,58 @@ void main() {
         expect(localPath, equals(path.join(tempDir.path, 'simple.md')));
       });
 
-      test('handles nested paths', () {
+      test('preserves nested directory structure', () {
         final localPath = fileService.getLocalPath('folder/subfolder/file.md');
 
-        expect(localPath, equals(path.join(tempDir.path, 'file.md')));
+        expect(localPath, equals(path.join(tempDir.path, 'folder', 'subfolder', 'file.md')));
       });
 
       test('handles paths with multiple extensions', () {
         final localPath = fileService.getLocalPath('notes/file.backup.md');
 
-        expect(localPath, equals(path.join(tempDir.path, 'file.backup.md')));
+        expect(localPath, equals(path.join(tempDir.path, 'notes', 'file.backup.md')));
+      });
+
+      test('throws PathSecurityException for path traversal with ..', () {
+        expect(
+          () => fileService.getLocalPath('../../../etc/passwd'),
+          throwsA(isA<PathSecurityException>()),
+        );
+      });
+
+      test('throws PathSecurityException for path containing ..', () {
+        expect(
+          () => fileService.getLocalPath('notes/../../../etc/passwd'),
+          throwsA(isA<PathSecurityException>()),
+        );
+      });
+
+      test('throws PathSecurityException for absolute paths', () {
+        expect(
+          () => fileService.getLocalPath('/etc/passwd'),
+          throwsA(isA<PathSecurityException>()),
+        );
+      });
+
+      test('throws PathSecurityException for null byte injection', () {
+        expect(
+          () => fileService.getLocalPath('notes/test\x00.md'),
+          throwsA(isA<PathSecurityException>()),
+        );
+      });
+
+      test('throws PathSecurityException for empty path components', () {
+        expect(
+          () => fileService.getLocalPath('notes//test.md'),
+          throwsA(isA<PathSecurityException>()),
+        );
+      });
+
+      test('normalizes and validates safe paths', () {
+        // Path with redundant separators should be normalized
+        final localPath = fileService.getLocalPath('notes/folder/./file.md');
+
+        expect(localPath, equals(path.join(tempDir.path, 'notes', 'folder', 'file.md')));
       });
     });
 
@@ -232,7 +274,7 @@ void main() {
         );
       });
 
-      test('ignores subdirectories', () async {
+      test('recursively finds files in subdirectories', () async {
         await File(path.join(tempDir.path, 'root.md')).writeAsString('Root');
         await Directory(path.join(tempDir.path, 'subdir')).create();
         await File(
@@ -241,8 +283,9 @@ void main() {
 
         final files = await fileService.listLocalFiles();
 
-        expect(files, hasLength(1));
-        expect(path.basename(files.first.path), equals('root.md'));
+        expect(files, hasLength(2));
+        final basenames = files.map((f) => path.basename(f.path)).toList();
+        expect(basenames, containsAll(['root.md', 'sub.md']));
       });
 
       test('handles files with similar extensions', () async {

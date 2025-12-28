@@ -171,87 +171,89 @@ class NotesDatabase extends _$NotesDatabase {
   }
 
   /// Delete a note by ID
+  ///
+  /// Uses a transaction to ensure both the notes table and FTS index are updated atomically.
   Future<int> deleteNoteById(String id) async {
-    // Get the rowid first for FTS deletion
-    final rowIdResult = await customSelect(
-      'SELECT rowid FROM notes WHERE id = ?',
-      variables: [Variable.withString(id)],
-      readsFrom: {notes},
-    ).getSingleOrNull();
+    return await transaction(() async {
+      // Get the rowid first for FTS deletion
+      final rowIdResult = await customSelect(
+        'SELECT rowid FROM notes WHERE id = ?',
+        variables: [Variable.withString(id)],
+        readsFrom: {notes},
+      ).getSingleOrNull();
 
-    // Delete from FTS5 index first if note existed
-    if (rowIdResult != null) {
-      final rowId = rowIdResult.read<int>('rowid');
-      await customStatement('DELETE FROM notes_fts WHERE rowid = ?', [rowId]);
-    }
+      // Delete from FTS5 index first if note existed
+      if (rowIdResult != null) {
+        final rowId = rowIdResult.read<int>('rowid');
+        await customStatement('DELETE FROM notes_fts WHERE rowid = ?', [rowId]);
+      }
 
-    // Delete from notes table
-    final result = await (delete(notes)..where((n) => n.id.equals(id))).go();
+      // Delete from notes table
+      final result = await (delete(notes)..where((n) => n.id.equals(id))).go();
 
-    return result;
+      return result;
+    });
   }
 
   /// Delete a note by path
+  ///
+  /// Uses a transaction to ensure both the notes table and FTS index are updated atomically.
   Future<int> deleteNoteByPath(String path) async {
-    // Get the rowid first for FTS deletion
-    final rowIdResult = await customSelect(
-      'SELECT rowid FROM notes WHERE path = ?',
-      variables: [Variable.withString(path)],
-      readsFrom: {notes},
-    ).getSingleOrNull();
+    return await transaction(() async {
+      // Get the rowid first for FTS deletion
+      final rowIdResult = await customSelect(
+        'SELECT rowid FROM notes WHERE path = ?',
+        variables: [Variable.withString(path)],
+        readsFrom: {notes},
+      ).getSingleOrNull();
 
-    // Delete from FTS5 index first if note existed
-    if (rowIdResult != null) {
-      final rowId = rowIdResult.read<int>('rowid');
-      await customStatement('DELETE FROM notes_fts WHERE rowid = ?', [rowId]);
-    }
+      // Delete from FTS5 index first if note existed
+      if (rowIdResult != null) {
+        final rowId = rowIdResult.read<int>('rowid');
+        await customStatement('DELETE FROM notes_fts WHERE rowid = ?', [rowId]);
+      }
 
-    // Delete from notes table
-    final result = await (delete(
-      notes,
-    )..where((n) => n.path.equals(path))).go();
+      // Delete from notes table
+      final result = await (delete(
+        notes,
+      )..where((n) => n.path.equals(path))).go();
 
-    return result;
+      return result;
+    });
   }
 
   /// Update FTS5 index for a note
-  /// Call this whenever note content changes
+  ///
+  /// Uses a transaction and efficient INSERT OR REPLACE to update the index atomically.
+  /// Call this whenever note content changes.
   Future<void> updateFtsIndex(String id, String title, String content) async {
-    // First, get the rowid for this note
-    final note = await getNoteById(id);
-    if (note == null) {
-      throw StateError('Cannot update FTS index: note not found with id $id');
-    }
+    return await transaction(() async {
+      // First, get the rowid for this note
+      final note = await getNoteById(id);
+      if (note == null) {
+        throw StateError('Cannot update FTS index: note not found with id $id');
+      }
 
-    // SQLite rowid is 1-based and auto-increments, but we need to get it from the note
-    final rowIdResult = await customSelect(
-      'SELECT rowid FROM notes WHERE id = ?',
-      variables: [Variable.withString(id)],
-      readsFrom: {notes},
-    ).getSingleOrNull();
+      // SQLite rowid is 1-based and auto-increments, but we need to get it from the note
+      final rowIdResult = await customSelect(
+        'SELECT rowid FROM notes WHERE id = ?',
+        variables: [Variable.withString(id)],
+        readsFrom: {notes},
+      ).getSingleOrNull();
 
-    if (rowIdResult == null) {
-      throw StateError('Cannot find rowid for note $id');
-    }
+      if (rowIdResult == null) {
+        throw StateError('Cannot find rowid for note $id');
+      }
 
-    final rowId = rowIdResult.read<int>('rowid');
+      final rowId = rowIdResult.read<int>('rowid');
 
-    // Check if entry exists in FTS
-    final existsResult = await customSelect(
-      'SELECT rowid FROM notes_fts WHERE rowid = ?',
-      variables: [Variable.withInt(rowId)],
-    ).getSingleOrNull();
-
-    if (existsResult != null) {
-      // Delete old entry
-      await customStatement('DELETE FROM notes_fts WHERE rowid = ?', [rowId]);
-    }
-
-    // Insert new entry
-    await customStatement(
-      'INSERT INTO notes_fts(rowid, title, content) VALUES (?, ?, ?)',
-      [rowId, title, content],
-    );
+      // Use INSERT OR REPLACE for efficient upsert operation
+      // This is more efficient than DELETE + INSERT and works atomically
+      await customStatement(
+        'INSERT OR REPLACE INTO notes_fts(rowid, title, content) VALUES (?, ?, ?)',
+        [rowId, title, content],
+      );
+    });
   }
 
   /// Full-text search using FTS5
