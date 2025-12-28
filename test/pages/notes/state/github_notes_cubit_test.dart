@@ -886,12 +886,21 @@ void main() {
         when(
           () => mockFileService.moveToTrash(any()),
         ).thenAnswer((_) async => '/path/to/.trash/12345_test.md');
+        when(() => mockFileService.listBackups()).thenAnswer(
+          (_) async => [
+            MockFile('/path/to/.trash/12345_test.md'),
+          ],
+        );
+        when(
+          () => mockFileService.readFile('/path/to/.trash/12345_test.md'),
+        ).thenAnswer((_) async => 'Test content from trash');
         when(
           () => mockDatabase.updateNoteById(any(), any()),
         ).thenAnswer((_) async => 1);
         when(
           () => mockDatabase.getAllNotes(),
         ).thenAnswer((_) async => [testNote.copyWith(markedForDeletion: true)]);
+        when(() => mockNetworkService.isOnline()).thenAnswer((_) async => true);
       },
       build: () => GitHubNotesCubit(
         database: mockDatabase,
@@ -929,7 +938,7 @@ void main() {
       ),
       act: (cubit) => cubit.deleteNote('note1'),
       expect: () => [
-        // Should reload with marked for deletion AND keep selection (to show undo button)
+        // Should reload with marked for deletion AND keep selection with content loaded (to show undo button)
         isA<GitHubNotesState>()
             .having((s) => s.status, 'status', GitHubNotesStatus.loaded)
             .having(
@@ -942,7 +951,12 @@ void main() {
               'selectedNote.markedForDeletion',
               true,
             )
-            .having((s) => s.selectedNote?.id, 'selectedNote.id', 'note1'),
+            .having((s) => s.selectedNote?.id, 'selectedNote.id', 'note1')
+            .having(
+              (s) => s.noteContent,
+              'noteContent',
+              'Test content from trash',
+            ),
       ],
       verify: (cubit) {
         // Should mark note for deletion
@@ -1009,6 +1023,7 @@ void main() {
             ),
           ],
         );
+        when(() => mockNetworkService.isOnline()).thenAnswer((_) async => true);
       },
       build: () => GitHubNotesCubit(
         database: mockDatabase,

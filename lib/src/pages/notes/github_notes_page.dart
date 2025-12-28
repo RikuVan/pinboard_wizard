@@ -647,6 +647,32 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
           ),
         ),
 
+        // Deletion warning banner
+        if (note.markedForDeletion)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: Colors.orange.withValues(alpha: 0.1),
+            child: Row(
+              children: [
+                MacosIcon(
+                  CupertinoIcons.exclamationmark_triangle,
+                  color: Colors.orange,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'This note is marked for deletion and will be permanently removed when you sync.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.orange.shade300 : Colors.orange.shade800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
         // Content
         Expanded(
           child: content == null

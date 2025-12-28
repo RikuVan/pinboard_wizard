@@ -449,25 +449,58 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
       final notes = await database.getAllNotes();
       final isOnline = await networkService.isOnline();
 
-      // If this note was selected, re-select it (with updated markedForDeletion state)
-      // to show the undo button. Otherwise keep existing selection.
-      Note? newSelection = state.selectedNote;
+      // If this note was selected, re-select it and load content from trash
       if (state.selectedNote?.id == noteId) {
-        newSelection = notes.firstWhere(
+        final updatedNote = notes.firstWhere(
           (n) => n.id == noteId,
           orElse: () => note,
         );
-      }
 
-      emit(
-        state.copyWith(
-          status: GitHubNotesStatus.loaded,
-          notes: notes,
-          isOnline: isOnline,
-          selectedNote: newSelection,
-          clearErrorMessage: true,
-        ),
-      );
+        // Read content from trash backup
+        String? content;
+        try {
+          final backups = await fileService.listBackups();
+          final filename = localPath.split('/').last;
+          final noteBackups = backups
+              .where((backup) => backup.path.endsWith('_$filename'))
+              .toList()
+            ..sort((a, b) => b.path.compareTo(a.path));
+
+          if (noteBackups.isNotEmpty) {
+            content = await fileService.readFile(noteBackups.first.path);
+            debugPrint('📖 Loaded content from trash backup');
+          } else {
+            content =
+                '# Note marked for deletion\n\nThis note has been marked for deletion and the file has been moved to trash. Use the "Undo Delete" button to restore it.';
+            debugPrint('⚠️ No backup found for deleted note');
+          }
+        } catch (e) {
+          content =
+              '# Note marked for deletion\n\nThis note has been marked for deletion. Use the "Undo Delete" button to restore it.\n\nError reading backup: $e';
+          debugPrint('⚠️ Error reading backup: $e');
+        }
+
+        emit(
+          state.copyWith(
+            status: GitHubNotesStatus.loaded,
+            notes: notes,
+            isOnline: isOnline,
+            selectedNote: updatedNote,
+            noteContent: content,
+            clearErrorMessage: true,
+          ),
+        );
+      } else {
+        // Different note was selected, just reload
+        emit(
+          state.copyWith(
+            status: GitHubNotesStatus.loaded,
+            notes: notes,
+            isOnline: isOnline,
+            clearErrorMessage: true,
+          ),
+        );
+      }
 
       debugPrint('🗑️ Note marked for deletion: ${note.title}');
       debugPrint('   Backup available for 30 days in .trash/');
