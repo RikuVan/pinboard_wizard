@@ -382,75 +382,220 @@ test/github/
 
 ---
 
-## 🎯 Next Steps: Phase 3 - Local Database & File Service
+## ✅ Completed: Phase 3 - Local Database (Partial)
 
-### 🔜 To Implement
+### ✅ Implemented Components
 
-Based on `NOTES_REDESIGN.md` sections:
+#### 1. Dependencies Added
 
-1. **Required Dependencies to Add:**
+Added to `pubspec.yaml`:
 
-   ```yaml
-   dependencies:
-     drift: ^2.14.0 # Local database
-     sqlite3_flutter_libs: ^0.5.0 # SQLite support
-     path: ^1.8.0 # File path handling
-     path_provider: ^2.1.0 # App documents directory
-   ```
+- `drift: ^2.30.0` - Local database ORM
+- `drift_dev: ^2.30.0` - Code generation (dev dependency)
+- `sqlite3: ^2.9.4` - SQLite library
+- `sqlite3_flutter_libs: ^0.5.41` - SQLite native libraries
+- `path: ^1.9.1` - Path manipulation
+- `path_provider: ^2.1.5` - App directories
 
-2. **Models:**
-   - `SyncResult` - Sync operation results
-   - `SyncFailure` - Failure details
+#### 2. Drift Database (`lib/src/database/`)
 
-3. **Services:**
-   - `FileService` - Local file I/O
-   - `NetworkService` - Connectivity checking
-   - `NoteFilenameService` - Filename generation/parsing
+**File Structure:**
 
-4. **Drift Database:**
-   - `notes_metadata` table schema
-   - `notes_fts` FTS5 full-text search table
-   - Database migrations
-   - CRUD operations
-   - Search queries
+```
+lib/src/database/
+├── notes_database.dart
+└── notes_database.g.dart (generated)
 
-5. **Tests:**
-   - File service tests
-   - Network service tests
-   - Database tests
-   - Filename service tests
+test/database/
+└── notes_database_test.dart
+```
 
-### 📋 Implementation Checklist
+**Database Schema:**
 
-- [ ] Add new dependencies to `pubspec.yaml`
-- [ ] Create `SyncResult` model
-- [ ] Create `SyncFailure` model
-- [ ] Implement `FileService` for local storage
-- [ ] Implement `NetworkService` for connectivity
-- [ ] Implement `NoteFilenameService`
-- [ ] Set up Drift database
-  - [ ] Define `notes_metadata` table
-  - [ ] Define `notes_fts` FTS5 table
-  - [ ] Implement CRUD operations
-  - [ ] Implement search functionality
-- [ ] Write comprehensive tests
-- [ ] Update service locator integration
-- [ ] Document services
+- **`Notes` Table** - Main metadata table
+  - `id` (text, PK) - UUID v4
+  - `path` (text, unique) - Repository path
+  - `title` (text, nullable) - Note title
+  - `lastKnownSha` (text, nullable) - GitHub SHA for conflict detection
+  - `isDirty` (bool) - Local edits not synced
+  - `updatedAt` (datetime) - Last modification time
+  - `createdAt` (datetime) - Creation time
+  - `contentPreview` (text, nullable) - First 300 chars
+  - `contentLength` (int) - Cached content length
+  - `isConflict` (bool) - Conflict flag
+  - `markedForDeletion` (bool) - Deletion queue flag
+
+- **`notes_fts` FTS5 Virtual Table** - Full-text search
+  - `rowid` (int) - Links to Notes table rowid
+  - `title` (text) - Searchable title
+  - `content` (text) - Full markdown content
+  - Created manually in migrations (FTS5 not fully supported by Drift)
+
+**Key Features:**
+
+- **CRUD Operations:**
+  - `insertNote()` - Insert new note
+  - `upsertNote()` - Insert or update
+  - `updateNoteById()` / `updateNoteByPath()` - Update specific fields
+  - `deleteNoteById()` / `deleteNoteByPath()` - Delete note
+  - `getNoteById()` / `getNoteByPath()` - Retrieve note
+  - `getAllNotes()` - Get all notes (ordered by updatedAt desc)
+
+- **Query Operations:**
+  - `getDirtyNotes()` - Get notes needing sync
+  - `getConflictNotes()` - Get conflicted notes
+  - `getMarkedForDeletionNotes()` - Get deletion queue
+  - `getDirtyNotesCount()` / `getConflictNotesCount()` - Counts
+
+- **Sync Helper Methods:**
+  - `markNoteDirty()` - Mark note as modified
+  - `markNoteConflict()` - Mark as conflicted
+  - `markNoteForDeletion()` - Queue for deletion
+  - `updateNoteAfterSync()` - Clear dirty flag, update SHA
+
+- **FTS5 Full-Text Search:**
+  - `updateFtsIndex()` - Sync note content to FTS5
+  - `searchNotes()` - Full-text search with ranking (limit 50)
+  - Manual FTS5 table management (insert/update/delete)
+  - Automatic FTS5 cleanup on note deletion
+
+- **Utilities:**
+  - `clearAllNotes()` - Clear all data (for testing/reset)
+  - Test constructor for in-memory testing
+
+**Technical Implementation:**
+
+- Uses `NativeDatabase` for SQLite backend
+- FTS5 table created manually in migrations (Drift limitation)
+- Platform-specific optimizations (Android/macOS temp directories)
+- Foreign keys enabled via `beforeOpen` hook
+- Proper database file location via `path_provider`
+
+#### 3. Tests (`test/database/notes_database_test.dart`)
+
+**Test Coverage:** 39 tests total ✅ **ALL PASSING**
+
+- ✅ **Basic Operations** (8/8 tests passing)
+  - Insert, upsert, get, delete operations
+  - Path and ID-based lookups
+  - Ordering by updated date
+
+- ✅ **Update Operations** (6/6 tests passing)
+  - Field-specific updates
+  - Dirty flag management
+  - Conflict flag management
+  - Deletion flag management
+  - Post-sync updates
+
+- ✅ **Query Operations** (5/5 tests passing)
+  - Filtering by dirty/conflict/deletion status
+  - Count queries
+
+- ✅ **FTS5 Search** (7/7 tests passing)
+  - Title and content search
+  - Content-only search
+  - Empty query handling
+  - No results handling
+  - Result limiting (50 max)
+  - Update searchable content
+  - FTS index deletion on note deletion
+
+- ✅ **Edge Cases** (6/6 tests passing)
+  - Duplicate constraint violations
+  - Non-existent note updates/deletes
+  - Clear all functionality
+
+- ✅ **Timestamps** (3/3 tests passing)
+  - Auto-set createdAt on insert
+  - Auto-set updatedAt on insert
+  - updatedAt changes on modification
+
+- ✅ **Migrations** (4/4 tests passing)
+  - Schema version configuration
+  - Migration strategy setup
+  - onCreate creates notes table
+  - onCreate creates FTS5 table
+
+**Testing Infrastructure:**
+
+- In-memory database for fast tests
+- Proper setup/tearDown lifecycle
+- Mock-free direct database testing
+- Import conflict resolution (`matcher` aliasing)
+
+### 🔧 Technical Notes
+
+#### Database Location Strategy
+
+Following Drift best practices:
+
+- Production: `lib/src/database/` (app-wide database, not feature-specific)
+- Can contain tables for multiple features (notes, bookmarks cache, etc.)
+- Single database file: `notes.db` in app documents directory
+
+#### Migration Support
+
+The database includes full migration infrastructure:
+
+- **Schema versioning** - Currently at version 1
+- **onCreate callback** - Creates initial schema
+- **onUpgrade callback** - Handles migrations between versions
+- **beforeOpen callback** - Enables foreign keys and data migrations
+- **Migration guide** - Documented in `lib/src/database/MIGRATIONS.md`
+
+**Key Features:**
+
+- Incremental migrations from any version
+- Support for additive changes (new columns, indexes)
+- Support for complex changes (FTS5 rebuilds, table restructuring)
+- Example migrations for common scenarios
+- Best practices and rollback strategies
+- Migration testing infrastructure
+
+**Future-proofing:**
+
+- Schema version tracking (`schemaVersion = 1`)
+- Migration callbacks ready for versions 2+
+- Comprehensive migration documentation
+- Test infrastructure for migration verification
+
+#### FTS5 Implementation Challenges
+
+Drift doesn't fully support FTS5 virtual tables, so we:
+
+1. Removed `NotesFts` from `@DriftDatabase(tables: [...])`
+2. Create FTS5 manually in `onCreate` migration
+3. Manage FTS5 CRUD via raw SQL (`customStatement`)
+4. No UPSERT support for FTS5 (delete + insert pattern)
+5. Special FTS5 delete syntax (not standard SQL DELETE)
+
+### 🔜 Remaining Work for Phase 3
+
+- [x] ~~Fix timestamp test flakiness~~ ✅ **DONE**
+- [x] ~~Fix FTS5 search functionality~~ ✅ **DONE**
+- [x] ~~Add migration support~~ ✅ **DONE**
+- [ ] Create `SyncResult` model for sync operations
+- [ ] Create `SyncFailure` model for error tracking
+- [ ] Implement `FileService` for local markdown I/O
+- [ ] Implement `NetworkService` for connectivity checks
+- [ ] Implement `NoteFilenameService` for filename generation
+- [ ] Write tests for new services
+- [ ] Update service locator registration
 
 ---
 
 ## 📈 Progress Summary
 
-| Phase                                  | Status      | Completion |
-| -------------------------------------- | ----------- | ---------- |
-| **Phase 1: Credentials & Settings UI** | ✅ Complete | 100%       |
-| **Phase 2: GitHub API Client**         | ✅ Complete | 100%       |
-| **Phase 3: Local Database & Services** | ⏳ Next     | 0%         |
-| **Phase 4: Sync Engine**               | 🔜 Planned  | 0%         |
-| **Phase 5: Notes UI**                  | 🔜 Planned  | 0%         |
-| **Phase 6: Polish**                    | 🔜 Planned  | 0%         |
+| Phase                                  | Status         | Completion |
+| -------------------------------------- | -------------- | ---------- |
+| **Phase 1: Credentials & Settings UI** | ✅ Complete    | 100%       |
+| **Phase 2: GitHub API Client**         | ✅ Complete    | 100%       |
+| **Phase 3: Local Database & Services** | 🔄 In Progress | 60%        |
+| **Phase 4: Sync Engine**               | 🔜 Planned     | 0%         |
+| **Phase 5: Notes UI**                  | 🔜 Planned     | 0%         |
+| **Phase 6: Polish**                    | 🔜 Planned     | 0%         |
 
-**Overall Progress**: ~33% (2/6 phases complete)
+**Overall Progress**: ~45% (2.6/6 phases complete)
 
 ---
 
@@ -518,14 +663,18 @@ Using `fvm` for version management.
 
 ## Metrics
 
-- **Files Created:** 13 (Phase 1: 8, Phase 2: 5)
-- **Lines of Code:** ~1,800 (Phase 1: 650, Phase 2: 1,150)
-- **Test Coverage:** 52 tests (Phase 1: 26, Phase 2: 26)
+- **Files Created:** 16 (Phase 1: 8, Phase 2: 5, Phase 3: 3)
+  - `lib/src/database/notes_database.dart`
+  - `lib/src/database/MIGRATIONS.md` (migration guide)
+  - `test/database/notes_database_test.dart`
+- **Lines of Code:** ~3,400 (Phase 1: 650, Phase 2: 1,150, Phase 3: 1,600)
+- **Test Coverage:** 91 tests (Phase 1: 26, Phase 2: 26, Phase 3: 39)
+  - ✅ **ALL 91 TESTS PASSING**
 - **Documentation:** ~500 lines
-- **Build Status:** ✅ All tests passing, no errors
+- **Build Status:** ✅ No errors, all tests passing
 
 ---
 
 **Last Updated:** 2025-01-13
 **Implemented By:** Claude & User
-**Status:** Phase 1 & 2 Complete ✅ | Ready for Phase 3
+**Status:** Phase 1 & 2 Complete ✅ | Phase 3 Database Done (60%) 🔄 | All Tests Passing ✅ | Migration Support Added ✅ | Services Remaining
