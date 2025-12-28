@@ -670,6 +670,92 @@ void main() {
         verify(() => mockFileService.writeFile(any(), any())).called(1);
       },
     );
+
+    blocTest<GitHubNotesCubit, GitHubNotesState>(
+      'createNote handles title collision by adding timestamp',
+      setUp: () {
+        // Handle three calls: collision check, timestamp check, retrieve created note
+        var callCount = 0;
+        when(
+          () => mockDatabase.getNoteByPath(any()),
+        ).thenAnswer((_) {
+          callCount++;
+          if (callCount == 1) {
+            // First check: collision detected with base filename
+            return Future<Note?>.value(
+              Note(
+                id: 'existing',
+                path: 'new-note.md',
+                title: 'Existing Note',
+                isDirty: false,
+                isConflict: false,
+                markedForDeletion: false,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+                contentLength: 100,
+              ),
+            );
+          } else if (callCount == 2) {
+            // Second check: timestamped version is unique
+            return Future<Note?>.value(null);
+          } else {
+            // Third call: retrieve the newly created note
+            return Future<Note?>.value(
+              Note(
+                id: 'new',
+                path: 'new-note-20251228-143045.md',
+                title: 'New Note',
+                isDirty: true,
+                isConflict: false,
+                markedForDeletion: false,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+                contentLength: 11,
+              ),
+            );
+          }
+        });
+        when(
+          () => mockDatabase.getAllNotes(),
+        ).thenAnswer((_) => Future<List<Note>>.value([]));
+        when(
+          () => mockDatabase.insertNote(any()),
+        ).thenAnswer((_) => Future.value(1));
+        when(
+          () => mockDatabase.updateFtsIndex(any(), any(), any()),
+        ).thenAnswer((_) => Future.value(null));
+        when(
+          () => mockFileService.writeFile(any(), any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockFileService.getLocalPath(any()),
+        ).thenReturn('/local/path/new-note-20251228-143045.md');
+        when(
+          () => mockFileService.readFile(any()),
+        ).thenAnswer((_) async => 'New content');
+      },
+      build: () => GitHubNotesCubit(
+        database: mockDatabase,
+        syncEngine: mockSyncEngine,
+        fileService: mockFileService,
+        networkService: mockNetworkService,
+      ),
+      act: (cubit) async {
+        await cubit.loadNotes();
+        cubit.startCreating();
+        await cubit.createNote(title: 'New Note', content: 'New content');
+      },
+      verify: (cubit) {
+        // Should check 3 times:
+        // 1. Base filename collision check
+        // 2. Timestamped filename uniqueness check
+        // 3. Retrieve newly created note for selection
+        verify(() => mockDatabase.getNoteByPath(any())).called(3);
+        // Should still successfully insert the note with timestamped name
+        verify(() => mockDatabase.insertNote(any())).called(1);
+        verify(() => mockFileService.writeFile(any(), any())).called(1);
+      },
+    );
   });
 
   group('GitHubNotesCubit - Syncing', () {

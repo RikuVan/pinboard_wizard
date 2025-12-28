@@ -274,19 +274,39 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
   }) async {
     try {
       // Generate filename from title
-      final filename = _sanitizeFilename(title);
-      final path = '$filename.md';
+      final baseFilename = _sanitizeFilename(title);
+
+      // Try base filename first, add timestamp suffix if collision
+      String filename = baseFilename;
+      String path = '$filename.md';
 
       // Check if file already exists
-      final existingNote = await database.getNoteByPath(path);
+      var existingNote = await database.getNoteByPath(path);
       if (existingNote != null) {
-        emit(
-          state.copyWith(
-            isCreating: false,
-            errorMessage: 'A note with this title already exists',
-          ),
-        );
-        return;
+        // Add timestamp suffix to make it unique
+        // Format: filename-YYYYMMDD-HHMMSS.md
+        final now = DateTime.now();
+        final timestamp = '${now.year}${now.month.toString().padLeft(2, '0')}'
+            '${now.day.toString().padLeft(2, '0')}-'
+            '${now.hour.toString().padLeft(2, '0')}'
+            '${now.minute.toString().padLeft(2, '0')}'
+            '${now.second.toString().padLeft(2, '0')}';
+        filename = '$baseFilename-$timestamp';
+        path = '$filename.md';
+
+        // Verify the timestamped version doesn't exist (extremely unlikely but safe)
+        existingNote = await database.getNoteByPath(path);
+        if (existingNote != null) {
+          emit(
+            state.copyWith(
+              isCreating: false,
+              errorMessage: 'Failed to create unique filename. Please try again.',
+            ),
+          );
+          return;
+        }
+
+        debugPrint('📝 Note filename collision detected, using: $path');
       }
 
       // Write file to local filesystem
