@@ -665,7 +665,9 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
                     'This note is marked for deletion and will be permanently removed when you sync.',
                     style: TextStyle(
                       fontSize: 12,
-                      color: isDark ? Colors.orange.shade300 : Colors.orange.shade800,
+                      color: isDark
+                          ? Colors.orange.shade300
+                          : Colors.orange.shade800,
                     ),
                   ),
                 ),

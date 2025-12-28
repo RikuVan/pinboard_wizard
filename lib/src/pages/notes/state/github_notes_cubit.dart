@@ -456,28 +456,44 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
           orElse: () => note,
         );
 
-        // Read content from trash backup
-        String? content;
+        // Always show deletion message with undo button
+        // Try to load content from trash with a timeout to avoid hanging
+        String? content =
+            '# Note marked for deletion\n\nThis note has been marked for deletion. Use the "Undo Delete" button to restore it.';
+
         try {
-          final backups = await fileService.listBackups();
+          final backups = await fileService.listBackups().timeout(
+            const Duration(seconds: 2),
+          );
           final filename = localPath.split('/').last;
-          final noteBackups = backups
-              .where((backup) => backup.path.endsWith('_$filename'))
-              .toList()
-            ..sort((a, b) => b.path.compareTo(a.path));
+          final noteBackups =
+              backups
+                  .where((backup) => backup.path.endsWith('_$filename'))
+                  .toList()
+                ..sort((a, b) => b.path.compareTo(a.path));
 
           if (noteBackups.isNotEmpty) {
-            content = await fileService.readFile(noteBackups.first.path);
-            debugPrint('📖 Loaded content from trash backup');
+            try {
+              final backupContent = await fileService
+                  .readFile(noteBackups.first.path)
+                  .timeout(const Duration(seconds: 2));
+              content = backupContent;
+              debugPrint('📖 Loaded content from trash backup');
+            } catch (readError) {
+              debugPrint(
+                '⚠️ Failed to read backup content (will show deletion message): $readError',
+              );
+              // Keep the default deletion message
+            }
           } else {
-            content =
-                '# Note marked for deletion\n\nThis note has been marked for deletion and the file has been moved to trash. Use the "Undo Delete" button to restore it.';
             debugPrint('⚠️ No backup found for deleted note');
+            // Keep the default deletion message
           }
         } catch (e) {
-          content =
-              '# Note marked for deletion\n\nThis note has been marked for deletion. Use the "Undo Delete" button to restore it.\n\nError reading backup: $e';
-          debugPrint('⚠️ Error reading backup: $e');
+          debugPrint(
+            '⚠️ Error accessing backups (will show deletion message): $e',
+          );
+          // Keep the default deletion message
         }
 
         emit(
@@ -579,6 +595,13 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
 
       // Reload notes
       await loadNotes();
+
+      // Re-select the note to get the updated version without markedForDeletion flag
+      final updatedNote = state.notes.firstWhere(
+        (n) => n.id == noteId,
+        orElse: () => note,
+      );
+      await selectNote(updatedNote);
 
       debugPrint('↩️  Restored note from deletion: ${note.title}');
     } catch (e) {

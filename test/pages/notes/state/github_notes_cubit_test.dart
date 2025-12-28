@@ -886,11 +886,9 @@ void main() {
         when(
           () => mockFileService.moveToTrash(any()),
         ).thenAnswer((_) async => '/path/to/.trash/12345_test.md');
-        when(() => mockFileService.listBackups()).thenAnswer(
-          (_) async => [
-            MockFile('/path/to/.trash/12345_test.md'),
-          ],
-        );
+        when(
+          () => mockFileService.listBackups(),
+        ).thenAnswer((_) async => [MockFile('/path/to/.trash/12345_test.md')]);
         when(
           () => mockFileService.readFile('/path/to/.trash/12345_test.md'),
         ).thenAnswer((_) async => 'Test content from trash');
