@@ -579,38 +579,70 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
               ),
               PushButton(
                 controlSize: ControlSize.regular,
-                onPressed: () => _notesCubit?.startEditing(),
+                onPressed: note.markedForDeletion
+                    ? null
+                    : () => _notesCubit?.startEditing(),
                 child: const Text('Edit'),
               ),
               const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () => _confirmDeleteNote(note),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 2,
+              if (note.markedForDeletion)
+                GestureDetector(
+                  onTap: () => _notesCubit?.undoDeleteNote(note.id),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        MacosIcon(
+                          CupertinoIcons.arrow_uturn_left,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Undo Delete',
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    color: MacosColors.systemRedColor,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      MacosIcon(
-                        CupertinoIcons.trash,
-                        size: 14,
-                        color: Colors.white,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        'Delete',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
-                      ),
-                    ],
+                )
+              else
+                GestureDetector(
+                  onTap: () => _confirmDeleteNote(note),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: MacosColors.systemRedColor,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        MacosIcon(
+                          CupertinoIcons.trash,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Delete',
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),

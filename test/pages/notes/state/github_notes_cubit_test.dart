@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
@@ -18,6 +20,15 @@ class MockNoteSyncEngine extends Mock implements NoteSyncEngine {}
 class MockFileService extends Mock implements FileService {}
 
 class MockNetworkService extends Mock implements NetworkService {}
+
+class MockFile extends Mock implements File {
+  final String _path;
+
+  MockFile(this._path);
+
+  @override
+  String get path => _path;
+}
 
 class FakeSyncResult extends Fake implements SyncResult {
   // isSuccess is not part of SyncResult interface, so no @override
@@ -842,6 +853,356 @@ void main() {
           (state) => state.isOnline,
           'isOnline',
           false,
+        ),
+      ],
+    );
+  });
+
+  group('GitHubNotesCubit - Deletion', () {
+    blocTest<GitHubNotesCubit, GitHubNotesState>(
+      'deleteNote marks note for deletion and clears selection if selected',
+      setUp: () {
+        final testNote = Note(
+          id: 'note1',
+          path: 'notes/test.md',
+          title: 'Test Note',
+          isDirty: false,
+          isConflict: false,
+          markedForDeletion: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          contentLength: 100,
+        );
+
+        when(
+          () => mockDatabase.getNoteById('note1'),
+        ).thenAnswer((_) async => testNote);
+        when(
+          () => mockFileService.getLocalPath(any()),
+        ).thenReturn('/path/to/notes/test.md');
+        when(
+          () => mockFileService.fileExists(any()),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockFileService.moveToTrash(any()),
+        ).thenAnswer((_) async => '/path/to/.trash/12345_test.md');
+        when(
+          () => mockDatabase.updateNoteById(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDatabase.getAllNotes(),
+        ).thenAnswer((_) async => [testNote.copyWith(markedForDeletion: true)]);
+      },
+      build: () => GitHubNotesCubit(
+        database: mockDatabase,
+        syncEngine: mockSyncEngine,
+        fileService: mockFileService,
+        networkService: mockNetworkService,
+      ),
+      seed: () => GitHubNotesState(
+        status: GitHubNotesStatus.loaded,
+        notes: [
+          Note(
+            id: 'note1',
+            path: 'notes/test.md',
+            title: 'Test Note',
+            isDirty: false,
+            isConflict: false,
+            markedForDeletion: false,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            contentLength: 100,
+          ),
+        ],
+        selectedNote: Note(
+          id: 'note1',
+          path: 'notes/test.md',
+          title: 'Test Note',
+          isDirty: false,
+          isConflict: false,
+          markedForDeletion: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          contentLength: 100,
+        ),
+        noteContent: 'Test content',
+      ),
+      act: (cubit) => cubit.deleteNote('note1'),
+      expect: () => [
+        // Should clear selection
+        isA<GitHubNotesState>()
+            .having((s) => s.selectedNote, 'selectedNote', isNull)
+            .having((s) => s.noteContent, 'noteContent', isNull),
+        // Then reload with marked for deletion
+        isA<GitHubNotesState>().having(
+          (s) => s.status,
+          'status',
+          GitHubNotesStatus.loading,
+        ),
+        isA<GitHubNotesState>()
+            .having((s) => s.status, 'status', GitHubNotesStatus.loaded)
+            .having(
+              (s) => s.notes.first.markedForDeletion,
+              'markedForDeletion',
+              true,
+            ),
+      ],
+      verify: (cubit) {
+        // Should mark note for deletion
+        verify(
+          () => mockDatabase.updateNoteById(
+            'note1',
+            any(
+              that: isA<NotesCompanion>().having(
+                (c) => c.markedForDeletion.value,
+                'markedForDeletion',
+                true,
+              ),
+            ),
+          ),
+        ).called(1);
+        // Should backup file before deletion
+        verify(() => mockFileService.moveToTrash(any())).called(1);
+      },
+    );
+
+    blocTest<GitHubNotesCubit, GitHubNotesState>(
+      'deleteNote does not clear selection if different note selected',
+      setUp: () {
+        final testNote = Note(
+          id: 'note1',
+          path: 'notes/test.md',
+          title: 'Test Note',
+          isDirty: false,
+          isConflict: false,
+          markedForDeletion: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          contentLength: 100,
+        );
+
+        when(
+          () => mockDatabase.getNoteById('note1'),
+        ).thenAnswer((_) async => testNote);
+        when(
+          () => mockFileService.getLocalPath(any()),
+        ).thenReturn('/path/to/notes/test.md');
+        when(
+          () => mockFileService.fileExists(any()),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockFileService.moveToTrash(any()),
+        ).thenAnswer((_) async => '/path/to/.trash/12345_test.md');
+        when(
+          () => mockDatabase.updateNoteById(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(() => mockDatabase.getAllNotes()).thenAnswer(
+          (_) async => [
+            testNote.copyWith(markedForDeletion: true),
+            Note(
+              id: 'note2',
+              path: 'notes/other.md',
+              title: 'Other Note',
+              isDirty: false,
+              isConflict: false,
+              markedForDeletion: false,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              contentLength: 50,
+            ),
+          ],
+        );
+      },
+      build: () => GitHubNotesCubit(
+        database: mockDatabase,
+        syncEngine: mockSyncEngine,
+        fileService: mockFileService,
+        networkService: mockNetworkService,
+      ),
+      seed: () => GitHubNotesState(
+        status: GitHubNotesStatus.loaded,
+        notes: [
+          Note(
+            id: 'note1',
+            path: 'notes/test.md',
+            title: 'Test Note',
+            isDirty: false,
+            isConflict: false,
+            markedForDeletion: false,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            contentLength: 100,
+          ),
+          Note(
+            id: 'note2',
+            path: 'notes/other.md',
+            title: 'Other Note',
+            isDirty: false,
+            isConflict: false,
+            markedForDeletion: false,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            contentLength: 50,
+          ),
+        ],
+        selectedNote: Note(
+          id: 'note2',
+          path: 'notes/other.md',
+          title: 'Other Note',
+          isDirty: false,
+          isConflict: false,
+          markedForDeletion: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          contentLength: 50,
+        ),
+        noteContent: 'Other content',
+      ),
+      act: (cubit) => cubit.deleteNote('note1'),
+      expect: () => [
+        // Should reload notes but keep selection
+        isA<GitHubNotesState>().having(
+          (s) => s.status,
+          'status',
+          GitHubNotesStatus.loading,
+        ),
+        isA<GitHubNotesState>()
+            .having((s) => s.status, 'status', GitHubNotesStatus.loaded)
+            .having((s) => s.selectedNote?.id, 'selectedNote.id', 'note2')
+            .having((s) => s.noteContent, 'noteContent', 'Other content'),
+      ],
+    );
+
+    blocTest<GitHubNotesCubit, GitHubNotesState>(
+      'undoDeleteNote unmarks note from deletion and restores from trash',
+      setUp: () {
+        final deletedNote = Note(
+          id: 'note1',
+          path: 'notes/test.md',
+          title: 'Test Note',
+          isDirty: false,
+          isConflict: false,
+          markedForDeletion: true,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          contentLength: 100,
+        );
+
+        when(
+          () => mockDatabase.getNoteById('note1'),
+        ).thenAnswer((_) async => deletedNote);
+        when(
+          () => mockFileService.getLocalPath(any()),
+        ).thenReturn('/path/to/notes/test.md');
+        when(
+          () => mockFileService.fileExists(any()),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockFileService.listBackups(),
+        ).thenAnswer((_) async => [MockFile('/path/to/.trash/12345_test.md')]);
+        when(
+          () => mockFileService.restoreFromTrash(any(), any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockDatabase.updateNoteById(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(() => mockDatabase.getAllNotes()).thenAnswer(
+          (_) async => [deletedNote.copyWith(markedForDeletion: false)],
+        );
+      },
+      build: () => GitHubNotesCubit(
+        database: mockDatabase,
+        syncEngine: mockSyncEngine,
+        fileService: mockFileService,
+        networkService: mockNetworkService,
+      ),
+      seed: () => GitHubNotesState(
+        status: GitHubNotesStatus.loaded,
+        notes: [
+          Note(
+            id: 'note1',
+            path: 'notes/test.md',
+            title: 'Test Note',
+            isDirty: false,
+            isConflict: false,
+            markedForDeletion: true,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            contentLength: 100,
+          ),
+        ],
+      ),
+      act: (cubit) => cubit.undoDeleteNote('note1'),
+      expect: () => [
+        // Should reload notes
+        isA<GitHubNotesState>().having(
+          (s) => s.status,
+          'status',
+          GitHubNotesStatus.loading,
+        ),
+        isA<GitHubNotesState>()
+            .having((s) => s.status, 'status', GitHubNotesStatus.loaded)
+            .having(
+              (s) => s.notes.first.markedForDeletion,
+              'markedForDeletion',
+              false,
+            ),
+      ],
+      verify: (cubit) {
+        // Should restore from trash
+        verify(
+          () => mockFileService.restoreFromTrash(
+            '/path/to/.trash/12345_test.md',
+            '/path/to/notes/test.md',
+          ),
+        ).called(1);
+        // Should unmark from deletion
+        verify(
+          () => mockDatabase.updateNoteById(
+            'note1',
+            any(
+              that: isA<NotesCompanion>().having(
+                (c) => c.markedForDeletion.value,
+                'markedForDeletion',
+                false,
+              ),
+            ),
+          ),
+        ).called(1);
+      },
+    );
+
+    blocTest<GitHubNotesCubit, GitHubNotesState>(
+      'undoDeleteNote shows error if note not marked for deletion',
+      setUp: () {
+        final note = Note(
+          id: 'note1',
+          path: 'notes/test.md',
+          title: 'Test Note',
+          isDirty: false,
+          isConflict: false,
+          markedForDeletion: false, // Not marked for deletion
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          contentLength: 100,
+        );
+
+        when(
+          () => mockDatabase.getNoteById('note1'),
+        ).thenAnswer((_) async => note);
+      },
+      build: () => GitHubNotesCubit(
+        database: mockDatabase,
+        syncEngine: mockSyncEngine,
+        fileService: mockFileService,
+        networkService: mockNetworkService,
+      ),
+      act: (cubit) => cubit.undoDeleteNote('note1'),
+      expect: () => [
+        isA<GitHubNotesState>().having(
+          (s) => s.errorMessage,
+          'errorMessage',
+          'Note is not marked for deletion',
         ),
       ],
     );
