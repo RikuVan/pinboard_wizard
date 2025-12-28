@@ -36,10 +36,32 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
 
   /// Initialize the cubit and load notes
   Future<void> initialize() async {
-    // Clean up any orphaned notes first
-    await cleanupOrphanedNotes();
+    // Clean up old backups from trash (30+ days old)
+    try {
+      final deletedCount = await fileService.cleanupOldBackups(
+        retentionDays: 30,
+      );
+      if (deletedCount > 0) {
+        debugPrint('🗑️ Cleaned up $deletedCount old backup(s) from trash');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to cleanup old backups: $e');
+    }
+
+    // Load notes first
     await loadNotes();
+
+    // Start auto-sync (currently disabled)
     _startAutoSync();
+
+    // Clean up orphaned notes AFTER first load
+    // This prevents race conditions with initial sync
+    // We defer this to avoid deleting notes that might be syncing
+    Future.delayed(const Duration(seconds: 5), () async {
+      if (!state.isSyncing) {
+        await cleanupOrphanedNotes();
+      }
+    });
   }
 
   /// Start periodic auto-sync every 5 minutes when online
@@ -74,7 +96,10 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
       );
     } catch (e) {
       emit(
-        state.copyWith(status: GitHubNotesStatus.error, errorMessage: 'Failed to load notes: $e'),
+        state.copyWith(
+          status: GitHubNotesStatus.error,
+          errorMessage: 'Failed to load notes: $e',
+        ),
       );
     }
   }
@@ -97,7 +122,12 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
         ),
       );
     } catch (e) {
-      emit(state.copyWith(status: GitHubNotesStatus.error, errorMessage: 'Search failed: $e'));
+      emit(
+        state.copyWith(
+          status: GitHubNotesStatus.error,
+          errorMessage: 'Search failed: $e',
+        ),
+      );
     }
   }
 
@@ -128,11 +158,13 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
 
   /// Clear note selection
   void clearSelection() {
-    emit(state.copyWith(
-      clearSelectedNote: true,
-      clearNoteContent: true,
-      isEditing: false,
-    ));
+    emit(
+      state.copyWith(
+        clearSelectedNote: true,
+        clearNoteContent: true,
+        isEditing: false,
+      ),
+    );
   }
 
   /// Start editing the selected note
@@ -166,7 +198,9 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
       debugPrint('   ✅ File written successfully');
 
       // Update database: mark as dirty, update timestamp, regenerate preview
-      final preview = content.length > 300 ? '${content.substring(0, 297)}...' : content;
+      final preview = content.length > 300
+          ? '${content.substring(0, 297)}...'
+          : content;
 
       debugPrint('   Updating database: isDirty=true');
       debugPrint('   Note ID: ${note.id}');
@@ -197,17 +231,35 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
       await selectNote(updatedNote);
 
       debugPrint('✅ Save complete');
-      emit(state.copyWith(isSaving: false, isEditing: false, clearErrorMessage: true));
+      emit(
+        state.copyWith(
+          isSaving: false,
+          isEditing: false,
+          clearErrorMessage: true,
+        ),
+      );
     } catch (e, stackTrace) {
       debugPrint('❌ Save failed: $e');
       debugPrint('   Stack trace: $stackTrace');
-      emit(state.copyWith(isSaving: false, errorMessage: 'Failed to save note: $e'));
+      emit(
+        state.copyWith(
+          isSaving: false,
+          errorMessage: 'Failed to save note: $e',
+        ),
+      );
     }
   }
 
   /// Start creating a new note (shows inline form)
   void startCreating() {
-    emit(state.copyWith(isCreating: true, selectedNote: null, noteContent: null, isEditing: false));
+    emit(
+      state.copyWith(
+        isCreating: true,
+        selectedNote: null,
+        noteContent: null,
+        isEditing: false,
+      ),
+    );
   }
 
   /// Cancel creating a new note
@@ -216,7 +268,10 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
   }
 
   /// Create a new note locally
-  Future<void> createNote({required String title, required String content}) async {
+  Future<void> createNote({
+    required String title,
+    required String content,
+  }) async {
     try {
       // Generate filename from title
       final filename = _sanitizeFilename(title);
@@ -226,7 +281,10 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
       final existingNote = await database.getNoteByPath(path);
       if (existingNote != null) {
         emit(
-          state.copyWith(isCreating: false, errorMessage: 'A note with this title already exists'),
+          state.copyWith(
+            isCreating: false,
+            errorMessage: 'A note with this title already exists',
+          ),
         );
         return;
       }
@@ -236,7 +294,9 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
       await fileService.writeFile(localPath, content);
 
       // Create database entry
-      final preview = content.length > 300 ? '${content.substring(0, 297)}...' : content;
+      final preview = content.length > 300
+          ? '${content.substring(0, 297)}...'
+          : content;
       final noteId = _generateUuid();
 
       await database.insertNote(
@@ -263,14 +323,39 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
 
       emit(state.copyWith(isCreating: false, clearErrorMessage: true));
     } catch (e) {
-      emit(state.copyWith(isCreating: false, errorMessage: 'Failed to create note: $e'));
+      emit(
+        state.copyWith(
+          isCreating: false,
+          errorMessage: 'Failed to create note: $e',
+        ),
+      );
     }
   }
 
   /// Delete a note locally and mark for deletion
+  /// Delete a note
+  ///
+  /// This creates a backup in .trash before deletion. The backup is kept
+  /// for 30 days to allow recovery if needed. The actual GitHub deletion
+  /// happens during sync.
   Future<void> deleteNote(String noteId) async {
     try {
       final note = state.notes.firstWhere((n) => n.id == noteId);
+      final localPath = fileService.getLocalPath(note.path);
+
+      // Backup file to trash before deletion (safety measure)
+      String? backupPath;
+      try {
+        if (await fileService.fileExists(localPath)) {
+          backupPath = await fileService.moveToTrash(localPath);
+          debugPrint('📦 Backed up file to trash: $backupPath');
+        }
+      } catch (e) {
+        debugPrint(
+          '⚠️ Failed to backup file (will continue with deletion): $e',
+        );
+        // Continue with deletion even if backup fails
+      }
 
       // Mark for deletion and clear dirty/conflict flags
       await database.updateNoteById(
@@ -282,24 +367,32 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
         ),
       );
 
-      // Delete local file
-      final localPath = fileService.getLocalPath(note.path);
-      await fileService.deleteFile(localPath);
-
       // Clear selection if this note was selected
       if (state.selectedNote?.id == noteId) {
-        emit(state.copyWith(selectedNote: null, noteContent: null));
+        emit(state.copyWith(clearSelectedNote: true, clearNoteContent: true));
       }
 
       // Reload notes
       await loadNotes();
+
+      debugPrint('🗑️ Note marked for deletion: ${note.title}');
+      debugPrint('   Backup available for 30 days in .trash/');
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Failed to delete note: $e'));
     }
   }
 
   /// Clean up orphaned notes (notes in database without local files)
+  ///
+  /// This method checks if sync is in progress and skips cleanup to prevent
+  /// race conditions where notes being synced are incorrectly marked as orphaned.
   Future<void> cleanupOrphanedNotes() async {
+    // Don't cleanup during sync to prevent race conditions
+    if (state.isSyncing) {
+      debugPrint('⏭️ Skipping orphaned notes cleanup (sync in progress)');
+      return;
+    }
+
     try {
       final notes = await database.getAllNotes();
       var cleanedCount = 0;
@@ -307,6 +400,12 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
       debugPrint('🧹 Checking ${notes.length} notes for orphaned files...');
 
       for (final note in notes) {
+        // Skip if sync started during iteration
+        if (state.isSyncing) {
+          debugPrint('⏭️ Sync started, stopping cleanup');
+          break;
+        }
+
         final localPath = fileService.getLocalPath(note.path);
         final exists = await fileService.fileExists(localPath);
 
@@ -328,7 +427,9 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
       }
     } catch (e) {
       debugPrint('❌ Failed to cleanup orphaned notes: $e');
-      emit(state.copyWith(errorMessage: 'Failed to cleanup orphaned notes: $e'));
+      emit(
+        state.copyWith(errorMessage: 'Failed to cleanup orphaned notes: $e'),
+      );
     }
   }
 
@@ -339,7 +440,13 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
     try {
       final isOnline = await networkService.isOnline();
       if (!isOnline) {
-        emit(state.copyWith(isSyncing: false, isOnline: false, syncResult: SyncResult.offline()));
+        emit(
+          state.copyWith(
+            isSyncing: false,
+            isOnline: false,
+            syncResult: SyncResult.offline(),
+          ),
+        );
         return;
       }
 
@@ -390,20 +497,50 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
   }
 
   /// Resolve conflict by replacing original with conflict version
-  Future<void> resolveConflictKeepYours(Note originalNote, Note conflictNote) async {
+  ///
+  /// This backs up the original file before overwriting it with the conflict version.
+  /// The backup is kept in .trash for 30 days as a safety measure.
+  Future<void> resolveConflictKeepYours(
+    Note originalNote,
+    Note conflictNote,
+  ) async {
     try {
       // Read conflict content
       final conflictLocalPath = fileService.getLocalPath(conflictNote.path);
       final conflictContent = await fileService.readFile(conflictLocalPath);
 
-      // Write to original
       final originalLocalPath = fileService.getLocalPath(originalNote.path);
+
+      // Backup original file before overwriting (safety measure)
+      String? backupPath;
+      try {
+        if (await fileService.fileExists(originalLocalPath)) {
+          backupPath = await fileService.moveToTrash(originalLocalPath);
+          debugPrint(
+            '📦 Backed up original file before conflict resolution: $backupPath',
+          );
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to backup original file: $e');
+        // Ask user if they want to continue without backup
+        emit(
+          state.copyWith(
+            errorMessage: 'Warning: Could not create backup. Continue anyway?',
+          ),
+        );
+        return;
+      }
+
+      // Write conflict content to original location
       await fileService.writeFile(originalLocalPath, conflictContent);
 
       // Update original as dirty
       await database.updateNoteById(
         originalNote.id,
-        NotesCompanion(isDirty: const Value(true), updatedAt: Value(DateTime.now())),
+        NotesCompanion(
+          isDirty: const Value(true),
+          updatedAt: Value(DateTime.now()),
+        ),
       );
 
       // Delete conflict file
@@ -411,6 +548,9 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
 
       // Reload
       await loadNotes();
+
+      debugPrint('✅ Conflict resolved: kept your version');
+      debugPrint('   Original backed up to: $backupPath');
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Failed to resolve conflict: $e'));
     }

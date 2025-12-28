@@ -29,6 +29,7 @@ void main() {
       branch: branch,
       notesPath: notesPath,
       httpClient: mockHttpClient,
+      delayFunction: (_) async {}, // No-op delay for tests
     );
   });
 
@@ -958,6 +959,7 @@ void main() {
         branch: branch,
         notesPath: 'custom',
         httpClient: mockHttpClient,
+        delayFunction: (_) async {},
       );
 
       // Assert - Internal path should have trailing slash added
@@ -975,6 +977,7 @@ void main() {
         branch: customBranch,
         notesPath: notesPath,
         httpClient: mockHttpClient,
+        delayFunction: (_) async {},
       );
 
       final response = http.Response(

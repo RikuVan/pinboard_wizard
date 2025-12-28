@@ -699,8 +699,10 @@ class NoteSyncEngine {
   ///
   /// Process:
   /// 1. Download remote version
-  /// 2. Save as "[original]-conflict-[timestamp].md"
+  /// 2. Save as "[original]-conflict-YYYY-MM-DD-HH-MM-SS.md"
   /// 3. Insert as conflict note in database
+  ///
+  /// Example: notes/my-note-conflict-2025-12-28-14-30-45.md
   Future<void> _createConflictFile(
     GitHubFile remoteFile,
     Note localNote,
@@ -710,10 +712,17 @@ class NoteSyncEngine {
       throw Exception('Failed to download conflict file: ${remoteFile.path}');
     }
 
-    // Generate conflict filename
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    // Generate conflict filename with human-readable ISO date
+    // Format: notes/filename-conflict-2025-12-28-14-30-45.md
+    final now = DateTime.now();
+    final isoDate =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}-'
+        '${now.hour.toString().padLeft(2, '0')}-'
+        '${now.minute.toString().padLeft(2, '0')}-'
+        '${now.second.toString().padLeft(2, '0')}';
     final baseName = remoteFile.path.replaceAll('.md', '');
-    final conflictPath = '$baseName-conflict-$timestamp.md';
+    final conflictPath = '$baseName-conflict-$isoDate.md';
 
     // Save conflict file
     final conflictLocalPath = fileService.getLocalPath(conflictPath);

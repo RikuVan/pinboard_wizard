@@ -138,7 +138,9 @@ class GitHubNotesState extends Equatable {
       status: status ?? this.status,
       notes: notes ?? this.notes,
       filteredNotes: filteredNotes ?? this.filteredNotes,
-      selectedNote: clearSelectedNote ? null : (selectedNote ?? this.selectedNote),
+      selectedNote: clearSelectedNote
+          ? null
+          : (selectedNote ?? this.selectedNote),
       noteContent: clearNoteContent ? null : (noteContent ?? this.noteContent),
       searchQuery: searchQuery ?? this.searchQuery,
       isSearching: isSearching ?? this.isSearching,
@@ -148,8 +150,12 @@ class GitHubNotesState extends Equatable {
       isSyncing: isSyncing ?? this.isSyncing,
       isOnline: isOnline ?? this.isOnline,
       syncResult: clearSyncResult ? null : (syncResult ?? this.syncResult),
-      lastSyncTime: clearLastSyncTime ? null : (lastSyncTime ?? this.lastSyncTime),
-      errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
+      lastSyncTime: clearLastSyncTime
+          ? null
+          : (lastSyncTime ?? this.lastSyncTime),
+      errorMessage: clearErrorMessage
+          ? null
+          : (errorMessage ?? this.errorMessage),
     );
   }
 

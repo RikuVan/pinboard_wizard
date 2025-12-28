@@ -92,6 +92,9 @@ class GitHubClient {
   /// Current rate limit information
   RateLimitInfo? _rateLimitInfo;
 
+  /// Delay function for testing (allows mocking delays in tests)
+  final Future<void> Function(Duration) _delayFunction;
+
   /// Creates a new GitHubClient instance.
   ///
   /// [token] - GitHub Personal Access Token (PAT) with repo access
@@ -100,6 +103,7 @@ class GitHubClient {
   /// [branch] - Git branch to use (defaults to 'main')
   /// [notesPath] - Path prefix for notes files (defaults to 'notes/')
   /// [httpClient] - Optional HTTP client for testing
+  /// [delayFunction] - Optional delay function for testing (defaults to Future.delayed)
   GitHubClient({
     required String token,
     required String owner,
@@ -107,12 +111,14 @@ class GitHubClient {
     String branch = 'main',
     String notesPath = 'notes/',
     http.Client? httpClient,
+    Future<void> Function(Duration)? delayFunction,
   }) : _token = token,
        _owner = owner,
        _repo = repo,
        _branch = branch,
        _notesPath = notesPath.endsWith('/') ? notesPath : '$notesPath/',
-       _httpClient = httpClient ?? http.Client() {
+       _httpClient = httpClient ?? http.Client(),
+       _delayFunction = delayFunction ?? Future.delayed {
     debugPrint('🔧 GitHubClient initialized:');
     debugPrint('   Owner: $_owner');
     debugPrint('   Repo: $_repo');
@@ -454,8 +460,37 @@ class GitHubClient {
         // Don't retry non-transient errors
         if (!_isTransientError(e)) rethrow;
 
-        // Wait with exponential backoff
-        await Future.delayed(delay);
+        // For rate limit errors, respect the reset time if available
+        if (e is GitHubRateLimitException && e.rateLimitInfo != null) {
+          final resetAt = e.rateLimitInfo!.resetAt;
+          final now = DateTime.now();
+
+          // If reset time is in the future, wait until then (plus a small buffer)
+          if (resetAt.isAfter(now)) {
+            final waitDuration =
+                resetAt.difference(now) + const Duration(seconds: 1);
+
+            // Cap the wait time at max delay to prevent excessive waiting
+            final cappedWait = Duration(
+              milliseconds: waitDuration.inMilliseconds.clamp(
+                0,
+                _maxDelay.inMilliseconds,
+              ),
+            );
+
+            debugPrint(
+              '⏳ Rate limit exceeded. Waiting ${cappedWait.inSeconds}s until reset...',
+            );
+            await _delayFunction(cappedWait);
+            continue; // Don't do exponential backoff for rate limits
+          }
+        }
+
+        // Wait with exponential backoff for other errors
+        debugPrint(
+          '🔄 Retry attempt $attempt/$maxAttempts after ${delay.inSeconds}s delay',
+        );
+        await _delayFunction(delay);
         final newDelayMs = (delay.inMilliseconds * 2).toInt();
         final clampedMs = newDelayMs.clamp(
           _defaultInitialDelay.inMilliseconds,
@@ -475,10 +510,16 @@ class GitHubClient {
       return true;
     }
 
+    // Rate limit errors (429) are transient and should be retried
+    if (error is GitHubRateLimitException) {
+      return true;
+    }
+
     // Server errors (5xx) are transient
     if (error is GitHubException && error.statusCode != null) {
       final code = error.statusCode!;
-      return code >= 500 && code < 600;
+      // 429 (rate limit) and 5xx (server errors) are transient
+      return (code == 429) || (code >= 500 && code < 600);
     }
 
     return false;

@@ -20,7 +20,7 @@ class MockFileService extends Mock implements FileService {}
 class MockNetworkService extends Mock implements NetworkService {}
 
 class FakeSyncResult extends Fake implements SyncResult {
-  @override
+  // isSuccess is not part of SyncResult interface, so no @override
   bool get isSuccess => true;
 
   @override
@@ -34,6 +34,9 @@ class FakeSyncResult extends Fake implements SyncResult {
 
   @override
   bool get isOnline => true;
+
+  @override
+  DateTime get timestamp => DateTime.now();
 }
 
 void main() {
@@ -68,7 +71,9 @@ void main() {
 
     // Default mock behaviors
     when(() => mockNetworkService.isOnline()).thenAnswer((_) async => true);
-    when(() => mockNetworkService.isOnlineWithTimeout()).thenAnswer((_) async => true);
+    when(
+      () => mockNetworkService.isOnlineWithTimeout(),
+    ).thenAnswer((_) async => true);
   });
 
   group('GitHubNotesCubit - Initialization', () {
@@ -127,7 +132,9 @@ void main() {
     blocTest<GitHubNotesCubit, GitHubNotesState>(
       'loadNotes emits error state on failure',
       setUp: () {
-        when(() => mockDatabase.getAllNotes()).thenThrow(Exception('Database error'));
+        when(
+          () => mockDatabase.getAllNotes(),
+        ).thenThrow(Exception('Database error'));
       },
       build: () => GitHubNotesCubit(
         database: mockDatabase,
@@ -208,7 +215,11 @@ void main() {
             .having((state) => state.notes.length, 'notes.length', 2),
         isA<GitHubNotesState>()
             .having((state) => state.isSearching, 'isSearching', true)
-            .having((state) => state.displayNotes.length, 'displayNotes.length', 1),
+            .having(
+              (state) => state.displayNotes.length,
+              'displayNotes.length',
+              1,
+            ),
       ],
     );
 
@@ -254,11 +265,23 @@ void main() {
           'status',
           GitHubNotesStatus.loading,
         ),
-        isA<GitHubNotesState>().having((state) => state.status, 'status', GitHubNotesStatus.loaded),
+        isA<GitHubNotesState>().having(
+          (state) => state.status,
+          'status',
+          GitHubNotesStatus.loaded,
+        ),
         isA<GitHubNotesState>()
             .having((state) => state.isSearching, 'isSearching', true)
-            .having((state) => state.displayNotes.length, 'displayNotes.length', 1),
-        isA<GitHubNotesState>().having((state) => state.isSearching, 'isSearching', false),
+            .having(
+              (state) => state.displayNotes.length,
+              'displayNotes.length',
+              1,
+            ),
+        isA<GitHubNotesState>().having(
+          (state) => state.isSearching,
+          'isSearching',
+          false,
+        ),
       ],
     );
   });
@@ -283,8 +306,12 @@ void main() {
         when(
           () => mockDatabase.getAllNotes(),
         ).thenAnswer((_) => Future<List<Note>>.value([testNote]));
-        when(() => mockFileService.getLocalPath(any())).thenReturn('/local/path/test.md');
-        when(() => mockFileService.readFile(any())).thenAnswer((_) async => 'Test content');
+        when(
+          () => mockFileService.getLocalPath(any()),
+        ).thenReturn('/local/path/test.md');
+        when(
+          () => mockFileService.readFile(any()),
+        ).thenAnswer((_) async => 'Test content');
       },
       build: () => GitHubNotesCubit(
         database: mockDatabase,
@@ -302,9 +329,21 @@ void main() {
           'status',
           GitHubNotesStatus.loading,
         ),
-        isA<GitHubNotesState>().having((state) => state.status, 'status', GitHubNotesStatus.loaded),
-        isA<GitHubNotesState>().having((state) => state.selectedNote, 'selectedNote', isNotNull),
-        isA<GitHubNotesState>().having((state) => state.noteContent, 'noteContent', isNotNull),
+        isA<GitHubNotesState>().having(
+          (state) => state.status,
+          'status',
+          GitHubNotesStatus.loaded,
+        ),
+        isA<GitHubNotesState>().having(
+          (state) => state.selectedNote,
+          'selectedNote',
+          isNotNull,
+        ),
+        isA<GitHubNotesState>().having(
+          (state) => state.noteContent,
+          'noteContent',
+          isNotNull,
+        ),
       ],
     );
 
@@ -327,8 +366,12 @@ void main() {
         when(
           () => mockDatabase.getAllNotes(),
         ).thenAnswer((_) => Future<List<Note>>.value([testNote]));
-        when(() => mockFileService.getLocalPath(any())).thenReturn('/local/path/test.md');
-        when(() => mockFileService.readFile(any())).thenAnswer((_) async => 'Test content');
+        when(
+          () => mockFileService.getLocalPath(any()),
+        ).thenReturn('/local/path/test.md');
+        when(
+          () => mockFileService.readFile(any()),
+        ).thenAnswer((_) async => 'Test content');
       },
       build: () => GitHubNotesCubit(
         database: mockDatabase,
@@ -347,7 +390,11 @@ void main() {
           'status',
           GitHubNotesStatus.loading,
         ),
-        isA<GitHubNotesState>().having((state) => state.status, 'status', GitHubNotesStatus.loaded),
+        isA<GitHubNotesState>().having(
+          (state) => state.status,
+          'status',
+          GitHubNotesStatus.loaded,
+        ),
         // selectNote emits first with selectedNote but null content
         isA<GitHubNotesState>()
             .having((state) => state.selectedNote, 'selectedNote', isNotNull)
@@ -357,7 +404,11 @@ void main() {
             .having((state) => state.selectedNote, 'selectedNote', isNotNull)
             .having((state) => state.noteContent, 'noteContent', isNotNull),
         // clearSelection emits with selectedNote back to null
-        isA<GitHubNotesState>().having((state) => state.selectedNote, 'selectedNote', isNull),
+        isA<GitHubNotesState>().having(
+          (state) => state.selectedNote,
+          'selectedNote',
+          isNull,
+        ),
       ],
     );
   });
@@ -382,8 +433,12 @@ void main() {
         when(
           () => mockDatabase.getAllNotes(),
         ).thenAnswer((_) => Future<List<Note>>.value([testNote]));
-        when(() => mockFileService.getLocalPath(any())).thenReturn('/local/path/test.md');
-        when(() => mockFileService.readFile(any())).thenAnswer((_) async => 'Test content');
+        when(
+          () => mockFileService.getLocalPath(any()),
+        ).thenReturn('/local/path/test.md');
+        when(
+          () => mockFileService.readFile(any()),
+        ).thenAnswer((_) async => 'Test content');
       },
       build: () => GitHubNotesCubit(
         database: mockDatabase,
@@ -402,10 +457,26 @@ void main() {
           'status',
           GitHubNotesStatus.loading,
         ),
-        isA<GitHubNotesState>().having((state) => state.status, 'status', GitHubNotesStatus.loaded),
-        isA<GitHubNotesState>().having((state) => state.selectedNote, 'selectedNote', isNotNull),
-        isA<GitHubNotesState>().having((state) => state.noteContent, 'noteContent', isNotNull),
-        isA<GitHubNotesState>().having((state) => state.isEditing, 'isEditing', true),
+        isA<GitHubNotesState>().having(
+          (state) => state.status,
+          'status',
+          GitHubNotesStatus.loaded,
+        ),
+        isA<GitHubNotesState>().having(
+          (state) => state.selectedNote,
+          'selectedNote',
+          isNotNull,
+        ),
+        isA<GitHubNotesState>().having(
+          (state) => state.noteContent,
+          'noteContent',
+          isNotNull,
+        ),
+        isA<GitHubNotesState>().having(
+          (state) => state.isEditing,
+          'isEditing',
+          true,
+        ),
       ],
     );
 
@@ -428,8 +499,12 @@ void main() {
         when(
           () => mockDatabase.getAllNotes(),
         ).thenAnswer((_) => Future<List<Note>>.value([testNote]));
-        when(() => mockFileService.getLocalPath(any())).thenReturn('/local/path/test.md');
-        when(() => mockFileService.readFile(any())).thenAnswer((_) async => 'Test content');
+        when(
+          () => mockFileService.getLocalPath(any()),
+        ).thenReturn('/local/path/test.md');
+        when(
+          () => mockFileService.readFile(any()),
+        ).thenAnswer((_) async => 'Test content');
       },
       build: () => GitHubNotesCubit(
         database: mockDatabase,
@@ -449,11 +524,31 @@ void main() {
           'status',
           GitHubNotesStatus.loading,
         ),
-        isA<GitHubNotesState>().having((state) => state.status, 'status', GitHubNotesStatus.loaded),
-        isA<GitHubNotesState>().having((state) => state.selectedNote, 'selectedNote', isNotNull),
-        isA<GitHubNotesState>().having((state) => state.noteContent, 'noteContent', isNotNull),
-        isA<GitHubNotesState>().having((state) => state.isEditing, 'isEditing', true),
-        isA<GitHubNotesState>().having((state) => state.isEditing, 'isEditing', false),
+        isA<GitHubNotesState>().having(
+          (state) => state.status,
+          'status',
+          GitHubNotesStatus.loaded,
+        ),
+        isA<GitHubNotesState>().having(
+          (state) => state.selectedNote,
+          'selectedNote',
+          isNotNull,
+        ),
+        isA<GitHubNotesState>().having(
+          (state) => state.noteContent,
+          'noteContent',
+          isNotNull,
+        ),
+        isA<GitHubNotesState>().having(
+          (state) => state.isEditing,
+          'isEditing',
+          true,
+        ),
+        isA<GitHubNotesState>().having(
+          (state) => state.isEditing,
+          'isEditing',
+          false,
+        ),
       ],
     );
   });
@@ -462,7 +557,9 @@ void main() {
     blocTest<GitHubNotesCubit, GitHubNotesState>(
       'startCreating sets creating mode',
       setUp: () {
-        when(() => mockDatabase.getAllNotes()).thenAnswer((_) => Future<List<Note>>.value([]));
+        when(
+          () => mockDatabase.getAllNotes(),
+        ).thenAnswer((_) => Future<List<Note>>.value([]));
       },
       build: () => GitHubNotesCubit(
         database: mockDatabase,
@@ -480,15 +577,25 @@ void main() {
           'status',
           GitHubNotesStatus.loading,
         ),
-        isA<GitHubNotesState>().having((state) => state.status, 'status', GitHubNotesStatus.loaded),
-        isA<GitHubNotesState>().having((state) => state.isCreating, 'isCreating', true),
+        isA<GitHubNotesState>().having(
+          (state) => state.status,
+          'status',
+          GitHubNotesStatus.loaded,
+        ),
+        isA<GitHubNotesState>().having(
+          (state) => state.isCreating,
+          'isCreating',
+          true,
+        ),
       ],
     );
 
     blocTest<GitHubNotesCubit, GitHubNotesState>(
       'cancelCreating exits creating mode',
       setUp: () {
-        when(() => mockDatabase.getAllNotes()).thenAnswer((_) => Future<List<Note>>.value([]));
+        when(
+          () => mockDatabase.getAllNotes(),
+        ).thenAnswer((_) => Future<List<Note>>.value([]));
       },
       build: () => GitHubNotesCubit(
         database: mockDatabase,
@@ -507,23 +614,45 @@ void main() {
           'status',
           GitHubNotesStatus.loading,
         ),
-        isA<GitHubNotesState>().having((state) => state.status, 'status', GitHubNotesStatus.loaded),
-        isA<GitHubNotesState>().having((state) => state.isCreating, 'isCreating', true),
-        isA<GitHubNotesState>().having((state) => state.isCreating, 'isCreating', false),
+        isA<GitHubNotesState>().having(
+          (state) => state.status,
+          'status',
+          GitHubNotesStatus.loaded,
+        ),
+        isA<GitHubNotesState>().having(
+          (state) => state.isCreating,
+          'isCreating',
+          true,
+        ),
+        isA<GitHubNotesState>().having(
+          (state) => state.isCreating,
+          'isCreating',
+          false,
+        ),
       ],
     );
 
     blocTest<GitHubNotesCubit, GitHubNotesState>(
       'createNote creates and inserts new note',
       setUp: () {
-        when(() => mockDatabase.getAllNotes()).thenAnswer((_) => Future<List<Note>>.value([]));
-        when(() => mockDatabase.getNoteByPath(any())).thenAnswer((_) => Future<Note?>.value(null));
-        when(() => mockDatabase.insertNote(any())).thenAnswer((_) => Future.value(1));
+        when(
+          () => mockDatabase.getAllNotes(),
+        ).thenAnswer((_) => Future<List<Note>>.value([]));
+        when(
+          () => mockDatabase.getNoteByPath(any()),
+        ).thenAnswer((_) => Future<Note?>.value(null));
+        when(
+          () => mockDatabase.insertNote(any()),
+        ).thenAnswer((_) => Future.value(1));
         when(
           () => mockDatabase.updateFtsIndex(any(), any(), any()),
         ).thenAnswer((_) => Future.value(null));
-        when(() => mockFileService.writeFile(any(), any())).thenAnswer((_) async {});
-        when(() => mockFileService.getLocalPath(any())).thenReturn('/local/path/new-note.md');
+        when(
+          () => mockFileService.writeFile(any(), any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockFileService.getLocalPath(any()),
+        ).thenReturn('/local/path/new-note.md');
       },
       build: () => GitHubNotesCubit(
         database: mockDatabase,
@@ -547,8 +676,12 @@ void main() {
     blocTest<GitHubNotesCubit, GitHubNotesState>(
       'sync updates isSyncing state',
       setUp: () {
-        when(() => mockDatabase.getAllNotes()).thenAnswer((_) => Future<List<Note>>.value([]));
-        when(() => mockSyncEngine.sync()).thenAnswer((_) async => FakeSyncResult());
+        when(
+          () => mockDatabase.getAllNotes(),
+        ).thenAnswer((_) => Future<List<Note>>.value([]));
+        when(
+          () => mockSyncEngine.sync(),
+        ).thenAnswer((_) async => FakeSyncResult());
       },
       build: () => GitHubNotesCubit(
         database: mockDatabase,
@@ -566,17 +699,33 @@ void main() {
           'status',
           GitHubNotesStatus.loading,
         ),
-        isA<GitHubNotesState>().having((state) => state.status, 'status', GitHubNotesStatus.loaded),
-        isA<GitHubNotesState>().having((state) => state.isSyncing, 'isSyncing', true),
+        isA<GitHubNotesState>().having(
+          (state) => state.status,
+          'status',
+          GitHubNotesStatus.loaded,
+        ),
+        isA<GitHubNotesState>().having(
+          (state) => state.isSyncing,
+          'isSyncing',
+          true,
+        ),
         // sync() calls loadNotes() which emits loading/loaded states
         isA<GitHubNotesState>().having(
           (state) => state.status,
           'status',
           GitHubNotesStatus.loading,
         ),
-        isA<GitHubNotesState>().having((state) => state.status, 'status', GitHubNotesStatus.loaded),
+        isA<GitHubNotesState>().having(
+          (state) => state.status,
+          'status',
+          GitHubNotesStatus.loaded,
+        ),
         // Final state with isSyncing: false
-        isA<GitHubNotesState>().having((state) => state.isSyncing, 'isSyncing', false),
+        isA<GitHubNotesState>().having(
+          (state) => state.isSyncing,
+          'isSyncing',
+          false,
+        ),
       ],
     );
   });
@@ -585,8 +734,12 @@ void main() {
     blocTest<GitHubNotesCubit, GitHubNotesState>(
       'tracks online status from network service',
       setUp: () {
-        when(() => mockDatabase.getAllNotes()).thenAnswer((_) => Future<List<Note>>.value([]));
-        when(() => mockNetworkService.isOnline()).thenAnswer((_) async => false);
+        when(
+          () => mockDatabase.getAllNotes(),
+        ).thenAnswer((_) => Future<List<Note>>.value([]));
+        when(
+          () => mockNetworkService.isOnline(),
+        ).thenAnswer((_) async => false);
       },
       build: () => GitHubNotesCubit(
         database: mockDatabase,
@@ -601,7 +754,11 @@ void main() {
           'status',
           GitHubNotesStatus.loading,
         ),
-        isA<GitHubNotesState>().having((state) => state.isOnline, 'isOnline', false),
+        isA<GitHubNotesState>().having(
+          (state) => state.isOnline,
+          'isOnline',
+          false,
+        ),
       ],
     );
   });

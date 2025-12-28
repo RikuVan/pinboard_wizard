@@ -170,7 +170,10 @@ void main() {
       test('preserves directory structure from repository path', () {
         final localPath = fileService.getLocalPath('notes/my-note.md');
 
-        expect(localPath, equals(path.join(tempDir.path, 'notes', 'my-note.md')));
+        expect(
+          localPath,
+          equals(path.join(tempDir.path, 'notes', 'my-note.md')),
+        );
       });
 
       test('handles simple filename', () {
@@ -182,13 +185,19 @@ void main() {
       test('preserves nested directory structure', () {
         final localPath = fileService.getLocalPath('folder/subfolder/file.md');
 
-        expect(localPath, equals(path.join(tempDir.path, 'folder', 'subfolder', 'file.md')));
+        expect(
+          localPath,
+          equals(path.join(tempDir.path, 'folder', 'subfolder', 'file.md')),
+        );
       });
 
       test('handles paths with multiple extensions', () {
         final localPath = fileService.getLocalPath('notes/file.backup.md');
 
-        expect(localPath, equals(path.join(tempDir.path, 'notes', 'file.backup.md')));
+        expect(
+          localPath,
+          equals(path.join(tempDir.path, 'notes', 'file.backup.md')),
+        );
       });
 
       test('throws PathSecurityException for path traversal with ..', () {
@@ -230,7 +239,10 @@ void main() {
         // Path with redundant separators should be normalized
         final localPath = fileService.getLocalPath('notes/folder/./file.md');
 
-        expect(localPath, equals(path.join(tempDir.path, 'notes', 'folder', 'file.md')));
+        expect(
+          localPath,
+          equals(path.join(tempDir.path, 'notes', 'folder', 'file.md')),
+        );
       });
     });
 
