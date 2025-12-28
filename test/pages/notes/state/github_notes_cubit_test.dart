@@ -1119,6 +1119,9 @@ void main() {
         when(() => mockDatabase.getAllNotes()).thenAnswer(
           (_) async => [deletedNote.copyWith(markedForDeletion: false)],
         );
+        when(
+          () => mockFileService.readFile(any()),
+        ).thenAnswer((_) async => '# Test Note\n\nContent');
       },
       build: () => GitHubNotesCubit(
         database: mockDatabase,
@@ -1157,6 +1160,14 @@ void main() {
               'markedForDeletion',
               false,
             ),
+        // selectNote emits with selectedNote but null content
+        isA<GitHubNotesState>()
+            .having((s) => s.selectedNote, 'selectedNote', isNotNull)
+            .having((s) => s.noteContent, 'noteContent', isNull),
+        // selectNote emits with content loaded
+        isA<GitHubNotesState>()
+            .having((s) => s.selectedNote, 'selectedNote', isNotNull)
+            .having((s) => s.noteContent, 'noteContent', isNotNull),
       ],
       verify: (cubit) {
         // Should restore from trash
