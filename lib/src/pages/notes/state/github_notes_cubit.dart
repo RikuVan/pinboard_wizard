@@ -286,7 +286,8 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
         // Add timestamp suffix to make it unique
         // Format: filename-YYYYMMDD-HHMMSS.md
         final now = DateTime.now();
-        final timestamp = '${now.year}${now.month.toString().padLeft(2, '0')}'
+        final timestamp =
+            '${now.year}${now.month.toString().padLeft(2, '0')}'
             '${now.day.toString().padLeft(2, '0')}-'
             '${now.hour.toString().padLeft(2, '0')}'
             '${now.minute.toString().padLeft(2, '0')}'
@@ -300,7 +301,8 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
           emit(
             state.copyWith(
               isCreating: false,
-              errorMessage: 'Failed to create unique filename. Please try again.',
+              errorMessage:
+                  'Failed to create unique filename. Please try again.',
             ),
           );
           return;
@@ -402,6 +404,83 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
     }
   }
 
+  /// Undo deletion of a note
+  ///
+  /// This unmarks a note from deletion and restores it from trash if needed.
+  /// Must be called before the note is synced to GitHub.
+  Future<void> undoDeleteNote(String noteId) async {
+    try {
+      final note = await database.getNoteById(noteId);
+      if (note == null) {
+        emit(state.copyWith(errorMessage: 'Note not found'));
+        return;
+      }
+
+      if (!note.markedForDeletion) {
+        emit(state.copyWith(errorMessage: 'Note is not marked for deletion'));
+        return;
+      }
+
+      final localPath = fileService.getLocalPath(note.path);
+
+      // Try to restore file from trash if it doesn't exist
+      if (!await fileService.fileExists(localPath)) {
+        final backups = await fileService.listBackups();
+
+        // Find the most recent backup for this note
+        // Backup format: {timestamp}_{filename}
+        final filename = localPath.split('/').last;
+        final noteBackups =
+            backups
+                .where((backup) => backup.path.endsWith('_$filename'))
+                .toList()
+              ..sort(
+                (a, b) => b.path.compareTo(a.path),
+              ); // Sort by timestamp desc
+
+        if (noteBackups.isNotEmpty) {
+          final mostRecentBackup = noteBackups.first;
+          try {
+            await fileService.restoreFromTrash(
+              mostRecentBackup.path,
+              localPath,
+            );
+            debugPrint('✅ Restored file from trash: ${mostRecentBackup.path}');
+          } catch (e) {
+            debugPrint('⚠️ Failed to restore from trash: $e');
+            emit(
+              state.copyWith(
+                errorMessage: 'Failed to restore file from trash: $e',
+              ),
+            );
+            return;
+          }
+        } else {
+          debugPrint('⚠️ No backup found for ${note.path}');
+          emit(
+            state.copyWith(
+              errorMessage: 'Could not find backup file to restore',
+            ),
+          );
+          return;
+        }
+      }
+
+      // Unmark from deletion
+      await database.updateNoteById(
+        note.id,
+        const NotesCompanion(markedForDeletion: Value(false)),
+      );
+
+      // Reload notes
+      await loadNotes();
+
+      debugPrint('↩️  Restored note from deletion: ${note.title}');
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Failed to undo deletion: $e'));
+    }
+  }
+
   /// Clean up orphaned notes (notes in database without local files)
   ///
   /// This method checks if sync is in progress and skips cleanup to prevent
@@ -470,11 +549,36 @@ class GitHubNotesCubit extends Cubit<GitHubNotesState> {
         return;
       }
 
+      // Store the currently selected note ID before sync
+      final selectedNoteId = state.selectedNote?.id;
+
       // Perform sync
       final result = await syncEngine.sync();
 
       // Reload notes to reflect sync changes
       await loadNotes();
+
+      // Check if the selected note still exists after sync
+      // If it was deleted during sync, clear the selection
+      if (selectedNoteId != null) {
+        final noteStillExists = state.notes.any((n) => n.id == selectedNoteId);
+        if (!noteStillExists) {
+          debugPrint(
+            '🔄 Selected note was deleted during sync, clearing selection',
+          );
+          emit(
+            state.copyWith(
+              isSyncing: false,
+              isOnline: true,
+              syncResult: result,
+              lastSyncTime: DateTime.now(),
+              clearSelectedNote: true,
+              clearNoteContent: true,
+            ),
+          );
+          return;
+        }
+      }
 
       emit(
         state.copyWith(

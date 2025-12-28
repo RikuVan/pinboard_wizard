@@ -676,9 +676,7 @@ void main() {
       setUp: () {
         // Handle three calls: collision check, timestamp check, retrieve created note
         var callCount = 0;
-        when(
-          () => mockDatabase.getNoteByPath(any()),
-        ).thenAnswer((_) {
+        when(() => mockDatabase.getNoteByPath(any())).thenAnswer((_) {
           callCount++;
           if (callCount == 1) {
             // First check: collision detected with base filename
