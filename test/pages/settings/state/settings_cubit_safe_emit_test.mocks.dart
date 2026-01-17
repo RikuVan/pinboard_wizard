@@ -35,6 +35,7 @@ import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart' as _i3;
 // ignore_for_file: unnecessary_parenthesis
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
+// ignore_for_file: invalid_use_of_internal_member
 
 class _FakeValueNotifier_0<T> extends _i1.SmartFake
     implements _i2.ValueNotifier<T> {
