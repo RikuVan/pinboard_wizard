@@ -1,12 +1,13 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/ai/ai_bookmark_service.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
-import 'package:pinboard_wizard/src/service_locator.dart';
 import 'package:pinboard_wizard/src/common/widgets/dialogs.dart';
+import 'package:pinboard_wizard/src/service_locator.dart';
 
 class AddBookmarkDialog extends StatefulWidget {
   const AddBookmarkDialog({super.key});
@@ -571,14 +572,16 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
         final text = clipboardData.text!.trim();
         final uri = Uri.tryParse(text);
         if (uri != null && uri.hasScheme && uri.scheme.startsWith('http')) {
-          _urlController.text = text;
-          // Try to generate a title from the URL
-          if (uri.host.isNotEmpty) {
-            _titleController.text = uri.host
-                .replaceAll('www.', '')
-                .split('.')
-                .first;
-          }
+          setState(() {
+            _urlController.text = text;
+            // Try to generate a title from the URL
+            if (uri.host.isNotEmpty) {
+              _titleController.text = uri.host
+                  .replaceAll('www.', '')
+                  .split('.')
+                  .first;
+            }
+          });
         }
         // Set the last clipboard URL to prevent monitoring from re-filling
         _lastClipboardUrl = text;
