@@ -71,9 +71,16 @@ class BackupService extends ChangeNotifier {
     }
   }
 
-  /// Check if S3 response status code indicates success
-  bool _isSuccessStatusCode(String statusCode) {
-    return statusCode == "200" || statusCode == "204";
+  /// Check if S3 response is a valid URL (indicates success)
+  bool _isSuccessResponse(String response) {
+    try {
+      final uri = Uri.parse(response);
+      return uri.hasScheme &&
+          (uri.scheme == 'http' || uri.scheme == 'https') &&
+          uri.host.contains('s3');
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Validate S3 configuration by attempting a test connection
@@ -96,8 +103,7 @@ class BackupService extends ChangeNotifier {
         'app': 'Pinboard Wizard',
       });
 
-      final testFileName =
-          'test_connection_${DateTime.now().millisecondsSinceEpoch}.json';
+      final testFileName = 'test_connection_${DateTime.now().millisecondsSinceEpoch}.json';
 
       // Clean up the destination directory path
       String destDir = _s3Config.filePath;
@@ -146,19 +152,27 @@ class BackupService extends ChangeNotifier {
         print('S3 Validation Result: $result');
       }
 
-      if (_isSuccessStatusCode(result.toString())) {
+      if (_isSuccessResponse(result.toString())) {
         _status = BackupStatus.idle;
         notifyListeners();
         return true;
       } else {
         _status = BackupStatus.error;
-        _lastError = _getErrorMessageForStatusCode(result.toString());
+        _lastError = 'S3 validation failed: Invalid response format';
         if (kDebugMode) {
           print('S3 Validation Failed: $_lastError');
         }
         notifyListeners();
         return false;
       }
+    } on AwsS3UploadException catch (e) {
+      _status = BackupStatus.error;
+      _lastError = 'S3 validation failed: ${e.message}';
+      if (kDebugMode) {
+        print('S3 Validation Exception: $e');
+      }
+      notifyListeners();
+      return false;
     } catch (e) {
       _status = BackupStatus.error;
       _lastError = 'Configuration validation failed: $e';
@@ -210,9 +224,7 @@ class BackupService extends ChangeNotifier {
       final backupJson = json.encode(backupData);
 
       // Generate filename with timestamp
-      final timestamp = DateFormat(
-        'yyyy-MM-dd_HH-mm-ss',
-      ).format(DateTime.now());
+      final timestamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
       final fileName = 'pinboard_backup_$timestamp.json';
 
       // Clean up destination directory path
@@ -233,7 +245,7 @@ class BackupService extends ChangeNotifier {
         acl: ACL.private,
       );
 
-      if (_isSuccessStatusCode(result.toString())) {
+      if (_isSuccessResponse(result.toString())) {
         _status = BackupStatus.success;
         _lastBackupMessage =
             'Successfully backed up ${bookmarks.length} bookmarks to S3 as $fileName';
@@ -241,33 +253,23 @@ class BackupService extends ChangeNotifier {
         return true;
       } else {
         _status = BackupStatus.error;
-        _lastError = 'Backup failed with HTTP status: ${result.toString()}';
+        _lastError = 'Backup failed: Invalid response format';
         _lastBackupMessage = null;
         notifyListeners();
         return false;
       }
+    } on AwsS3UploadException catch (e) {
+      _status = BackupStatus.error;
+      _lastError = 'S3 backup failed: ${e.message}';
+      _lastBackupMessage = null;
+      notifyListeners();
+      return false;
     } catch (e) {
       _status = BackupStatus.error;
       _lastError = 'Backup failed: $e';
       _lastBackupMessage = null;
       notifyListeners();
       return false;
-    }
-  }
-
-  /// Get user-friendly error message for HTTP status codes
-  String _getErrorMessageForStatusCode(String statusCode) {
-    switch (statusCode) {
-      case "301":
-        return 'S3 validation failed: Bucket found in different region than specified';
-      case "400":
-        return 'S3 validation failed: Invalid request (check bucket name, region, or file path)';
-      case "403":
-        return 'S3 validation failed: Access denied (check AWS credentials and permissions)';
-      case "404":
-        return 'S3 validation failed: Bucket not found (check bucket name and region)';
-      default:
-        return 'S3 validation failed with HTTP status: $statusCode';
     }
   }
 
