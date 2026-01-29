@@ -103,7 +103,8 @@ class BackupService extends ChangeNotifier {
         'app': 'Pinboard Wizard',
       });
 
-      final testFileName = 'test_connection_${DateTime.now().millisecondsSinceEpoch}.json';
+      final testFileName =
+          'test_connection_${DateTime.now().millisecondsSinceEpoch}.json';
 
       // Clean up the destination directory path
       String destDir = _s3Config.filePath;
@@ -224,7 +225,9 @@ class BackupService extends ChangeNotifier {
       final backupJson = json.encode(backupData);
 
       // Generate filename with timestamp
-      final timestamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
+      final timestamp = DateFormat(
+        'yyyy-MM-dd_HH-mm-ss',
+      ).format(DateTime.now());
       final fileName = 'pinboard_backup_$timestamp.json';
 
       // Clean up destination directory path

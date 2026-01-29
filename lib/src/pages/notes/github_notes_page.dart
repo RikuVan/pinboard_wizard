@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_highlight/flutter_highlight.dart';
 import 'package:flutter_highlight/themes/a11y-dark.dart';
@@ -577,6 +578,22 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
                   ],
                 ),
               ),
+              PushButton(
+                controlSize: ControlSize.regular,
+                onPressed: content == null
+                    ? null
+                    : () {
+                        Clipboard.setData(ClipboardData(text: content));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Note copied to clipboard'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                child: const Text('Copy'),
+              ),
+              const SizedBox(width: 8),
               PushButton(
                 controlSize: ControlSize.regular,
                 onPressed: note.markedForDeletion
