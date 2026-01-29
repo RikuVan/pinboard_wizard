@@ -440,7 +440,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
    ```bash
    cd pinboard_wizard
-   fvm use 3.38.5
+   fvm use 3.38.8
    fvm flutter pub get
    ```
 
