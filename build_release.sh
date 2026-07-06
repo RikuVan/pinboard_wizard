@@ -92,7 +92,7 @@ fi
 
 # 9. Check for required frameworks
 print_status "Checking for critical frameworks..."
-CRITICAL_FRAMEWORKS=("FlutterMacOS.framework" "appkit_ui_element_colors.framework")
+CRITICAL_FRAMEWORKS=("FlutterMacOS.framework" "App.framework")
 for framework in "${CRITICAL_FRAMEWORKS[@]}"; do
     if [ -d "$APP_PATH/Contents/Frameworks/$framework" ]; then
         print_success "Found: $framework"
