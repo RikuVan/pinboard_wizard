@@ -14,18 +14,13 @@ import 'package:uuid/uuid.dart';
 
 class SettingsCubit extends Cubit<SettingsState> {
   SettingsCubit({
-    required CredentialsService credentialsService,
-    required PinboardService pinboardService,
-    required AiSettingsService aiSettingsService,
-    required BackupService backupService,
-    required GitHubAuthService githubAuthService,
+    required this._credentialsService,
+    required this._pinboardService,
+    required this._aiSettingsService,
+    required this._backupService,
+    required this._githubAuthService,
     GitHubConfigValidator? githubConfigValidator,
-  }) : _credentialsService = credentialsService,
-       _pinboardService = pinboardService,
-       _aiSettingsService = aiSettingsService,
-       _backupService = backupService,
-       _githubAuthService = githubAuthService,
-       _githubConfigValidator =
+  }) : _githubConfigValidator =
            githubConfigValidator ?? GitHubConfigValidator(),
        super(const SettingsState()) {
     // Listen to authentication changes

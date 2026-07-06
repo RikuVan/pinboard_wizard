@@ -4,9 +4,8 @@ import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
 
 class BookmarksCubit extends Cubit<BookmarksState> {
-  BookmarksCubit({required PinboardService pinboardService})
-    : _pinboardService = pinboardService,
-      super(const BookmarksState());
+  BookmarksCubit({required this._pinboardService})
+    : super(const BookmarksState());
 
   final PinboardService _pinboardService;
   static const int _pageSize = 50;
