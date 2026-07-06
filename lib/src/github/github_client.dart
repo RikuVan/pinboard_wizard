@@ -98,24 +98,21 @@ class GitHubClient {
   /// Creates a new GitHubClient instance.
   ///
   /// [token] - GitHub Personal Access Token (PAT) with repo access
-  /// [owner] - Repository owner (username or organization)
-  /// [repo] - Repository name
-  /// [branch] - Git branch to use (defaults to 'main')
+  /// [_owner] - Repository owner (username or organization)
+  /// [_repo] - Repository name
+  /// [_branch] - Git branch to use (defaults to 'main')
   /// [notesPath] - Path prefix for notes files (defaults to 'notes/')
   /// [httpClient] - Optional HTTP client for testing
   /// [delayFunction] - Optional delay function for testing (defaults to Future.delayed)
   GitHubClient({
     required String token,
-    required String owner,
-    required String repo,
-    String branch = 'main',
+    required this._owner,
+    required this._repo,
+    this._branch = 'main',
     String notesPath = 'notes/',
     http.Client? httpClient,
     Future<void> Function(Duration)? delayFunction,
   }) : _token = token,
-       _owner = owner,
-       _repo = repo,
-       _branch = branch,
        _notesPath = notesPath.endsWith('/') ? notesPath : '$notesPath/',
        _httpClient = httpClient ?? http.Client(),
        _delayFunction = delayFunction ?? Future.delayed {
