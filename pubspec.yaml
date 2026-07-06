@@ -16,7 +16,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   macos_ui: ^2.2.2
   provider: ^6.1.5+1
-  json_annotation: ^4.9.0
+  json_annotation: ^4.12.0
   equatable: ^2.0.7
   flutter_secure_storage: ^10.0.0
   http: ^1.1.0
@@ -30,7 +30,7 @@ dependencies:
   openai_dart: ^0.6.2
   aws_s3_upload_lite: ^0.1.7
   uuid: ^4.0.0
-  json_serializable: 6.11.2
+  json_serializable: ^6.11.2
   drift: ^2.30.0
   sqlite3: ^2.9.4
   sqlite3_flutter_libs: ^0.5.41
