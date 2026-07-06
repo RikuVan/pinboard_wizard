@@ -424,14 +424,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  freezed_annotation:
-    dependency: transitive
-    description:
-      name: freezed_annotation
-      sha256: "7294967ff0a6d98638e7acb774aac3af2550777accd8149c90af5b014e6d44d8"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.1.0"
   frontend_server_client:
     dependency: transitive
     description:
@@ -724,10 +716,10 @@ packages:
     dependency: "direct main"
     description:
       name: openai_dart
-      sha256: "037605a210cb3b1d8ac72b11a4ace26f25ee9267aaf981d2af1d7f0524adcbf5"
+      sha256: c2d690fb68ae56a913872a1347fa11294fea9cf373e6fdf0b253754d83f1e779
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.2"
+    version: "7.0.1"
   package_config:
     dependency: transitive
     description:

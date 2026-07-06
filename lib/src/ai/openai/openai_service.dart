@@ -9,7 +9,7 @@ class OpenAiService {
 
   void initialize(String apiKey) {
     _apiKey = apiKey;
-    _client = OpenAIClient(apiKey: apiKey);
+    _client = OpenAIClient.withApiKey(apiKey);
   }
 
   bool get isInitialized => _client != null && _apiKey != null;
@@ -32,17 +32,14 @@ class OpenAiService {
         maxTags: maxTags,
       );
 
-      final response = await _client!.createChatCompletion(
-        request: CreateChatCompletionRequest(
-          model: const ChatCompletionModel.modelId('gpt-3.5-turbo'),
+      final response = await _client!.chat.completions.create(
+        ChatCompletionCreateRequest(
+          model: 'gpt-3.5-turbo',
           messages: [
-            const ChatCompletionMessage.system(
-              content:
-                  'You are a helpful assistant that analyzes web content and generates structured bookmark metadata. Respond only with valid JSON.',
+            ChatMessage.system(
+              'You are a helpful assistant that analyzes web content and generates structured bookmark metadata. Respond only with valid JSON.',
             ),
-            ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string(prompt),
-            ),
+            ChatMessage.user(prompt),
           ],
           maxTokens: 300,
           temperature: 0.3,
@@ -128,14 +125,10 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
     if (!isInitialized) return false;
 
     try {
-      final response = await _client!.createChatCompletion(
-        request: const CreateChatCompletionRequest(
-          model: ChatCompletionModel.modelId('gpt-3.5-turbo'),
-          messages: [
-            ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string('Hello'),
-            ),
-          ],
+      final response = await _client!.chat.completions.create(
+        ChatCompletionCreateRequest(
+          model: 'gpt-3.5-turbo',
+          messages: [ChatMessage.user('Hello')],
           maxTokens: 5,
         ),
       );
@@ -154,7 +147,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
 
     try {
       // Get available models to verify permissions
-      final modelsResponse = await _client!.listModels();
+      final modelsResponse = await _client!.models.list();
       final models = modelsResponse.data;
 
       // Filter for models we care about
@@ -170,14 +163,10 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
       // Try a minimal completion to verify chat permissions
       bool canChat = false;
       try {
-        final testResponse = await _client!.createChatCompletion(
-          request: const CreateChatCompletionRequest(
-            model: ChatCompletionModel.modelId('gpt-3.5-turbo'),
-            messages: [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Hi'),
-              ),
-            ],
+        final testResponse = await _client!.chat.completions.create(
+          ChatCompletionCreateRequest(
+            model: 'gpt-3.5-turbo',
+            messages: [ChatMessage.user('Hi')],
             maxTokens: 1,
           ),
         );
@@ -210,7 +199,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
   }
 
   void dispose() {
-    _client?.endSession();
+    _client?.close();
     _client = null;
     _apiKey = null;
   }
