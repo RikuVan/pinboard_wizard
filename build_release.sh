@@ -68,14 +68,6 @@ rm -rf build/macos
 rm -rf macos/Flutter/ephemeral
 rm -rf macos/.symlinks
 
-# 5. Update CocoaPods
-print_status "Updating CocoaPods..."
-cd macos
-pod repo update
-pod install --repo-update
-cd ..
-check_error "CocoaPods update failed"
-
 # 6. Build the release app
 print_status "Building macOS release app..."
 flutter build macos --release --verbose

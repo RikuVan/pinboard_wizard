@@ -128,9 +128,6 @@ jobs:
           set -euo pipefail
           echo "🔧 Resolving Swift Package Manager dependencies..."
 
-          # CocoaPods (ensure workspace is up to date)
-          (cd macos && pod install)
-
           # Resolve SPM packages
           xcodebuild -resolvePackageDependencies \
             -workspace macos/Runner.xcworkspace \
