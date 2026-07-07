@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pinboard_wizard/src/auth/auth_gate.dart';
 import 'package:pinboard_wizard/src/common/state/bookmark_change_notifier.dart';
@@ -13,6 +15,7 @@ import 'package:pinboard_wizard/src/pages/settings/settings_page.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/service_locator.dart';
 import 'package:pinboard_wizard/src/theme.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:provider/provider.dart';
 
 // Global navigator key for menu navigation
@@ -21,10 +24,23 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   PackageInfo packageInfo = await PackageInfo.fromPlatform();
-  const config = MacosWindowUtilsConfig();
-  await config.apply();
+  await WindowManipulator.initialize(enableWindowDelegate: true);
+  await WindowManipulator.setMaterial(
+    NSVisualEffectViewMaterial.windowBackground,
+  );
+  await WindowManipulator.enableFullSizeContentView();
+  await WindowManipulator.makeTitlebarTransparent();
+  await WindowManipulator.hideTitle();
+  await WindowManipulator.addToolbar();
+  await WindowManipulator.setToolbarStyle(
+    toolbarStyle: NSWindowToolbarStyle.unified,
+  );
+  await LiquidGlassWidgets.initialize();
   await setup();
-  runApp(PinboardWizard(version: packageInfo.version));
+  runApp(LiquidGlassWidgets.wrap(
+    theme: appGlassTheme(),
+    child: PinboardWizard(version: packageInfo.version),
+  ));
 }
 
 class PinboardWizard extends StatefulWidget {
@@ -65,10 +81,12 @@ class _PinboardWizardState extends State<PinboardWizard> {
       create: (_) => AppTheme(),
       builder: (context, _) {
         final appTheme = context.watch<AppTheme>();
-        return MacosApp(
+        return MaterialApp(
           title: 'Pinboard Wizard',
           navigatorKey: navigatorKey,
           themeMode: appTheme.mode,
+          theme: appLightTheme(),
+          darkTheme: appDarkTheme(),
           debugShowCheckedModeBanner: false,
           home: PlatformMenuBar(
             menus: menuBarItems(
@@ -87,87 +105,48 @@ class _PinboardWizardState extends State<PinboardWizard> {
                 onNavigateToNotes: () => setState(() => pageIndex = 2),
                 onNavigateToSettings: () => setState(() => pageIndex = 3),
                 onRefreshPage: _refreshCurrentPage,
-                child: MacosWindow(
-                  sidebar: Sidebar(
-                    minWidth: 200,
-                    builder: (context, scrollController) {
-                      return Column(
-                        children: [
-                          Expanded(
-                            child: SidebarItems(
-                              currentIndex: pageIndex,
-                              items: [
-                                SidebarItem(
-                                  leading: MacosIcon(
-                                    CupertinoIcons.pin_fill,
-                                    color: CupertinoColors.systemBlue,
-                                    size: 20,
-                                  ),
-                                  label: Text('Pinned'),
-                                ),
-                                SidebarItem(
-                                  leading: MacosIcon(
-                                    CupertinoIcons.bookmark_fill,
-                                    color: CupertinoColors.systemBlue,
-                                    size: 20,
-                                  ),
-                                  label: Text('Bookmarks'),
-                                ),
-                                SidebarItem(
-                                  leading: MacosIcon(
-                                    CupertinoIcons.doc_text_fill,
-                                    color: CupertinoColors.systemBlue,
-                                    size: 20,
-                                  ),
-                                  label: Text('Notes'),
-                                ),
-                                SidebarItem(
-                                  leading: MacosIcon(
-                                    CupertinoIcons.gear_alt_fill,
-                                    color: CupertinoColors.systemBlue,
-                                    size: 20,
-                                  ),
-                                  label: Text('Settings'),
-                                ),
-                              ],
-                              onChanged: (i) {
-                                setState(() => pageIndex = i);
-                              },
-                            ),
+                child: GlassWindowScaffold(
+                  sidebar: GlassSidebar(
+                    selectedIndex: pageIndex,
+                    onSelected: (i) => setState(() => pageIndex = i),
+                    items: const [
+                      GlassSidebarItem(
+                          icon: CupertinoIcons.pin_fill, label: 'Pinned'),
+                      GlassSidebarItem(
+                          icon: CupertinoIcons.bookmark_fill, label: 'Bookmarks'),
+                      GlassSidebarItem(
+                          icon: CupertinoIcons.doc_text_fill, label: 'Notes'),
+                      GlassSidebarItem(
+                          icon: CupertinoIcons.gear_alt_fill, label: 'Settings'),
+                    ],
+                    footer: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                            color: AppColors.separator.resolveFrom(context),
+                            width: 0.5,
                           ),
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                top: BorderSide(
-                                  color: MacosColors.separatorColor,
-                                  width: 0.5,
-                                ),
-                              ),
-                            ),
-                            child: MacosListTile(
-                              leading: const AppLogo.small(),
-                              title: Text('Pinboard Wizard'),
-                              subtitle: Text('Version ${widget.version}'),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                        ),
+                      ),
+                      child: AppListTile(
+                        leading: const AppLogo.small(),
+                        title: const Text('Pinboard Wizard'),
+                        subtitle: Text('Version ${widget.version}'),
+                      ),
+                    ),
                   ),
-                  child: ContentArea(
-                    builder: (context, _) => pageIndex == 3
-                        ? const SettingsPage() // Always show Settings page when selected
-                        : AuthGate(
-                            onNavigateToSettings: () =>
-                                setState(() => pageIndex = 3),
-                            child: [
-                              const PinnedPage(),
-                              const BookmarksPage(),
-                              const GitHubNotesPage(),
-                            ][pageIndex],
-                          ),
-                  ),
+                  body: pageIndex == 3
+                      ? const SettingsPage()
+                      : AuthGate(
+                          onNavigateToSettings: () =>
+                              setState(() => pageIndex = 3),
+                          child: const [
+                            PinnedPage(),
+                            BookmarksPage(),
+                            GitHubNotesPage(),
+                          ][pageIndex],
+                        ),
                 ),
               ),
             ),
