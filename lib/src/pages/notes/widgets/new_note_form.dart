@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 
 /// Inline form for creating a new note.
 ///
@@ -70,7 +70,7 @@ class _NewNoteFormState extends State<NewNoteForm> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = MacosTheme.of(context).brightness == Brightness.dark;
+    final isDark = context.appBrightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -80,7 +80,7 @@ class _NewNoteFormState extends State<NewNoteForm> {
           // Header
           Row(
             children: [
-              MacosIcon(
+              Icon(
                 CupertinoIcons.doc_text_fill,
                 size: 24,
                 color: isDark ? Colors.white70 : Colors.black87,
@@ -88,16 +88,16 @@ class _NewNoteFormState extends State<NewNoteForm> {
               const SizedBox(width: 12),
               Text(
                 'Create New Note',
-                style: MacosTheme.of(context).typography.title2,
+                style: context.appTypography.title2,
               ),
             ],
           ),
           const SizedBox(height: 24),
 
           // Title field
-          Text('Title', style: MacosTheme.of(context).typography.headline),
+          Text('Title', style: context.appTypography.headline),
           const SizedBox(height: 8),
-          MacosTextField(
+          CupertinoTextField(
             controller: _titleController,
             focusNode: _titleFocusNode,
             placeholder: 'Enter note title...',
@@ -109,7 +109,7 @@ class _NewNoteFormState extends State<NewNoteForm> {
           // Content field
           Text(
             'Content (Optional)',
-            style: MacosTheme.of(context).typography.headline,
+            style: context.appTypography.headline,
           ),
           const SizedBox(height: 8),
           Text(
@@ -133,7 +133,7 @@ class _NewNoteFormState extends State<NewNoteForm> {
                 ),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: MacosTextField(
+              child: CupertinoTextField(
                 controller: _contentController,
                 placeholder: 'Start writing your note...',
                 maxLines: null,
@@ -169,7 +169,7 @@ class _NewNoteFormState extends State<NewNoteForm> {
             ),
             child: Row(
               children: [
-                MacosIcon(
+                Icon(
                   CupertinoIcons.info_circle_fill,
                   size: 16,
                   color: isDark
@@ -196,15 +196,15 @@ class _NewNoteFormState extends State<NewNoteForm> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              PushButton(
-                controlSize: ControlSize.large,
+              AppButton(
+                size: AppButtonSize.large,
                 secondary: true,
                 onPressed: widget.onCancel,
                 child: const Text('Cancel'),
               ),
               const SizedBox(width: 12),
-              PushButton(
-                controlSize: ControlSize.large,
+              AppButton(
+                size: AppButtonSize.large,
                 onPressed: _canCreate ? _handleCreate : null,
                 child: const Text('Create Note'),
               ),

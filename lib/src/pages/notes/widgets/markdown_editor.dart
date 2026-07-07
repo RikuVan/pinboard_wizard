@@ -5,7 +5,7 @@ import 'package:flutter_highlight/flutter_highlight.dart';
 import 'package:flutter_highlight/themes/a11y-dark.dart';
 import 'package:flutter_highlight/themes/github.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:markdown/markdown.dart' as md;
 
 /// Display mode for the markdown editor
@@ -291,7 +291,7 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MacosTheme.of(context).brightness;
+    final brightness = context.appBrightness;
     final isDark = brightness == Brightness.dark;
 
     return Column(
@@ -429,7 +429,7 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
           ),
           child: Focus(
             onKeyEvent: _handleKeyEvent,
-            child: MacosTextField(
+            child: CupertinoTextField(
               controller: _controller,
               focusNode: _focusNode,
               maxLines: null,
@@ -599,15 +599,15 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
           ),
           Row(
             children: [
-              PushButton(
-                controlSize: ControlSize.regular,
+              AppButton(
+                size: AppButtonSize.regular,
                 secondary: true,
                 onPressed: widget.onCancel,
                 child: const Text('Cancel'),
               ),
               const SizedBox(width: 8),
-              PushButton(
-                controlSize: ControlSize.regular,
+              AppButton(
+                size: AppButtonSize.regular,
                 onPressed: _hasChanges
                     ? () => widget.onSave(_controller.text)
                     : null,
@@ -662,17 +662,18 @@ class _ToolbarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = MacosTheme.of(context).brightness == Brightness.dark;
+    final isDark = context.appBrightness == Brightness.dark;
 
-    return MacosTooltip(
+    return AppTooltip(
       message: tooltip,
-      child: MacosIconButton(
-        icon: MacosIcon(
+      child: AppIconButton(
+        icon: Icon(
           icon,
           size: 16,
           color: isDark ? Colors.white70 : Colors.black87,
         ),
-        boxConstraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+        backgroundColor: Colors.transparent,
+        size: 28,
         onPressed: onPressed,
       ),
     );
@@ -687,7 +688,7 @@ class _ModeToggleButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = MacosTheme.of(context).brightness == Brightness.dark;
+    final isDark = context.appBrightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
@@ -737,7 +738,7 @@ class _ModeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = MacosTheme.of(context).brightness == Brightness.dark;
+    final isDark = context.appBrightness == Brightness.dark;
 
     return GestureDetector(
       onTap: onPressed,
