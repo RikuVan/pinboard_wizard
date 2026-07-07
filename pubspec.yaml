@@ -60,6 +60,8 @@ flutter:
   # Assets for the application
   assets:
     - assets/app_logo.png
+    - assets/wallpaper_light.png
+    - assets/wallpaper_dark.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
