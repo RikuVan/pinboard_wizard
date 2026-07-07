@@ -15,6 +15,8 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   macos_ui: ^2.2.2
+  liquid_glass_widgets: ^0.21.1
+  macos_window_utils: ^1.9.1
   provider: ^6.1.5+1
   json_annotation: ^4.12.0
   equatable: ^2.0.7
