@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/service_locator.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
@@ -48,17 +48,17 @@ class _AuthGateState extends State<AuthGate> {
             const SizedBox(height: 32),
             Text(
               'Welcome to Pinboard Wizard',
-              style: MacosTheme.of(context).typography.largeTitle,
+              style: context.appTypography.largeTitle,
             ),
             const SizedBox(height: 16),
             Text(
               'To get started, please configure your Pinboard API credentials in Settings.',
-              style: MacosTheme.of(context).typography.body,
+              style: context.appTypography.body,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            PushButton(
-              controlSize: ControlSize.large,
+            AppButton(
+              size: AppButtonSize.large,
               onPressed: widget.onNavigateToSettings,
               child: const Text('Go to Settings'),
             ),
