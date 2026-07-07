@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 
 class ResizableSplitView extends StatefulWidget {
   final Widget left;
@@ -101,11 +101,11 @@ class _ResizableSplitViewState extends State<ResizableSplitView> {
           width: widget.dividerWidth,
           decoration: BoxDecoration(
             color: _isDragging
-                ? MacosColors.controlAccentColor.withValues(alpha: 0.3)
-                : MacosColors.separatorColor,
+                ? AppColors.accent.withValues(alpha: 0.3)
+                : AppColors.separator,
           ),
           child: Center(
-            child: Container(width: 1, color: MacosColors.separatorColor),
+            child: Container(width: 1, color: AppColors.separator),
           ),
         ),
       ),
