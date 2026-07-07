@@ -195,7 +195,7 @@ jobs:
           echo ""
 
           # Then check for required frameworks
-          REQUIRED_FRAMEWORKS=("FlutterMacOS.framework" "appkit_ui_element_colors.framework")
+          REQUIRED_FRAMEWORKS=("FlutterMacOS.framework" "App.framework")
           for framework in "${REQUIRED_FRAMEWORKS[@]}"; do
             if [[ -d "$APP_PATH/Contents/Frameworks/$framework" ]]; then
               echo "✅ Found: $framework"
