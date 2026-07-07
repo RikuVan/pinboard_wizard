@@ -56,6 +56,7 @@ class AppButton extends StatelessWidget {
         alignment: Alignment.center,
         padding: _padding,
         shape: const LiquidRoundedSuperellipse(borderRadius: 8),
+        useOwnLayer: true,
         settings: LiquidGlassSettings(
           glassColor: fill.withValues(alpha: secondary ? 0.5 : 0.9),
         ),
