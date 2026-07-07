@@ -20,6 +20,8 @@ class AppColors {
   static const CupertinoDynamicColor systemPurple =
       CupertinoColors.systemPurple;
   static const CupertinoDynamicColor systemGrey = CupertinoColors.systemGrey;
+  static const CupertinoDynamicColor systemYellow =
+      CupertinoColors.systemYellow;
 
   /// Accent (was `MacosColors.controlAccentColor`).
   static const CupertinoDynamicColor accent = CupertinoColors.systemBlue;

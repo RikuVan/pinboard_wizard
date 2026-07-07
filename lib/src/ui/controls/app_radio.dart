@@ -12,7 +12,7 @@ class AppRadio<T> extends StatelessWidget {
 
   final T value;
   final T? groupValue;
-  final ValueChanged<T>? onChanged;
+  final ValueChanged<T?>? onChanged;
 
   @override
   Widget build(BuildContext context) {

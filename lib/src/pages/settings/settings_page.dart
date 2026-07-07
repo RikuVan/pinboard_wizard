@@ -2,11 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
-import 'package:pinboard_wizard/src/common/extensions/theme_extensions.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
 import 'package:pinboard_wizard/src/common/widgets/validated_secret_field.dart';
 import 'package:pinboard_wizard/src/github/github_auth_service.dart';
@@ -60,14 +59,14 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
   final TextEditingController _githubTokenController = TextEditingController();
   final TextEditingController _githubTokenExpiryController =
       TextEditingController();
-  late MacosTabController _tabController;
+  late AppTabController _tabController;
   Timer? _s3DebounceTimer;
   TokenType _githubTokenType = TokenType.fineGrained;
 
   @override
   void initState() {
     super.initState();
-    _tabController = MacosTabController(length: 4);
+    _tabController = AppTabController(length: 4);
     _apiKeyController.addListener(_onApiKeyChanged);
     _openaiKeyController.addListener(_onOpenAiKeyChanged);
     _jinaKeyController.addListener(_onJinaKeyChanged);
@@ -173,7 +172,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                   const SizedBox(width: 12),
                   Text(
                     'Pinboard Wizard Settings',
-                    style: MacosTheme.of(context).typography.largeTitle,
+                    style: context.appTypography.largeTitle,
                   ),
                 ],
               ),
@@ -181,13 +180,13 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
 
               // Tab View
               Expanded(
-                child: MacosTabView(
+                child: AppTabView(
                   controller: _tabController,
                   tabs: const [
-                    MacosTab(label: 'Pinboard'),
-                    MacosTab(label: 'AI Settings'),
-                    MacosTab(label: 'Backups'),
-                    MacosTab(label: 'GitHub Notes'),
+                    AppTab(label: 'Pinboard'),
+                    AppTab(label: 'AI Settings'),
+                    AppTab(label: 'Backups'),
+                    AppTab(label: 'GitHub Notes'),
                   ],
                   children: [
                     _buildPinboardTab(context, state),
@@ -212,7 +211,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
         children: [
           Text(
             'Pinboard Configuration',
-            style: MacosTheme.of(context).typography.title1,
+            style: context.appTypography.title1,
           ),
           const SizedBox(height: 12),
           Row(
@@ -221,13 +220,13 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
               const SizedBox(width: 8),
               Row(
                 children: [
-                  MacosIcon(
+                  Icon(
                     state.isPinboardAuthenticated
                         ? CupertinoIcons.check_mark_circled_solid
                         : CupertinoIcons.exclamationmark_triangle,
                     color: state.isPinboardAuthenticated
-                        ? MacosColors.systemGreenColor
-                        : MacosColors.systemYellowColor,
+                        ? AppColors.systemGreen
+                        : AppColors.systemYellow,
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -239,7 +238,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
               ),
               if (state.isPinboardTesting) ...[
                 const SizedBox(width: 8),
-                const ProgressCircle(),
+                const AppProgress(),
               ],
             ],
           ),
@@ -248,8 +247,8 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
             children: [
               const Text('Pinboard API Key'),
               const SizedBox(width: 8),
-              MacosIconButton(
-                icon: const MacosIcon(CupertinoIcons.link, size: 14),
+              AppIconButton(
+                icon: const Icon(CupertinoIcons.link, size: 14),
                 onPressed: () =>
                     _launchUrl('https://pinboard.in/settings/password'),
               ),
@@ -275,20 +274,20 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           if (state.errorMessage != null)
             Text(
               state.errorMessage!,
-              style: const TextStyle(color: MacosColors.systemRedColor),
+              style: const TextStyle(color: AppColors.systemRed),
             ),
           const SizedBox(height: 12),
           Row(
             children: [
-              PushButton(
-                controlSize: ControlSize.large,
+              AppButton(
+                size: AppButtonSize.large,
                 onPressed: () =>
                     context.read<SettingsCubit>().savePinboardApiKey(),
                 child: const Text('Save'),
               ),
               const SizedBox(width: 8),
-              PushButton(
-                controlSize: ControlSize.large,
+              AppButton(
+                size: AppButtonSize.large,
                 onPressed: () =>
                     context.read<SettingsCubit>().clearPinboardApiKey(),
                 child: const Text('Clear'),
@@ -308,14 +307,14 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
         children: [
           Text(
             'AI Assistance',
-            style: MacosTheme.of(context).typography.title1,
+            style: context.appTypography.title1,
           ),
           const SizedBox(height: 12),
 
           // Enable AI Toggle
           Row(
             children: [
-              MacosSwitch(
+              AppSwitch(
                 value: state.isAiEnabled,
                 onChanged: (value) =>
                     context.read<SettingsCubit>().setAiEnabled(value),
@@ -348,11 +347,11 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
               children: [
                 Text(
                   'OpenAI Configuration',
-                  style: MacosTheme.of(context).typography.headline,
+                  style: context.appTypography.headline,
                 ),
                 const SizedBox(width: 8),
-                MacosIconButton(
-                  icon: const MacosIcon(CupertinoIcons.link, size: 14),
+                AppIconButton(
+                  icon: const Icon(CupertinoIcons.link, size: 14),
                   onPressed: () =>
                       _launchUrl('https://platform.openai.com/api-keys'),
                 ),
@@ -364,18 +363,18 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                 const Text('Status:'),
                 const SizedBox(width: 8),
                 if (state.isOpenAiValidating) ...[
-                  const ProgressCircle(),
+                  const AppProgress(),
                   const SizedBox(width: 6),
                   const Text('Validating...'),
                 ] else if (state.openAiValidationStatus !=
                     ValidationStatus.initial) ...[
-                  MacosIcon(
+                  Icon(
                     state.isOpenAiValid
                         ? CupertinoIcons.check_mark_circled_solid
                         : CupertinoIcons.xmark_octagon_fill,
                     color: state.isOpenAiValid
-                        ? MacosColors.systemGreenColor
-                        : MacosColors.systemRedColor,
+                        ? AppColors.systemGreen
+                        : AppColors.systemRed,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -383,20 +382,20 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                       state.openAiValidationMessage ?? 'Unknown status',
                       style: TextStyle(
                         color: state.isOpenAiValid
-                            ? MacosColors.systemGreenColor
-                            : MacosColors.systemRedColor,
+                            ? AppColors.systemGreen
+                            : AppColors.systemRed,
                       ),
                     ),
                   ),
                 ] else ...[
-                  const MacosIcon(
+                  const Icon(
                     CupertinoIcons.minus_circle,
-                    color: MacosColors.systemGrayColor,
+                    color: AppColors.systemGrey,
                   ),
                   const SizedBox(width: 6),
                   const Text(
                     'Not tested',
-                    style: TextStyle(color: MacosColors.systemGrayColor),
+                    style: TextStyle(color: AppColors.systemGrey),
                   ),
                 ],
               ],
@@ -426,23 +425,23 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
             const SizedBox(height: 8),
             Row(
               children: [
-                PushButton(
-                  controlSize: ControlSize.large,
+                AppButton(
+                  size: AppButtonSize.large,
                   onPressed: () =>
                       context.read<SettingsCubit>().saveOpenAiKey(),
                   child: const Text('Save OpenAI Key'),
                 ),
                 const SizedBox(width: 8),
-                PushButton(
-                  controlSize: ControlSize.large,
+                AppButton(
+                  size: AppButtonSize.large,
                   secondary: true,
                   onPressed: () =>
                       context.read<SettingsCubit>().testOpenAiConnection(),
                   child: const Text('Test'),
                 ),
                 const SizedBox(width: 8),
-                PushButton(
-                  controlSize: ControlSize.large,
+                AppButton(
+                  size: AppButtonSize.large,
                   secondary: true,
                   onPressed: () =>
                       context.read<SettingsCubit>().clearOpenAiKey(),
@@ -467,7 +466,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                       ),
                     ),
                     Expanded(
-                      child: MacosSlider(
+                      child: AppSlider(
                         value: state.descriptionMaxLength.toDouble(),
                         min: 20,
                         max: 300,
@@ -497,7 +496,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                       child: Text('Max Tags: ${state.maxTags}'),
                     ),
                     Expanded(
-                      child: MacosSlider(
+                      child: AppSlider(
                         value: state.maxTags.toDouble(),
                         min: 0,
                         max: 10,
@@ -526,11 +525,11 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
               children: [
                 Text(
                   'Jina AI Configuration (Optional)',
-                  style: MacosTheme.of(context).typography.headline,
+                  style: context.appTypography.headline,
                 ),
                 const SizedBox(width: 8),
-                MacosIconButton(
-                  icon: const MacosIcon(CupertinoIcons.link, size: 14),
+                AppIconButton(
+                  icon: const Icon(CupertinoIcons.link, size: 14),
                   onPressed: () => _launchUrl('https://jina.ai/'),
                 ),
               ],
@@ -546,18 +545,18 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                 const Text('Status:'),
                 const SizedBox(width: 8),
                 if (state.isJinaValidating) ...[
-                  const ProgressCircle(),
+                  const AppProgress(),
                   const SizedBox(width: 6),
                   const Text('Validating...'),
                 ] else if (state.jinaValidationStatus !=
                     ValidationStatus.initial) ...[
-                  MacosIcon(
+                  Icon(
                     state.isJinaValid
                         ? CupertinoIcons.check_mark_circled_solid
                         : CupertinoIcons.xmark_octagon_fill,
                     color: state.isJinaValid
-                        ? MacosColors.systemGreenColor
-                        : MacosColors.systemRedColor,
+                        ? AppColors.systemGreen
+                        : AppColors.systemRed,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -565,20 +564,20 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                       state.jinaValidationMessage ?? 'Unknown status',
                       style: TextStyle(
                         color: state.isJinaValid
-                            ? MacosColors.systemGreenColor
-                            : MacosColors.systemRedColor,
+                            ? AppColors.systemGreen
+                            : AppColors.systemRed,
                       ),
                     ),
                   ),
                 ] else ...[
-                  const MacosIcon(
+                  const Icon(
                     CupertinoIcons.minus_circle,
-                    color: MacosColors.systemGrayColor,
+                    color: AppColors.systemGrey,
                   ),
                   const SizedBox(width: 6),
                   const Text(
                     'Not tested',
-                    style: TextStyle(color: MacosColors.systemGrayColor),
+                    style: TextStyle(color: AppColors.systemGrey),
                   ),
                 ],
               ],
@@ -603,22 +602,22 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
             const SizedBox(height: 8),
             Row(
               children: [
-                PushButton(
-                  controlSize: ControlSize.large,
+                AppButton(
+                  size: AppButtonSize.large,
                   onPressed: () => context.read<SettingsCubit>().saveJinaKey(),
                   child: const Text('Save Jina Key'),
                 ),
                 const SizedBox(width: 8),
-                PushButton(
-                  controlSize: ControlSize.large,
+                AppButton(
+                  size: AppButtonSize.large,
                   secondary: true,
                   onPressed: () =>
                       context.read<SettingsCubit>().testJinaConnection(),
                   child: const Text('Test'),
                 ),
                 const SizedBox(width: 8),
-                PushButton(
-                  controlSize: ControlSize.large,
+                AppButton(
+                  size: AppButtonSize.large,
                   secondary: true,
                   onPressed: () => context.read<SettingsCubit>().clearJinaKey(),
                   child: const Text('Clear'),
@@ -629,8 +628,8 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
             const SizedBox(height: 16),
 
             // Clear All AI Settings Button
-            PushButton(
-              controlSize: ControlSize.large,
+            AppButton(
+              size: AppButtonSize.large,
               secondary: true,
               onPressed: () =>
                   context.read<SettingsCubit>().clearAllAiSettings(),
@@ -650,7 +649,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
         children: [
           Text(
             'Backup Configuration',
-            style: MacosTheme.of(context).typography.title1,
+            style: context.appTypography.title1,
           ),
           const SizedBox(height: 12),
           Text(
@@ -664,11 +663,11 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
             children: [
               Text(
                 'Amazon S3 Settings',
-                style: MacosTheme.of(context).typography.headline,
+                style: context.appTypography.headline,
               ),
               const SizedBox(width: 8),
-              MacosIconButton(
-                icon: const MacosIcon(CupertinoIcons.link, size: 14),
+              AppIconButton(
+                icon: const Icon(CupertinoIcons.link, size: 14),
                 onPressed: () => _launchUrl(
                   'https://docs.aws.amazon.com/s3/latest/userguide/setting-up-s3.html',
                 ),
@@ -683,9 +682,9 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           const SizedBox(height: 16),
 
           // Access Key
-          Text('Access Key', style: MacosTheme.of(context).typography.body),
+          Text('Access Key', style: context.appTypography.body),
           const SizedBox(height: 4),
-          MacosTextField(
+          AppTextField(
             controller: _s3AccessKeyController,
             placeholder: 'Enter your AWS Access Key ID',
           ),
@@ -697,7 +696,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           const SizedBox(height: 16),
 
           // Secret Key
-          Text('Secret Key', style: MacosTheme.of(context).typography.body),
+          Text('Secret Key', style: context.appTypography.body),
           const SizedBox(height: 4),
           ValidatedSecretField(
             controller: _s3SecretKeyController,
@@ -710,9 +709,9 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           const SizedBox(height: 16),
 
           // Region
-          Text('Region', style: MacosTheme.of(context).typography.body),
+          Text('Region', style: context.appTypography.body),
           const SizedBox(height: 4),
-          MacosTextField(
+          AppTextField(
             controller: _s3RegionController,
             placeholder: 'us-east-1',
           ),
@@ -724,9 +723,9 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           const SizedBox(height: 16),
 
           // Bucket Name
-          Text('Bucket Name', style: MacosTheme.of(context).typography.body),
+          Text('Bucket Name', style: context.appTypography.body),
           const SizedBox(height: 4),
-          MacosTextField(
+          AppTextField(
             controller: _s3BucketNameController,
             placeholder: 'my-pinboard-backups',
           ),
@@ -740,10 +739,10 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           // File Path (optional)
           Text(
             'File Path (Optional)',
-            style: MacosTheme.of(context).typography.body,
+            style: context.appTypography.body,
           ),
           const SizedBox(height: 4),
-          MacosTextField(
+          AppTextField(
             controller: _s3FilePathController,
             placeholder: 'backups/pinboard',
           ),
@@ -759,33 +758,33 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: state.isBackupValidating
-                  ? MacosColors.systemBlueColor.withValues(alpha: 0.1)
+                  ? AppColors.systemBlue.withValues(alpha: 0.1)
                   : state.isBackupValid
-                  ? MacosColors.systemGreenColor.withValues(alpha: 0.1)
+                  ? AppColors.systemGreen.withValues(alpha: 0.1)
                   : state.isBackupInvalid
-                  ? MacosColors.systemRedColor.withValues(alpha: 0.1)
-                  : MacosColors.systemGrayColor.withValues(alpha: 0.05),
+                  ? AppColors.systemRed.withValues(alpha: 0.1)
+                  : AppColors.systemGrey.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: state.isBackupValidating
-                    ? MacosColors.systemBlueColor.withValues(alpha: 0.3)
+                    ? AppColors.systemBlue.withValues(alpha: 0.3)
                     : state.isBackupValid
-                    ? MacosColors.systemGreenColor.withValues(alpha: 0.3)
+                    ? AppColors.systemGreen.withValues(alpha: 0.3)
                     : state.isBackupInvalid
-                    ? MacosColors.systemRedColor.withValues(alpha: 0.3)
-                    : MacosColors.systemGrayColor.withValues(alpha: 0.2),
+                    ? AppColors.systemRed.withValues(alpha: 0.3)
+                    : AppColors.systemGrey.withValues(alpha: 0.2),
               ),
             ),
             child: Row(
               children: [
                 if (state.isBackupValidating) ...[
-                  const ProgressCircle(),
+                  const AppProgress(),
                   const SizedBox(width: 8),
                   const Text('Testing connection to S3...'),
                 ] else if (state.isBackupValid) ...[
-                  const MacosIcon(
+                  const Icon(
                     CupertinoIcons.check_mark_circled_solid,
-                    color: MacosColors.systemGreenColor,
+                    color: AppColors.systemGreen,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -808,9 +807,9 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                     ),
                   ),
                 ] else if (state.isBackupInvalid) ...[
-                  const MacosIcon(
+                  const Icon(
                     CupertinoIcons.xmark_circle_fill,
-                    color: MacosColors.systemRedColor,
+                    color: AppColors.systemRed,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -833,9 +832,9 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                     ),
                   ),
                 ] else ...[
-                  const MacosIcon(
+                  const Icon(
                     CupertinoIcons.info_circle,
-                    color: MacosColors.systemGrayColor,
+                    color: AppColors.systemGrey,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -865,8 +864,8 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           // Action buttons
           Row(
             children: [
-              PushButton(
-                controlSize: ControlSize.large,
+              AppButton(
+                size: AppButtonSize.large,
                 onPressed: _canValidateS3Config() && !state.isBackupValidating
                     ? () => _validateS3Config()
                     : null,
@@ -874,10 +873,10 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (state.isBackupValidating) ...[
-                      const ProgressCircle(),
+                      const AppProgress(),
                       const SizedBox(width: 8),
                     ] else if (state.isBackupValid)
-                      const MacosIcon(CupertinoIcons.checkmark, size: 16),
+                      const Icon(CupertinoIcons.checkmark, size: 16),
                     if (state.isBackupValid) const SizedBox(width: 4),
                     Text(
                       state.isBackupValidating
@@ -888,8 +887,8 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                 ),
               ),
               const SizedBox(width: 8),
-              PushButton(
-                controlSize: ControlSize.large,
+              AppButton(
+                size: AppButtonSize.large,
                 secondary: true,
                 onPressed: () => _clearS3Config(),
                 child: const Text('Clear All'),
@@ -903,13 +902,13 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           ),
 
           const SizedBox(height: 32),
-          Container(height: 1, color: MacosColors.separatorColor),
+          Container(height: 1, color: AppColors.separator),
           const SizedBox(height: 32),
 
           // Backup Section
           Text(
             'Backup Operations',
-            style: MacosTheme.of(context).typography.headline,
+            style: context.appTypography.headline,
           ),
           const SizedBox(height: 8),
           Text(
@@ -922,10 +921,10 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: MacosColors.systemGreenColor.withValues(alpha: 0.1),
+                color: AppColors.systemGreen.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: MacosColors.systemGreenColor.withValues(alpha: 0.3),
+                  color: AppColors.systemGreen.withValues(alpha: 0.3),
                 ),
               ),
               child: Column(
@@ -933,9 +932,9 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                 children: [
                   Row(
                     children: [
-                      const MacosIcon(
+                      const Icon(
                         CupertinoIcons.check_mark_circled_solid,
-                        color: MacosColors.systemGreenColor,
+                        color: AppColors.systemGreen,
                       ),
                       const SizedBox(width: 8),
                       const Text(
@@ -960,8 +959,8 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
 
           Row(
             children: [
-              PushButton(
-                controlSize: ControlSize.large,
+              AppButton(
+                size: AppButtonSize.large,
                 onPressed:
                     _canValidateS3Config() &&
                         state.isBackupValid &&
@@ -972,7 +971,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                     ? const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          ProgressCircle(),
+                          AppProgress(),
                           SizedBox(width: 8),
                           Text('Creating backup...'),
                         ],
@@ -980,7 +979,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                     : const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          MacosIcon(CupertinoIcons.cloud_upload, size: 16),
+                          Icon(CupertinoIcons.cloud_upload, size: 16),
                           SizedBox(width: 6),
                           Text('Backup Bookmarks'),
                         ],
@@ -995,8 +994,8 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                   style: TextStyle(
                     fontSize: 12,
                     color: state.isBackupValid
-                        ? MacosColors.systemGreenColor
-                        : MacosColors.systemOrangeColor,
+                        ? AppColors.systemGreen
+                        : AppColors.systemOrange,
                   ),
                 ),
               ],
@@ -1020,7 +1019,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
         children: [
           Text(
             'GitHub Notes Configuration',
-            style: MacosTheme.of(context).typography.title1,
+            style: context.appTypography.title1,
           ),
           const SizedBox(height: 12),
 
@@ -1031,13 +1030,13 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
               const SizedBox(width: 8),
               Row(
                 children: [
-                  MacosIcon(
+                  Icon(
                     state.isGitHubAuthenticated
                         ? CupertinoIcons.check_mark_circled_solid
                         : CupertinoIcons.exclamationmark_triangle,
                     color: state.isGitHubAuthenticated
-                        ? MacosColors.systemGreenColor
-                        : MacosColors.systemGrayColor,
+                        ? AppColors.systemGreen
+                        : AppColors.systemGrey,
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -1058,30 +1057,30 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
               decoration: BoxDecoration(
                 color:
                     state.tokenExpiryWarning!.severity == WarningSeverity.high
-                    ? MacosColors.systemRedColor.withValues(alpha: 0.1)
-                    : MacosColors.systemOrangeColor.withValues(alpha: 0.1),
+                    ? AppColors.systemRed.withValues(alpha: 0.1)
+                    : AppColors.systemOrange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color:
                       state.tokenExpiryWarning!.severity == WarningSeverity.high
-                      ? MacosColors.systemRedColor
-                      : MacosColors.systemOrangeColor,
+                      ? AppColors.systemRed
+                      : AppColors.systemOrange,
                 ),
               ),
               child: Row(
                 children: [
-                  MacosIcon(
+                  Icon(
                     CupertinoIcons.exclamationmark_triangle_fill,
                     color:
                         state.tokenExpiryWarning!.severity ==
                             WarningSeverity.high
-                        ? MacosColors.systemRedColor
-                        : MacosColors.systemOrangeColor,
+                        ? AppColors.systemRed
+                        : AppColors.systemOrange,
                   ),
                   const SizedBox(width: 12),
                   Expanded(child: Text(state.tokenExpiryWarning!.message)),
-                  PushButton(
-                    controlSize: ControlSize.small,
+                  AppButton(
+                    size: AppButtonSize.small,
                     onPressed: () => context
                         .read<SettingsCubit>()
                         .dismissGitHubTokenWarning(),
@@ -1096,16 +1095,16 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           // Repository Configuration
           Text(
             'Repository Settings',
-            style: MacosTheme.of(context).typography.headline,
+            style: context.appTypography.headline,
           ),
           const SizedBox(height: 8),
 
           Text(
             'GitHub Owner/Organization',
-            style: MacosTheme.of(context).typography.body,
+            style: context.appTypography.body,
           ),
           const SizedBox(height: 4),
-          MacosTextField(
+          AppTextField(
             controller: _githubOwnerController,
             placeholder: 'username or org-name',
           ),
@@ -1113,10 +1112,10 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
 
           Text(
             'Repository Name',
-            style: MacosTheme.of(context).typography.body,
+            style: context.appTypography.body,
           ),
           const SizedBox(height: 4),
-          MacosTextField(
+          AppTextField(
             controller: _githubRepoController,
             placeholder: 'personal-notes',
           ),
@@ -1124,10 +1123,10 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
 
           Text(
             'Branch (Optional)',
-            style: MacosTheme.of(context).typography.body,
+            style: context.appTypography.body,
           ),
           const SizedBox(height: 4),
-          MacosTextField(
+          AppTextField(
             controller: _githubBranchController,
             placeholder: 'main',
           ),
@@ -1135,10 +1134,10 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
 
           Text(
             'Notes Path (Optional)',
-            style: MacosTheme.of(context).typography.body,
+            style: context.appTypography.body,
           ),
           const SizedBox(height: 8),
-          MacosTextField(
+          AppTextField(
             controller: _githubNotesPathController,
             placeholder: 'Leave empty for root level, or enter: notes/',
           ),
@@ -1157,11 +1156,11 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
             children: [
               Text(
                 'Personal Access Token',
-                style: MacosTheme.of(context).typography.headline,
+                style: context.appTypography.headline,
               ),
               const SizedBox(width: 8),
-              MacosIconButton(
-                icon: const MacosIcon(CupertinoIcons.link, size: 14),
+              AppIconButton(
+                icon: const Icon(CupertinoIcons.link, size: 14),
                 onPressed: () =>
                     _launchUrl('https://github.com/settings/tokens?type=beta'),
               ),
@@ -1174,7 +1173,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
             children: [
               const Text('Token Type:'),
               const SizedBox(width: 12),
-              MacosRadioButton<TokenType>(
+              AppRadio<TokenType>(
                 value: TokenType.fineGrained,
                 groupValue: _githubTokenType,
                 onChanged: (value) {
@@ -1186,7 +1185,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
               const SizedBox(width: 4),
               const Text('Fine-Grained (Recommended)'),
               const SizedBox(width: 16),
-              MacosRadioButton<TokenType>(
+              AppRadio<TokenType>(
                 value: TokenType.classic,
                 groupValue: _githubTokenType,
                 onChanged: (value) {
@@ -1214,10 +1213,10 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           // Token Expiry Date
           Text(
             'Token Expiry Date (Optional)',
-            style: MacosTheme.of(context).typography.body,
+            style: context.appTypography.body,
           ),
           const SizedBox(height: 4),
-          MacosTextField(
+          AppTextField(
             controller: _githubTokenExpiryController,
             placeholder: 'YYYY-MM-DD',
           ),
@@ -1230,8 +1229,8 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           // Action Buttons
           Row(
             children: [
-              PushButton(
-                controlSize: ControlSize.large,
+              AppButton(
+                size: AppButtonSize.large,
                 onPressed: () async {
                   final owner = _githubOwnerController.text.trim();
                   final repo = _githubRepoController.text.trim();
@@ -1257,9 +1256,9 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                       // ignore: use_build_context_synchronously
                       final navigator = Navigator.of(dialogContext);
                       // ignore: use_build_context_synchronously
-                      await showMacosAlertDialog(
+                      await showAppAlertDialog(
                         context: dialogContext,
-                        builder: (builderContext) => MacosAlertDialog(
+                        builder: (builderContext) => AppAlertDialog(
                           appIcon: const FlutterLogo(size: 56),
                           title: const Text('Invalid Date Format'),
                           message: Text(
@@ -1267,8 +1266,8 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                             'Example: 2025-12-31\n\n'
                             'Error: ${e.toString()}',
                           ),
-                          primaryButton: PushButton(
-                            controlSize: ControlSize.large,
+                          primaryButton: AppButton(
+                            size: AppButtonSize.large,
                             onPressed: () => navigator.pop(),
                             child: const Text('OK'),
                           ),
@@ -1291,8 +1290,8 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                 child: const Text('Save'),
               ),
               const SizedBox(width: 8),
-              PushButton(
-                controlSize: ControlSize.large,
+              AppButton(
+                size: AppButtonSize.large,
                 secondary: true,
                 onPressed: () async {
                   await context.read<SettingsCubit>().clearGitHubConfig();
@@ -1315,21 +1314,21 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
               state.githubValidationMessage!,
               style: TextStyle(
                 color: state.isGitHubValid
-                    ? MacosColors.systemGreenColor
+                    ? AppColors.systemGreen
                     : state.isGitHubInvalid
-                    ? MacosColors.systemRedColor
-                    : MacosColors.systemGrayColor,
+                    ? AppColors.systemRed
+                    : AppColors.systemGrey,
               ),
             ),
             const SizedBox(height: 16),
           ],
 
           // Help Section
-          Container(height: 1, color: MacosColors.separatorColor),
+          Container(height: 1, color: AppColors.separator),
           const SizedBox(height: 16),
           Text(
             'Setup Instructions',
-            style: MacosTheme.of(context).typography.headline,
+            style: context.appTypography.headline,
           ),
           const SizedBox(height: 8),
           Text(
@@ -1394,18 +1393,18 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
   }
 
   void _showPermissionsDialog(String service, String permissions) {
-    showMacosAlertDialog(
+    showAppAlertDialog(
       context: context,
-      builder: (_) => MacosAlertDialog(
+      builder: (_) => AppAlertDialog(
         appIcon: const Icon(
           CupertinoIcons.info_circle_fill,
           size: 64,
-          color: MacosColors.systemBlueColor,
+          color: AppColors.systemBlue,
         ),
         title: Text('$service API Status'),
         message: Text(permissions),
-        primaryButton: PushButton(
-          controlSize: ControlSize.large,
+        primaryButton: AppButton(
+          size: AppButtonSize.large,
           child: const Text('OK'),
           onPressed: () => Navigator.of(context).pop(),
         ),

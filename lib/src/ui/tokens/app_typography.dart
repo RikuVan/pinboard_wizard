@@ -9,6 +9,8 @@ class AppTypography {
 
   TextStyle get largeTitle =>
       TextStyle(fontSize: 26, fontWeight: FontWeight.w400, color: _label);
+  TextStyle get title1 =>
+      TextStyle(fontSize: 22, fontWeight: FontWeight.w400, color: _label);
   TextStyle get title2 =>
       TextStyle(fontSize: 18, fontWeight: FontWeight.w400, color: _label);
   TextStyle get headline =>
