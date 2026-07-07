@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import '../tokens/app_colors.dart';
 
 /// Desktop shell: muted wallpaper backdrop + [sidebar] beside [body].
 /// Replaces macos_ui `MacosWindow` + `ContentArea`.
@@ -28,7 +29,12 @@ class GlassWindowScaffold extends StatelessWidget {
             Row(
               children: [
                 sidebar,
-                Expanded(child: body),
+                Expanded(
+                  child: ColoredBox(
+                    color: AppColors.canvas.resolveFrom(context),
+                    child: body,
+                  ),
+                ),
               ],
             ),
           ],
