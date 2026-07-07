@@ -1,9 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
-import 'package:pinboard_wizard/src/common/extensions/theme_extensions.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PinnedBookmarkTile extends StatefulWidget {
@@ -24,14 +23,14 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {
       if (context.mounted) {
-        showMacosAlertDialog(
+        showAppAlertDialog(
           context: context,
-          builder: (_) => MacosAlertDialog(
+          builder: (_) => AppAlertDialog(
             appIcon: const AppLogo.dialog(),
             title: const Text('Error'),
             message: Text('Could not launch $url'),
-            primaryButton: PushButton(
-              controlSize: ControlSize.large,
+            primaryButton: AppButton(
+              size: AppButtonSize.large,
               child: const Text('OK'),
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -43,7 +42,7 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MacosTheme.brightnessOf(context);
+    final brightness = context.appBrightness;
     final backgroundColor = brightness == Brightness.dark
         ? const Color(0xFF2D2D30)
         : const Color(0xFFFAFAFA);
@@ -95,7 +94,7 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                       Icon(
                         CupertinoIcons.link,
                         size: 14,
-                        color: MacosColors.tertiaryLabelColor.resolveFrom(
+                        color: AppColors.tertiaryLabel.resolveFrom(
                           context,
                         ),
                       ),
@@ -127,7 +126,7 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                       ), // Strip HTML tags for clean display
                       style: TextStyle(
                         fontSize: 12,
-                        color: MacosColors.secondaryLabelColor.resolveFrom(
+                        color: AppColors.secondaryLabel.resolveFrom(
                           context,
                         ),
                         height: 1.3,
@@ -154,22 +153,19 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                           })
                           .take(3) // Limit to 3 tags to keep it compact
                           .map((tag) {
-                            final theme = MacosTheme.of(context);
                             return Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 6,
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: theme.brightness == Brightness.dark
-                                    ? MacosColors
-                                          .controlBackgroundColor
-                                          .darkColor
-                                    : MacosColors.controlBackgroundColor,
+                                color: brightness == Brightness.dark
+                                    ? AppColors.controlBackground.darkColor
+                                    : AppColors.controlBackground,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: MacosColors.separatorColor.withOpacity(
-                                    0.3,
+                                  color: AppColors.separator.withValues(
+                                    alpha: 0.3,
                                   ),
                                   width: 0.5,
                                 ),
@@ -178,7 +174,7 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                                 tag,
                                 style: TextStyle(
                                   fontSize: 10,
-                                  color: MacosColors.systemPurpleColor,
+                                  color: AppColors.systemPurple,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
