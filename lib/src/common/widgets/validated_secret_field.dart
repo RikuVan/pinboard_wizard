@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart' hide OverlayVisibilityMode;
-import 'package:macos_ui/macos_ui.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 
 class ValidatedSecretField extends StatelessWidget {
   final TextEditingController controller;
@@ -32,7 +32,7 @@ class ValidatedSecretField extends StatelessWidget {
       children: [
         SizedBox(
           height: 40,
-          child: MacosTextField(
+          child: AppTextField(
             controller: controller,
             placeholder: placeholder,
             placeholderStyle: TextStyle(
@@ -40,22 +40,20 @@ class ValidatedSecretField extends StatelessWidget {
               color: CupertinoColors.placeholderText.withValues(alpha: 0.5),
             ),
             obscureText: true,
-            clearButtonMode: OverlayVisibilityMode.editing,
-            suffixMode: OverlayVisibilityMode.always,
-            suffix: Padding(
+            suffixIcon: Padding(
               padding: const EdgeInsets.only(right: 6.0),
               child: isValidating
-                  ? const ProgressCircle()
+                  ? const AppProgress()
                   : (isValid == null
                         ? const SizedBox.shrink()
-                        : MacosIconButton(
-                            icon: MacosIcon(
+                        : AppIconButton(
+                            icon: Icon(
                               isValid == true
                                   ? CupertinoIcons.check_mark_circled_solid
                                   : CupertinoIcons.xmark_octagon_fill,
                               color: isValid == true
-                                  ? MacosColors.systemGreenColor
-                                  : MacosColors.systemRedColor,
+                                  ? AppColors.systemGreen
+                                  : AppColors.systemRed,
                             ),
                             onPressed: onPressed,
                           )),

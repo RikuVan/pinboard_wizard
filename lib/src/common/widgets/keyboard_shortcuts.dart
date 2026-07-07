@@ -1,12 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/add_bookmark_dialog.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_cubit.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
 import 'package:pinboard_wizard/src/service_locator.dart';
 import 'package:pinboard_wizard/src/common/state/bookmark_change_notifier.dart';
 import 'package:pinboard_wizard/src/common/widgets/dialogs.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 
 // Intent classes for keyboard shortcuts
 class NewBookmarkIntent extends Intent {
@@ -37,7 +37,7 @@ class RefreshPageIntent extends Intent {
 Future<void> showAddBookmarkDialog(BuildContext context) async {
   if (!context.mounted) return;
 
-  final result = await showMacosSheet<Map<String, dynamic>>(
+  final result = await showAppSheet<Map<String, dynamic>>(
     context: context,
     builder: (_) => const AddBookmarkDialog(),
   );
