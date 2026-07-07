@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:pinboard_wizard/src/ai/ai_bookmark_service.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/add_bookmark_dialog.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 
 import 'add_bookmark_dialog_test.mocks.dart';
 
@@ -39,9 +40,12 @@ void main() {
   });
 
   Widget createTestWidget() {
-    return MacosApp(
-      home: MacosWindow(
-        child: Builder(builder: (context) => AddBookmarkDialog()),
+    return LiquidGlassWidgets.wrap(
+      child: MaterialApp(
+        theme: appLightTheme(),
+        home: Scaffold(
+          body: Builder(builder: (context) => const AddBookmarkDialog()),
+        ),
       ),
     );
   }
@@ -70,7 +74,7 @@ void main() {
 
       final aiButton = find.byWidgetPredicate(
         (widget) =>
-            widget is PushButton &&
+            widget is AppButton &&
             widget.child is Row &&
             (widget.child as Row).children.any(
               (child) => child is Text && child.data == 'Complete with AI',
@@ -79,7 +83,7 @@ void main() {
 
       expect(aiButton, findsOneWidget);
 
-      final pushButton = tester.widget<PushButton>(aiButton);
+      final pushButton = tester.widget<AppButton>(aiButton);
       expect(pushButton.onPressed, isNotNull);
 
       verify(mockAiBookmarkService.isValidUrl(testUrl)).called(greaterThan(0));
@@ -110,7 +114,7 @@ void main() {
 
       final aiButton = find.byWidgetPredicate(
         (widget) =>
-            widget is PushButton &&
+            widget is AppButton &&
             widget.child is Row &&
             (widget.child as Row).children.any(
               (child) => child is Text && child.data == 'Complete with AI',
@@ -143,7 +147,7 @@ void main() {
 
     final aiButton = find.byWidgetPredicate(
       (widget) =>
-          widget is PushButton &&
+          widget is AppButton &&
           widget.child is Row &&
           (widget.child as Row).children.any(
             (child) => child is Text && child.data == 'Complete with AI',
@@ -152,7 +156,7 @@ void main() {
 
     expect(aiButton, findsOneWidget);
 
-    final pushButton = tester.widget<PushButton>(aiButton);
+    final pushButton = tester.widget<AppButton>(aiButton);
     expect(pushButton.onPressed, isNull);
   });
 
@@ -178,7 +182,7 @@ void main() {
 
     final aiButton = find.byWidgetPredicate(
       (widget) =>
-          widget is PushButton &&
+          widget is AppButton &&
           widget.child is Row &&
           (widget.child as Row).children.any(
             (child) => child is Text && child.data == 'Complete with AI',
@@ -187,7 +191,7 @@ void main() {
 
     expect(aiButton, findsOneWidget);
 
-    final pushButton = tester.widget<PushButton>(aiButton);
+    final pushButton = tester.widget<AppButton>(aiButton);
     expect(pushButton.onPressed, isNull);
   });
 
@@ -211,7 +215,7 @@ void main() {
 
     final aiButton = find.byWidgetPredicate(
       (widget) =>
-          widget is PushButton &&
+          widget is AppButton &&
           widget.child is Row &&
           (widget.child as Row).children.any(
             (child) => child is Text && child.data == 'Complete with AI',
@@ -220,14 +224,14 @@ void main() {
 
     expect(aiButton, findsOneWidget);
 
-    PushButton pushButton = tester.widget<PushButton>(aiButton);
+    AppButton pushButton = tester.widget<AppButton>(aiButton);
     expect(pushButton.onPressed, isNull);
 
-    final urlField = find.byType(MacosTextField).first;
+    final urlField = find.byType(AppTextField).first;
     await tester.enterText(urlField, 'https://example.com');
     await tester.pump();
 
-    pushButton = tester.widget<PushButton>(aiButton);
+    pushButton = tester.widget<AppButton>(aiButton);
     expect(pushButton.onPressed, isNotNull);
   });
 }
