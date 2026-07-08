@@ -320,7 +320,9 @@ class _HoverableTextState extends State<_HoverableText> {
             decoration: isHovering
                 ? TextDecoration.underline
                 : TextDecoration.none,
-            color: isHovering ? CupertinoColors.activeBlue : widget.style.color,
+            color: isHovering
+                ? AppColors.accent.resolveFrom(context)
+                : widget.style.color,
           ),
           maxLines: widget.maxLines,
           overflow: widget.overflow,

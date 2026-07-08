@@ -80,7 +80,7 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: isHovering
-                          ? CupertinoColors.activeBlue
+                          ? AppColors.accent.resolveFrom(context)
                           : (brightness == Brightness.dark
                                 ? Colors.white
                                 : Colors.black87),
@@ -94,9 +94,7 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                       Icon(
                         CupertinoIcons.link,
                         size: 14,
-                        color: AppColors.tertiaryLabel.resolveFrom(
-                          context,
-                        ),
+                        color: AppColors.tertiaryLabel.resolveFrom(context),
                       ),
                       const SizedBox(width: 6),
                       Expanded(
@@ -126,9 +124,7 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                       ), // Strip HTML tags for clean display
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.secondaryLabel.resolveFrom(
-                          context,
-                        ),
+                        color: AppColors.secondaryLabel.resolveFrom(context),
                         height: 1.3,
                       ),
                       maxLines: 1,

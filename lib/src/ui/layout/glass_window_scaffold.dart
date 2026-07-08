@@ -17,8 +17,9 @@ class GlassWindowScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final wallpaper =
-        isDark ? 'assets/wallpaper_dark.png' : 'assets/wallpaper_light.png';
+    final wallpaper = isDark
+        ? 'assets/wallpaper_dark.png'
+        : 'assets/wallpaper_light.png';
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: LiquidGlassScope(
@@ -30,9 +31,15 @@ class GlassWindowScaffold extends StatelessWidget {
               children: [
                 sidebar,
                 Expanded(
-                  child: ColoredBox(
-                    color: AppColors.canvas.resolveFrom(context),
-                    child: body,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: ColoredBox(
+                        color: AppColors.canvas.resolveFrom(context),
+                        child: body,
+                      ),
+                    ),
                   ),
                 ),
               ],
