@@ -70,7 +70,17 @@ rm -rf macos/.symlinks
 
 # 6. Build the release app
 print_status "Building macOS release app..."
-flutter build macos --release --verbose
+# Derive the app version from the latest git tag (e.g. v0.9.0 -> 0.9.0) so the
+# in-app version (shown in the sidebar) always matches the release. Falls back
+# to the pubspec version when no reachable tag exists.
+APP_VERSION="$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')"
+if [ -n "$APP_VERSION" ]; then
+    print_status "Using version $APP_VERSION (from latest git tag)"
+    flutter build macos --release --build-name="$APP_VERSION" --verbose
+else
+    print_warning "No git tag found; using pubspec version"
+    flutter build macos --release --verbose
+fi
 check_error "Flutter build failed"
 
 # 7. Verify the build
