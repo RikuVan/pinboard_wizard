@@ -265,15 +265,10 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             CupertinoIcons.sparkles,
                             size: 16,
-                            color: _canUseAiMagic
-                                ? AppColors.accent
-                                : context.appBrightness ==
-                                      Brightness.dark
-                                ? Colors.white38
-                                : Colors.black38,
+                            color: Colors.white,
                           ),
                           const SizedBox(width: 6),
                           const Text('Complete with AI'),
