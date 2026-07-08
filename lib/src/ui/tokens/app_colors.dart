@@ -50,7 +50,7 @@ class AppColors {
   /// Window canvas (was `MacosTheme.of(context).canvasColor`).
   static const CupertinoDynamicColor canvas =
       CupertinoDynamicColor.withBrightness(
-        color: Color(0xFFECECEC),
+        color: Color(0xFFE0E3E9),
         darkColor: Color(0xFF1E1E1E),
       );
 }

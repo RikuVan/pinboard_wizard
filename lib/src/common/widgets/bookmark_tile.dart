@@ -47,7 +47,7 @@ class BookmarkTile extends StatelessWidget {
     final brightness = context.appBrightness;
     final backgroundColor = brightness == Brightness.dark
         ? const Color(0xFF2D2D30)
-        : const Color(0xFFFAFAFA);
+        : const Color(0xFFFFFFFF);
     final borderColor = brightness == Brightness.dark
         ? Colors.white.withValues(alpha: 0.10)
         : Colors.black.withValues(alpha: 0.06);
