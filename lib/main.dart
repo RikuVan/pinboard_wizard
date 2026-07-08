@@ -37,10 +37,12 @@ void main() async {
   );
   await LiquidGlassWidgets.initialize();
   await setup();
-  runApp(LiquidGlassWidgets.wrap(
-    theme: appGlassTheme(),
-    child: PinboardWizard(version: packageInfo.version),
-  ));
+  runApp(
+    LiquidGlassWidgets.wrap(
+      theme: appGlassTheme(),
+      child: PinboardWizard(version: packageInfo.version),
+    ),
+  );
 }
 
 class PinboardWizard extends StatefulWidget {
@@ -111,13 +113,21 @@ class _PinboardWizardState extends State<PinboardWizard> {
                     onSelected: (i) => setState(() => pageIndex = i),
                     items: const [
                       GlassSidebarItem(
-                          icon: CupertinoIcons.pin_fill, label: 'Pinned'),
+                        icon: CupertinoIcons.pin_fill,
+                        label: 'Pinned',
+                      ),
                       GlassSidebarItem(
-                          icon: CupertinoIcons.bookmark_fill, label: 'Bookmarks'),
+                        icon: CupertinoIcons.bookmark_fill,
+                        label: 'Bookmarks',
+                      ),
                       GlassSidebarItem(
-                          icon: CupertinoIcons.doc_text_fill, label: 'Notes'),
+                        icon: CupertinoIcons.doc_text_fill,
+                        label: 'Notes',
+                      ),
                       GlassSidebarItem(
-                          icon: CupertinoIcons.gear_alt_fill, label: 'Settings'),
+                        icon: CupertinoIcons.gear_alt_fill,
+                        label: 'Settings',
+                      ),
                     ],
                     footer: Container(
                       padding: const EdgeInsets.all(12),
@@ -129,10 +139,35 @@ class _PinboardWizardState extends State<PinboardWizard> {
                           ),
                         ),
                       ),
-                      child: AppListTile(
-                        leading: const AppLogo.small(),
-                        title: const Text('Pinboard Wizard'),
-                        subtitle: Text('Version ${widget.version}'),
+                      child: Row(
+                        children: [
+                          const AppLogo(size: 40),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'Pinboard Wizard',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  'Version ${widget.version}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.secondaryLabel.resolveFrom(
+                                      context,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
