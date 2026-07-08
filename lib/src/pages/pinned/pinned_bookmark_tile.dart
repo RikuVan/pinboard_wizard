@@ -47,8 +47,8 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
         ? const Color(0xFF2D2D30)
         : const Color(0xFFFAFAFA);
     final borderColor = brightness == Brightness.dark
-        ? const Color(0xFF464649)
-        : const Color(0xFFE5E5E5);
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.black.withValues(alpha: 0.06);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -65,8 +65,17 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                         ? const Color(0xFF363639)
                         : const Color(0xFFF0F0F0))
                   : backgroundColor,
-              border: Border.all(color: borderColor, width: 0.5),
-              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: borderColor, width: 1),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(
+                    alpha: brightness == Brightness.dark ? 0.28 : 0.06,
+                  ),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Padding(
               padding: const EdgeInsets.all(12),
