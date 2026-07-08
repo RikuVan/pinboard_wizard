@@ -89,7 +89,7 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: isHovering
-                          ? AppColors.accent.resolveFrom(context)
+                          ? AppColors.linkText.resolveFrom(context)
                           : (brightness == Brightness.dark
                                 ? Colors.white
                                 : Colors.black87),
@@ -179,7 +179,9 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                                 tag,
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: AppColors.systemPurple,
+                                  color: AppColors.violetText.resolveFrom(
+                                    context,
+                                  ),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),

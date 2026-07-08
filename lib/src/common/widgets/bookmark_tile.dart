@@ -85,10 +85,10 @@ class BookmarkTile extends StatelessWidget {
                         _HoverableText(
                           text: post.description,
                           onTap: () => _launchUrl(context, post.href),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: CupertinoColors.activeBlue,
+                            color: AppColors.linkText.resolveFrom(context),
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -153,7 +153,7 @@ class BookmarkTile extends StatelessWidget {
                               ),
                               "p": Style(margin: Margins.only(bottom: 8)),
                               "a": Style(
-                                color: CupertinoColors.activeBlue,
+                                color: AppColors.linkText.resolveFrom(context),
                                 textDecoration: TextDecoration.none,
                               ),
                               "blockquote": Style(
@@ -330,7 +330,7 @@ class _HoverableTextState extends State<_HoverableText> {
                 ? TextDecoration.underline
                 : TextDecoration.none,
             color: isHovering
-                ? AppColors.accent.resolveFrom(context)
+                ? AppColors.linkText.resolveFrom(context)
                 : widget.style.color,
           ),
           maxLines: widget.maxLines,
