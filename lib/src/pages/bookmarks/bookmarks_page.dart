@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:pinboard_wizard/src/common/widgets/bookmark_tile.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/add_bookmark_dialog.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/edit_bookmark_dialog.dart';
@@ -151,7 +151,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
         },
         builder: (context, state) {
           if (state.isLoading) {
-            return const Center(child: ProgressCircle());
+            return const Center(child: AppProgress());
           }
 
           if (state.hasError && state.isEmpty) {
@@ -200,8 +200,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
               ),
             ),
             const SizedBox(height: 12),
-            PushButton(
-              controlSize: ControlSize.large,
+            AppButton(
+              size: AppButtonSize.large,
               onPressed: () => _bookmarksCubit.loadBookmarks(),
               child: const Text('Retry'),
             ),
@@ -220,8 +220,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
           children: [
             const Text('No bookmarks found.'),
             const SizedBox(height: 12),
-            PushButton(
-              controlSize: ControlSize.large,
+            AppButton(
+              size: AppButtonSize.large,
               onPressed: () => _bookmarksCubit.refresh(),
               child: const Text('Refresh'),
             ),
@@ -235,9 +235,9 @@ class _BookmarksPageState extends State<BookmarksPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: MacosTheme.of(context).canvasColor,
+        color: context.canvasColor,
         border: Border(
-          bottom: BorderSide(color: MacosColors.separatorColor, width: 0.5),
+          bottom: BorderSide(color: AppColors.separator, width: 0.5),
         ),
       ),
       child: SizedBox(
@@ -245,9 +245,9 @@ class _BookmarksPageState extends State<BookmarksPage> {
         width: double.infinity,
         child: Container(
           decoration: BoxDecoration(
-            color: MacosTheme.of(context).brightness == Brightness.dark
-                ? MacosColors.controlBackgroundColor.darkColor
-                : MacosColors.controlBackgroundColor,
+            color: context.appBrightness == Brightness.dark
+                ? AppColors.controlBackground.darkColor
+                : AppColors.controlBackground,
             borderRadius: BorderRadius.circular(2.25),
           ),
           child: FractionallySizedBox(
@@ -255,7 +255,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
             widthFactor: _scrollProgress / 100.0,
             child: Container(
               decoration: BoxDecoration(
-                color: MacosColors.systemBlueColor,
+                color: AppColors.systemBlue,
                 borderRadius: BorderRadius.circular(2.25),
               ),
             ),
@@ -269,21 +269,21 @@ class _BookmarksPageState extends State<BookmarksPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: MacosTheme.of(context).canvasColor,
+        color: context.canvasColor,
         border: Border(
-          bottom: BorderSide(color: MacosColors.separatorColor, width: 0.5),
+          bottom: BorderSide(color: AppColors.separator, width: 0.5),
         ),
       ),
       child: Row(
         children: [
-          PushButton(
-            controlSize: ControlSize.regular,
+          AppButton(
+            size: AppButtonSize.regular,
             onPressed: _showAddBookmarkDialog,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                MacosIcon(CupertinoIcons.add, size: 16, color: Colors.white),
+                Icon(CupertinoIcons.add, size: 16, color: Colors.white),
                 const SizedBox(width: 4),
                 Text('Add'),
               ],
@@ -291,7 +291,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: MacosSearchField(
+            child: AppSearchField(
               controller: _searchController,
               placeholder: 'Search bookmarks...',
               onChanged: (_) {}, // handled by controller listener
@@ -301,14 +301,14 @@ class _BookmarksPageState extends State<BookmarksPage> {
           Text(
             'Unread Only:',
             style: TextStyle(
-              color: MacosTheme.of(context).brightness == Brightness.dark
+              color: context.appBrightness == Brightness.dark
                   ? Colors.white
                   : Colors.black,
               fontSize: 13,
             ),
           ),
           const SizedBox(width: 8),
-          MacosSwitch(
+          AppSwitch(
             value: state.showUnreadOnly,
             onChanged: (value) => _bookmarksCubit.toggleUnreadFilter(value),
           ),
@@ -316,7 +316,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
           Text(
             'Search:',
             style: TextStyle(
-              color: MacosTheme.of(context).brightness == Brightness.dark
+              color: context.appBrightness == Brightness.dark
                   ? Colors.white
                   : Colors.black,
               fontSize: 13,
@@ -326,12 +326,12 @@ class _BookmarksPageState extends State<BookmarksPage> {
           if (state.isLoadingAllBookmarks)
             Row(
               children: [
-                const SizedBox(width: 12, height: 12, child: ProgressCircle()),
+                const SizedBox(width: 12, height: 12, child: AppProgress()),
                 const SizedBox(width: 8),
                 Text(
                   'Loading all bookmarks...',
                   style: TextStyle(
-                    color: MacosTheme.of(context).brightness == Brightness.dark
+                    color: context.appBrightness == Brightness.dark
                         ? Colors.white
                         : Colors.black,
                     fontSize: 12,
@@ -344,7 +344,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
             Text(
               state.searchAll ? 'All Bookmarks' : 'Current Page',
               style: TextStyle(
-                color: MacosTheme.of(context).brightness == Brightness.dark
+                color: context.appBrightness == Brightness.dark
                     ? Colors.white
                     : Colors.black,
                 fontSize: 12,
@@ -352,7 +352,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
               ),
             ),
           const SizedBox(width: 8),
-          MacosSwitch(
+          AppSwitch(
             value: state.searchAll,
             onChanged: (value) => _bookmarksCubit.toggleSearchScope(value),
           ),
@@ -369,7 +369,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
         child: Text(
           'No bookmarks found',
           style: TextStyle(
-            color: MacosColors.secondaryLabelColor,
+            color: AppColors.secondaryLabel,
             fontSize: 13,
           ),
         ),
@@ -391,11 +391,11 @@ class _BookmarksPageState extends State<BookmarksPage> {
             padding: const EdgeInsets.all(16),
             child: Center(
               child: state.isLoadingMore
-                  ? const ProgressCircle()
+                  ? const AppProgress()
                   : const Text(
                       'No more bookmarks',
                       style: TextStyle(
-                        color: MacosColors.secondaryLabelColor,
+                        color: AppColors.secondaryLabel,
                         fontSize: 13,
                       ),
                     ),
@@ -417,9 +417,9 @@ class _BookmarksPageState extends State<BookmarksPage> {
   Widget _buildFooterBar(BookmarksState state) {
     return Container(
       decoration: BoxDecoration(
-        color: MacosTheme.of(context).canvasColor,
+        color: context.canvasColor,
         border: Border(
-          top: BorderSide(color: MacosColors.separatorColor, width: 0.5),
+          top: BorderSide(color: AppColors.separator, width: 0.5),
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -429,7 +429,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
           Text(
             _bookmarksCubit.footerText,
             style: TextStyle(
-              color: MacosTheme.of(context).brightness == Brightness.dark
+              color: context.appBrightness == Brightness.dark
                   ? Colors.white70
                   : Colors.black87,
               fontSize: 11,
@@ -439,7 +439,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
             Text(
               _bookmarksCubit.getSecondaryFooterText()!,
               style: TextStyle(
-                color: MacosTheme.of(context).brightness == Brightness.dark
+                color: context.appBrightness == Brightness.dark
                     ? Colors.white54
                     : Colors.black54,
                 fontSize: 10,
@@ -456,7 +456,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
   }
 
   void _showAddBookmarkDialog() async {
-    final result = await showMacosSheet<Map<String, dynamic>>(
+    final result = await showAppSheet<Map<String, dynamic>>(
       context: context,
       builder: (_) => const AddBookmarkDialog(),
     );
@@ -494,7 +494,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
   }
 
   Future<void> _updateBookmark(Post bookmark) async {
-    final updatedBookmark = await showMacosSheet<Post>(
+    final updatedBookmark = await showAppSheet<Post>(
       context: context,
       builder: (_) => EditBookmarkDialog(bookmark: bookmark),
     );
@@ -537,7 +537,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
 
       if (isCurrentlyPinned) {
         // Show dialog for updating/removing pin
-        final result = await showMacosAlertDialog<String>(
+        final result = await showAppAlertDialog<String>(
           context: context,
           builder: (context) => PinCategoryDialog(
             isCurrentlyPinned: true,
@@ -570,7 +570,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
         await _bookmarksCubit.updateBookmark(updatedBookmark);
       } else {
         // Show dialog for pinning
-        final result = await showMacosAlertDialog<String>(
+        final result = await showAppAlertDialog<String>(
           context: context,
           builder: (context) =>
               PinCategoryDialog(isCurrentlyPinned: false, allPosts: allPosts),

@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:pinboard_wizard/src/database/notes_database.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -30,7 +30,7 @@ class GitHubNoteTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MacosTheme.of(context).brightness;
+    final brightness = context.appBrightness;
     final isDark = brightness == Brightness.dark;
 
     return GestureDetector(
@@ -129,9 +129,9 @@ class GitHubNoteTile extends StatelessWidget {
   Widget _buildStatusIndicator() {
     // Conflict takes precedence
     if (note.isConflict) {
-      return const MacosTooltip(
+      return const AppTooltip(
         message: 'Conflict detected',
-        child: MacosIcon(
+        child: Icon(
           CupertinoIcons.exclamationmark_triangle_fill,
           color: Colors.red,
           size: 18,
@@ -141,24 +141,24 @@ class GitHubNoteTile extends StatelessWidget {
 
     // Marked for deletion
     if (note.markedForDeletion) {
-      return const MacosTooltip(
+      return const AppTooltip(
         message: 'Marked for deletion',
-        child: MacosIcon(CupertinoIcons.trash, color: Colors.orange, size: 18),
+        child: Icon(CupertinoIcons.trash, color: Colors.orange, size: 18),
       );
     }
 
     // Dirty (pending sync)
     if (note.isDirty) {
-      return const MacosTooltip(
+      return const AppTooltip(
         message: 'Pending sync',
-        child: MacosIcon(CupertinoIcons.clock, color: Colors.orange, size: 18),
+        child: Icon(CupertinoIcons.clock, color: Colors.orange, size: 18),
       );
     }
 
     // Synced
-    return const MacosTooltip(
+    return const AppTooltip(
       message: 'Synced',
-      child: MacosIcon(
+      child: Icon(
         CupertinoIcons.checkmark_circle_fill,
         color: Colors.green,
         size: 18,

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:pinboard_wizard/src/ai/ai_bookmark_service.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/common/widgets/dialogs.dart';
@@ -73,7 +73,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return MacosSheet(
+    return AppSheet(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: SizedBox(
@@ -91,17 +91,17 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                     child: Icon(
                       CupertinoIcons.bookmark_fill,
                       size: 24,
-                      color: MacosColors.controlAccentColor,
+                      color: AppColors.accent,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     'Add Bookmark',
-                    style: MacosTheme.of(context).typography.largeTitle,
+                    style: context.appTypography.largeTitle,
                   ),
                   const Spacer(),
-                  MacosIconButton(
-                    icon: const MacosIcon(CupertinoIcons.xmark),
+                  AppIconButton(
+                    icon: const Icon(CupertinoIcons.xmark),
                     onPressed: () => _handleClose(),
                   ),
                 ],
@@ -151,14 +151,14 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
               // Bottom buttons
               Row(
                 children: [
-                  PushButton(
-                    controlSize: ControlSize.large,
+                  AppButton(
+                    size: AppButtonSize.large,
                     secondary: true,
                     onPressed: _isSubmitting ? null : _handleClear,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const MacosIcon(CupertinoIcons.clear),
+                        const Icon(CupertinoIcons.clear),
                         const SizedBox(width: 6),
                         const Text('Clear'),
                       ],
@@ -167,15 +167,15 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                   const Spacer(),
                   Row(
                     children: [
-                      PushButton(
-                        controlSize: ControlSize.large,
+                      AppButton(
+                        size: AppButtonSize.large,
                         secondary: true,
                         onPressed: _isSubmitting ? null : _handleClose,
                         child: const Text('Cancel'),
                       ),
                       const SizedBox(width: 12),
-                      PushButton(
-                        controlSize: ControlSize.large,
+                      AppButton(
+                        size: AppButtonSize.large,
                         onPressed: _isSubmitting ? null : _handleSubmit,
                         child: _isSubmitting
                             ? Row(
@@ -184,7 +184,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                                   const SizedBox(
                                     width: 16,
                                     height: 16,
-                                    child: ProgressCircle(),
+                                    child: AppProgress(),
                                   ),
                                   const SizedBox(width: 8),
                                   const Text('Adding...'),
@@ -214,7 +214,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
-                color: MacosTheme.of(context).brightness == Brightness.dark
+                color: context.appBrightness == Brightness.dark
                     ? Colors.white
                     : Colors.black,
               ),
@@ -222,7 +222,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
             Text(
               ' *',
               style: TextStyle(
-                color: MacosColors.systemRedColor,
+                color: AppColors.systemRed,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -232,7 +232,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
         Row(
           children: [
             Expanded(
-              child: MacosTextField(
+              child: AppTextField(
                 controller: _urlController,
                 placeholder: 'https://example.com',
                 onChanged: (_) {
@@ -246,8 +246,8 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
             ),
             if (_aiSettingsService.isEnabled) ...[
               const SizedBox(width: 12),
-              PushButton(
-                controlSize: ControlSize.regular,
+              AppButton(
+                size: AppButtonSize.regular,
                 onPressed: _canUseAiMagic ? _handleAiAnalysis : null,
                 child: _isAnalyzing
                     ? Row(
@@ -256,7 +256,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                           const SizedBox(
                             width: 16,
                             height: 16,
-                            child: ProgressCircle(),
+                            child: AppProgress(),
                           ),
                           const SizedBox(width: 8),
                           const Text('Analyzing...'),
@@ -265,15 +265,10 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             CupertinoIcons.sparkles,
                             size: 16,
-                            color: _canUseAiMagic
-                                ? MacosColors.controlAccentColor
-                                : MacosTheme.of(context).brightness ==
-                                      Brightness.dark
-                                ? Colors.white38
-                                : Colors.black38,
+                            color: Colors.white,
                           ),
                           const SizedBox(width: 6),
                           const Text('Complete with AI'),
@@ -288,10 +283,10 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: MacosColors.systemRedColor.withValues(alpha: 0.1),
+              color: AppColors.systemRed.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: MacosColors.systemRedColor.withValues(alpha: 0.3),
+                color: AppColors.systemRed.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
@@ -299,7 +294,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                 Icon(
                   CupertinoIcons.exclamationmark_triangle_fill,
                   size: 16,
-                  color: MacosColors.systemRedColor,
+                  color: AppColors.systemRed,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -307,7 +302,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                     _aiError!,
                     style: TextStyle(
                       fontSize: 12,
-                      color: MacosColors.systemRedColor,
+                      color: AppColors.systemRed,
                     ),
                   ),
                 ),
@@ -337,7 +332,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
-                color: MacosTheme.of(context).brightness == Brightness.dark
+                color: context.appBrightness == Brightness.dark
                     ? Colors.white
                     : Colors.black,
               ),
@@ -346,14 +341,14 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
               Text(
                 ' *',
                 style: TextStyle(
-                  color: MacosColors.systemRedColor,
+                  color: AppColors.systemRed,
                   fontWeight: FontWeight.w600,
                 ),
               ),
           ],
         ),
         const SizedBox(height: 6),
-        MacosTextField(
+        AppTextField(
           controller: controller,
           placeholder: placeholder,
           maxLines: maxLines,
@@ -364,7 +359,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
             helperText,
             style: TextStyle(
               fontSize: 12,
-              color: MacosTheme.of(context).brightness == Brightness.dark
+              color: context.appBrightness == Brightness.dark
                   ? Colors.white70
                   : Colors.black54,
             ),
@@ -383,7 +378,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
           style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 14,
-            color: MacosTheme.of(context).brightness == Brightness.dark
+            color: context.appBrightness == Brightness.dark
                 ? Colors.white
                 : Colors.black,
           ),
@@ -427,14 +422,14 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
   }) {
     return Row(
       children: [
-        MacosSwitch(value: value, onChanged: onChanged),
+        AppSwitch(value: value, onChanged: onChanged),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             label,
             style: TextStyle(
               fontSize: 13,
-              color: MacosTheme.of(context).brightness == Brightness.dark
+              color: context.appBrightness == Brightness.dark
                   ? Colors.white.withValues(alpha: 0.87)
                   : Colors.black.withValues(alpha: 0.87),
             ),
@@ -468,7 +463,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
   }
 
   Future<void> _handleSubmit() async {
-    // Validate manually since MacosTextField doesn't support validator
+    // Validate manually since AppTextField doesn't support validator
     if (_urlController.text.trim().isEmpty ||
         _titleController.text.trim().isEmpty) {
       _showErrorDialog('Please fill in all required fields');

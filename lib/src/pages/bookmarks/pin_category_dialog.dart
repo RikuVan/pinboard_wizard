@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 
@@ -60,7 +60,7 @@ class _PinCategoryDialogState extends State<PinCategoryDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return MacosAlertDialog(
+    return AppAlertDialog(
       appIcon: const AppLogo.dialog(),
       title: Text(widget.isCurrentlyPinned ? 'Update Pin' : 'Pin Bookmark'),
       message: SizedBox(
@@ -72,7 +72,7 @@ class _PinCategoryDialogState extends State<PinCategoryDialog> {
             // Category toggle
             Row(
               children: [
-                MacosCheckbox(
+                AppCheckbox(
                   value: _useCategory,
                   onChanged: (value) => setState(() => _useCategory = value),
                 ),
@@ -84,7 +84,7 @@ class _PinCategoryDialogState extends State<PinCategoryDialog> {
             // Category input
             if (_useCategory) ...[
               const SizedBox(height: 12),
-              MacosTextField(
+              AppTextField(
                 controller: _categoryController,
                 placeholder: 'Enter category name',
                 maxLines: 1,
@@ -97,7 +97,7 @@ class _PinCategoryDialogState extends State<PinCategoryDialog> {
                   'Tap to use:',
                   style: TextStyle(
                     fontSize: 11,
-                    color: MacosColors.secondaryLabelColor.resolveFrom(context),
+                    color: AppColors.secondaryLabel.resolveFrom(context),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -116,12 +116,12 @@ class _PinCategoryDialogState extends State<PinCategoryDialog> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: MacosColors.controlAccentColor.withValues(
+                          color: AppColors.accent.withValues(
                             alpha: 0.1,
                           ),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: MacosColors.controlAccentColor.withValues(
+                            color: AppColors.accent.withValues(
                               alpha: 0.3,
                             ),
                             width: 0.5,
@@ -131,7 +131,7 @@ class _PinCategoryDialogState extends State<PinCategoryDialog> {
                           category,
                           style: TextStyle(
                             fontSize: 9,
-                            color: MacosColors.controlAccentColor,
+                            color: AppColors.accent,
                           ),
                         ),
                       ),
@@ -145,9 +145,9 @@ class _PinCategoryDialogState extends State<PinCategoryDialog> {
             if (widget.isCurrentlyPinned) ...[
               const SizedBox(height: 16),
               Center(
-                child: PushButton(
-                  controlSize: ControlSize.regular,
-                  color: MacosColors.systemRedColor,
+                child: AppButton(
+                  size: AppButtonSize.regular,
+                  color: AppColors.systemRed,
                   onPressed: () => Navigator.of(context).pop('unpin'),
                   child: const Text('Remove Pin'),
                 ),
@@ -156,13 +156,13 @@ class _PinCategoryDialogState extends State<PinCategoryDialog> {
           ],
         ),
       ),
-      primaryButton: PushButton(
-        controlSize: ControlSize.large,
+      primaryButton: AppButton(
+        size: AppButtonSize.large,
         onPressed: _handlePin,
         child: Text(widget.isCurrentlyPinned ? 'Update' : 'Pin'),
       ),
-      secondaryButton: PushButton(
-        controlSize: ControlSize.large,
+      secondaryButton: AppButton(
+        size: AppButtonSize.large,
         secondary: true,
         onPressed: () => Navigator.of(context).pop(),
         child: const Text('Cancel'),
@@ -176,14 +176,14 @@ class _PinCategoryDialogState extends State<PinCategoryDialog> {
     if (_useCategory) {
       final category = _categoryController.text.trim().toLowerCase();
       if (category.isEmpty) {
-        showMacosAlertDialog(
+        showAppAlertDialog(
           context: context,
-          builder: (_) => MacosAlertDialog(
+          builder: (_) => AppAlertDialog(
             appIcon: const AppLogo.dialog(),
             title: const Text('Category Required'),
             message: const Text('Please enter a category name.'),
-            primaryButton: PushButton(
-              controlSize: ControlSize.large,
+            primaryButton: AppButton(
+              size: AppButtonSize.large,
               child: const Text('OK'),
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -193,14 +193,14 @@ class _PinCategoryDialogState extends State<PinCategoryDialog> {
       }
 
       if (!RegExp(r'^[a-zA-Z0-9\-]+$').hasMatch(category)) {
-        showMacosAlertDialog(
+        showAppAlertDialog(
           context: context,
-          builder: (_) => MacosAlertDialog(
+          builder: (_) => AppAlertDialog(
             appIcon: const AppLogo.dialog(),
             title: const Text('Invalid Category'),
             message: const Text('Use only letters, numbers, and hyphens.'),
-            primaryButton: PushButton(
-              controlSize: ControlSize.large,
+            primaryButton: AppButton(
+              size: AppButtonSize.large,
               child: const Text('OK'),
               onPressed: () => Navigator.of(context).pop(),
             ),

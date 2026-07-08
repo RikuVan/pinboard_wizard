@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:pinboard_wizard/src/pages/pinned/pinned_bookmark_tile.dart';
 import 'package:pinboard_wizard/src/pages/pinned/state/pinned_cubit.dart';
 import 'package:pinboard_wizard/src/pages/pinned/state/pinned_state.dart';
@@ -62,9 +62,9 @@ class _PinnedPageState extends State<PinnedPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: MacosTheme.of(context).canvasColor,
+        color: AppColors.canvas.resolveFrom(context),
         border: Border(
-          bottom: BorderSide(color: MacosColors.separatorColor, width: 0.5),
+          bottom: BorderSide(color: AppColors.separator, width: 0.5),
         ),
       ),
       child: Row(
@@ -75,7 +75,7 @@ class _PinnedPageState extends State<PinnedPage> {
               Icon(
                 CupertinoIcons.pin_fill,
                 size: 24,
-                color: MacosColors.controlAccentColor,
+                color: AppColors.accent,
               ),
               const SizedBox(width: 12),
               Column(
@@ -87,7 +87,7 @@ class _PinnedPageState extends State<PinnedPage> {
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color:
-                          MacosTheme.of(context).brightness == Brightness.dark
+                          context.appBrightness == Brightness.dark
                           ? Colors.white
                           : Colors.black,
                     ),
@@ -96,7 +96,7 @@ class _PinnedPageState extends State<PinnedPage> {
                     'Quick access to your favorite links',
                     style: TextStyle(
                       fontSize: 13,
-                      color: MacosColors.secondaryLabelColor.resolveFrom(
+                      color: AppColors.secondaryLabel.resolveFrom(
                         context,
                       ),
                     ),
@@ -106,8 +106,8 @@ class _PinnedPageState extends State<PinnedPage> {
             ],
           ),
           if (state.isLoaded)
-            PushButton(
-              controlSize: ControlSize.regular,
+            AppButton(
+              size: AppButtonSize.regular,
               onPressed: () => _pinnedCubit.refresh(),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -115,8 +115,8 @@ class _PinnedPageState extends State<PinnedPage> {
                   Icon(
                     CupertinoIcons.refresh,
                     size: 16,
-                    color: MacosTheme.of(context).brightness == Brightness.dark
-                        ? MacosColors.secondaryLabelColor.resolveFrom(context)
+                    color: context.appBrightness == Brightness.dark
+                        ? AppColors.secondaryLabel.resolveFrom(context)
                         : Colors.white,
                   ),
                   const SizedBox(width: 4),
@@ -131,7 +131,7 @@ class _PinnedPageState extends State<PinnedPage> {
 
   Widget _buildContent(PinnedState state) {
     if (state.isLoading) {
-      return const Center(child: ProgressCircle());
+      return const Center(child: AppProgress());
     }
 
     if (state.hasError && state.isEmpty) {
@@ -158,7 +158,7 @@ class _PinnedPageState extends State<PinnedPage> {
             Icon(
               CupertinoIcons.exclamationmark_triangle,
               size: 48,
-              color: MacosColors.systemOrangeColor,
+              color: AppColors.systemOrange,
             ),
             const SizedBox(height: 16),
             Text(
@@ -166,7 +166,7 @@ class _PinnedPageState extends State<PinnedPage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: MacosTheme.of(context).brightness == Brightness.dark
+                color: context.appBrightness == Brightness.dark
                     ? Colors.white
                     : Colors.black,
               ),
@@ -179,13 +179,13 @@ class _PinnedPageState extends State<PinnedPage> {
                     'An error occurred while loading your pinned bookmarks',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: MacosColors.secondaryLabelColor.resolveFrom(context),
+                  color: AppColors.secondaryLabel.resolveFrom(context),
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            PushButton(
-              controlSize: ControlSize.large,
+            AppButton(
+              size: AppButtonSize.large,
               onPressed: () => _pinnedCubit.loadPinnedBookmarks(),
               child: const Text('Try Again'),
             ),
@@ -205,7 +205,7 @@ class _PinnedPageState extends State<PinnedPage> {
             Icon(
               CupertinoIcons.pin,
               size: 48,
-              color: MacosColors.tertiaryLabelColor.resolveFrom(context),
+              color: AppColors.tertiaryLabel.resolveFrom(context),
             ),
             const SizedBox(height: 16),
             Text(
@@ -213,7 +213,7 @@ class _PinnedPageState extends State<PinnedPage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: MacosTheme.of(context).brightness == Brightness.dark
+                color: context.appBrightness == Brightness.dark
                     ? Colors.white
                     : Colors.black,
               ),
@@ -225,14 +225,14 @@ class _PinnedPageState extends State<PinnedPage> {
                 'Pin your favorite bookmarks by adding the "pin" tag to them in the Bookmarks page.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: MacosColors.secondaryLabelColor.resolveFrom(context),
+                  color: AppColors.secondaryLabel.resolveFrom(context),
                   height: 1.4,
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            PushButton(
-              controlSize: ControlSize.large,
+            AppButton(
+              size: AppButtonSize.large,
               onPressed: () => _pinnedCubit.refresh(),
               child: const Text('Refresh'),
             ),
@@ -245,9 +245,9 @@ class _PinnedPageState extends State<PinnedPage> {
   Widget _buildFooterBar(PinnedState state) {
     return Container(
       decoration: BoxDecoration(
-        color: MacosTheme.of(context).canvasColor,
+        color: AppColors.canvas.resolveFrom(context),
         border: Border(
-          top: BorderSide(color: MacosColors.separatorColor, width: 0.5),
+          top: BorderSide(color: AppColors.separator, width: 0.5),
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -259,7 +259,7 @@ class _PinnedPageState extends State<PinnedPage> {
                 ? 'No pinned bookmarks'
                 : '${state.pinnedBookmarks.length} pinned bookmark${state.pinnedBookmarks.length == 1 ? '' : 's'}',
             style: TextStyle(
-              color: MacosTheme.of(context).brightness == Brightness.dark
+              color: context.appBrightness == Brightness.dark
                   ? Colors.white70
                   : Colors.black87,
               fontSize: 12,
@@ -269,12 +269,12 @@ class _PinnedPageState extends State<PinnedPage> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(width: 12, height: 12, child: ProgressCircle()),
+                const SizedBox(width: 12, height: 12, child: AppProgress()),
                 const SizedBox(width: 8),
                 Text(
                   'Refreshing...',
                   style: TextStyle(
-                    color: MacosTheme.of(context).brightness == Brightness.dark
+                    color: context.appBrightness == Brightness.dark
                         ? Colors.white54
                         : Colors.black54,
                     fontSize: 11,
@@ -304,7 +304,7 @@ class _PinnedPageState extends State<PinnedPage> {
         for (final group in groups) {
           // Check if this index is the group header
           if (currentIndex == index) {
-            return _buildGroupHeader(group.categoryName);
+            return _buildGroupHeader(context, group.categoryName);
           }
           currentIndex++;
 
@@ -344,28 +344,33 @@ class _PinnedPageState extends State<PinnedPage> {
     return count;
   }
 
-  Widget _buildGroupHeader(String categoryName) {
+  Widget _buildGroupHeader(BuildContext context, String categoryName) {
+    final color = AppColors.secondaryLabel.resolveFrom(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 8),
       child: Row(
         children: [
           Icon(
             _getCategoryIcon(categoryName),
-            size: 16,
-            color: MacosColors.controlAccentColor,
+            size: 13,
+            color: color,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Text(
-            categoryName,
+            categoryName.toUpperCase(),
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: MacosColors.controlAccentColor,
+              letterSpacing: 0.5,
+              color: color,
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Container(height: 0.5, color: MacosColors.separatorColor),
+            child: Container(
+              height: 0.5,
+              color: AppColors.separator.resolveFrom(context),
+            ),
           ),
         ],
       ),
@@ -396,14 +401,14 @@ class _PinnedPageState extends State<PinnedPage> {
   void _showErrorDialog(String errorMessage) {
     if (!mounted) return;
 
-    showMacosAlertDialog(
+    showAppAlertDialog(
       context: context,
-      builder: (_) => MacosAlertDialog(
+      builder: (_) => AppAlertDialog(
         appIcon: const AppLogo.dialog(),
         title: const Text('Error'),
         message: Text(errorMessage),
-        primaryButton: PushButton(
-          controlSize: ControlSize.large,
+        primaryButton: AppButton(
+          size: AppButtonSize.large,
           child: const Text('OK'),
           onPressed: () => Navigator.of(context).pop(),
         ),

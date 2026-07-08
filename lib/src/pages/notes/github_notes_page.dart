@@ -8,7 +8,7 @@ import 'package:flutter_highlight/flutter_highlight.dart';
 import 'package:flutter_highlight/themes/a11y-dark.dart';
 import 'package:flutter_highlight/themes/github.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
 import 'package:pinboard_wizard/src/database/notes_database.dart';
@@ -121,7 +121,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
   Widget build(BuildContext context) {
     // Show loading state while initializing
     if (_isInitializing) {
-      return const Center(child: ProgressCircle());
+      return const Center(child: AppProgress());
     }
 
     // Show error state if initialization failed
@@ -130,7 +130,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const MacosIcon(
+            const Icon(
               CupertinoIcons.exclamationmark_triangle,
               size: 48,
               color: Colors.orange,
@@ -152,8 +152,8 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
               ),
             ),
             const SizedBox(height: 24),
-            PushButton(
-              controlSize: ControlSize.large,
+            AppButton(
+              size: AppButtonSize.large,
               onPressed: () => _initializeCubit(),
               child: const Text('Retry'),
             ),
@@ -184,7 +184,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
         },
         builder: (context, state) {
           if (state.isLoading) {
-            return const Center(child: ProgressCircle());
+            return const Center(child: AppProgress());
           }
 
           if (state.hasError && state.isEmpty) {
@@ -222,7 +222,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const MacosIcon(
+            const Icon(
               CupertinoIcons.exclamationmark_triangle,
               size: 48,
               color: Colors.orange,
@@ -234,8 +234,8 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
               style: const TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 16),
-            PushButton(
-              controlSize: ControlSize.large,
+            AppButton(
+              size: AppButtonSize.large,
               onPressed: () => _notesCubit?.loadNotes(),
               child: const Text('Retry'),
             ),
@@ -252,7 +252,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const MacosIcon(
+            const Icon(
               CupertinoIcons.doc_text,
               size: 64,
               color: Colors.grey,
@@ -268,14 +268,14 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
               style: TextStyle(fontSize: 13, color: Colors.grey),
             ),
             const SizedBox(height: 24),
-            PushButton(
-              controlSize: ControlSize.large,
+            AppButton(
+              size: AppButtonSize.large,
               onPressed: () => _notesCubit?.startCreating(),
               child: const Text('Create Note'),
             ),
             const SizedBox(height: 12),
-            PushButton(
-              controlSize: ControlSize.large,
+            AppButton(
+              size: AppButtonSize.large,
               secondary: true,
               onPressed: () => _notesCubit?.sync(),
               child: const Text('Sync from GitHub'),
@@ -287,26 +287,26 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
   }
 
   Widget _buildToolbar(GitHubNotesState state) {
-    final isDark = MacosTheme.of(context).brightness == Brightness.dark;
+    final isDark = context.appBrightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: MacosTheme.of(context).canvasColor,
+        color: AppColors.canvas.resolveFrom(context),
         border: Border(
-          bottom: BorderSide(color: MacosColors.separatorColor, width: 0.5),
+          bottom: BorderSide(color: AppColors.separator, width: 0.5),
         ),
       ),
       child: Row(
         children: [
           // Create button
-          PushButton(
-            controlSize: ControlSize.regular,
+          AppButton(
+            size: AppButtonSize.regular,
             onPressed: () => _notesCubit?.startCreating(),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                MacosIcon(
+                Icon(
                   CupertinoIcons.add,
                   size: 16,
                   color: isDark ? Colors.white : Colors.white,
@@ -322,8 +322,8 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
           const SizedBox(width: 12),
 
           // Sync button
-          PushButton(
-            controlSize: ControlSize.regular,
+          AppButton(
+            size: AppButtonSize.regular,
             secondary: true,
             onPressed: state.isSyncing ? null : () => _notesCubit?.sync(),
             child: Row(
@@ -333,10 +333,10 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
                   const SizedBox(
                     width: 14,
                     height: 14,
-                    child: ProgressCircle(radius: 7),
+                    child: AppProgress(radius: 7),
                   )
                 else
-                  MacosIcon(
+                  Icon(
                     CupertinoIcons.arrow_2_circlepath,
                     size: 16,
                     color: isDark ? Colors.white70 : null,
@@ -384,7 +384,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
           // Conflict indicator
           if (state.hasConflicts) ...[
             const SizedBox(width: 12),
-            MacosTooltip(
+            AppTooltip(
               message:
                   '${state.conflictNotesCount} conflict${state.conflictNotesCount == 1 ? '' : 's'}',
               child: Container(
@@ -396,7 +396,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const MacosIcon(
+                    const Icon(
                       CupertinoIcons.exclamationmark_triangle_fill,
                       size: 14,
                       color: Colors.red,
@@ -420,7 +420,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
 
           // Search field
           Expanded(
-            child: MacosSearchField(
+            child: AppSearchField(
               controller: _searchController,
               placeholder: 'Search notes...',
               onChanged: (_) {}, // handled by controller listener
@@ -439,7 +439,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const MacosIcon(
+            const Icon(
               CupertinoIcons.search,
               size: 48,
               color: Colors.grey,
@@ -449,9 +449,9 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
               'No notes found',
               style: TextStyle(
                 fontSize: 14,
-                color: MacosTheme.of(context).brightness == Brightness.dark
+                color: context.appBrightness == Brightness.dark
                     ? Colors.white70
-                    : MacosColors.secondaryLabelColor,
+                    : AppColors.secondaryLabel,
               ),
             ),
             const SizedBox(height: 8),
@@ -459,7 +459,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
               'Try a different search term',
               style: TextStyle(
                 fontSize: 12,
-                color: MacosTheme.of(context).brightness == Brightness.dark
+                color: context.appBrightness == Brightness.dark
                     ? Colors.white54
                     : Colors.black54,
               ),
@@ -484,7 +484,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
   }
 
   Widget _buildNoteDetail(GitHubNotesState state) {
-    final isDark = MacosTheme.of(context).brightness == Brightness.dark;
+    final isDark = context.appBrightness == Brightness.dark;
 
     // Show new note form if creating
     if (state.isCreating) {
@@ -500,7 +500,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            MacosIcon(
+            Icon(
               CupertinoIcons.doc_text,
               size: 64,
               color: isDark ? Colors.white24 : Colors.black12,
@@ -512,7 +512,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
                 fontSize: 16,
                 color: isDark
                     ? Colors.white60
-                    : MacosColors.secondaryLabelColor,
+                    : AppColors.secondaryLabel,
               ),
             ),
           ],
@@ -578,8 +578,8 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
                   ],
                 ),
               ),
-              PushButton(
-                controlSize: ControlSize.regular,
+              AppButton(
+                size: AppButtonSize.regular,
                 onPressed: content == null
                     ? null
                     : () {
@@ -594,8 +594,8 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
                 child: const Text('Copy'),
               ),
               const SizedBox(width: 8),
-              PushButton(
-                controlSize: ControlSize.regular,
+              AppButton(
+                size: AppButtonSize.regular,
                 onPressed: note.markedForDeletion
                     ? null
                     : () => _notesCubit?.startEditing(),
@@ -617,7 +617,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        MacosIcon(
+                        Icon(
                           CupertinoIcons.arrow_uturn_left,
                           size: 14,
                           color: Colors.white,
@@ -640,13 +640,13 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: MacosColors.systemRedColor,
+                      color: AppColors.systemRed,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        MacosIcon(
+                        Icon(
                           CupertinoIcons.trash,
                           size: 14,
                           color: Colors.white,
@@ -671,7 +671,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
             color: Colors.orange.withValues(alpha: 0.1),
             child: Row(
               children: [
-                MacosIcon(
+                Icon(
                   CupertinoIcons.exclamationmark_triangle,
                   color: Colors.orange,
                   size: 16,
@@ -695,7 +695,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
         // Content
         Expanded(
           child: content == null
-              ? const Center(child: ProgressCircle())
+              ? const Center(child: AppProgress())
               : Markdown(
                   data: content,
                   selectable: true,
@@ -775,13 +775,13 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
   }
 
   Widget _buildFooterBar(GitHubNotesState state) {
-    final isDark = MacosTheme.of(context).brightness == Brightness.dark;
+    final isDark = context.appBrightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
-        color: MacosTheme.of(context).canvasColor,
+        color: AppColors.canvas.resolveFrom(context),
         border: Border(
-          top: BorderSide(color: MacosColors.separatorColor, width: 0.5),
+          top: BorderSide(color: AppColors.separator, width: 0.5),
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -811,14 +811,14 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
   void _showErrorDialog(String errorMessage) {
     if (!mounted) return;
 
-    showMacosAlertDialog(
+    showAppAlertDialog(
       context: context,
-      builder: (_) => MacosAlertDialog(
+      builder: (_) => AppAlertDialog(
         appIcon: const AppLogo.dialog(),
         title: const Text('Error'),
         message: Text(errorMessage),
-        primaryButton: PushButton(
-          controlSize: ControlSize.large,
+        primaryButton: AppButton(
+          size: AppButtonSize.large,
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('OK'),
         ),
@@ -877,7 +877,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
   }
 
   void _showConflictDialog(Note originalNote, Note conflictNote) {
-    showMacosAlertDialog(
+    showAppAlertDialog(
       context: context,
       builder: (_) => ConflictResolutionDialog(
         originalNote: originalNote,
@@ -895,17 +895,17 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
   }
 
   void _confirmDeleteNote(Note note) {
-    showMacosAlertDialog(
+    showAppAlertDialog(
       context: context,
-      builder: (_) => MacosAlertDialog(
+      builder: (_) => AppAlertDialog(
         appIcon: const AppLogo.dialog(),
         title: const Text('Delete Note?'),
         message: Text(
           'Are you sure you want to delete "${note.title ?? 'Untitled'}"? '
           'This will mark it for deletion and remove it from GitHub on next sync.',
         ),
-        primaryButton: PushButton(
-          controlSize: ControlSize.large,
+        primaryButton: AppButton(
+          size: AppButtonSize.large,
           secondary: false,
           onPressed: () {
             Navigator.of(context).pop();
@@ -913,8 +913,8 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
           },
           child: const Text('Delete'),
         ),
-        secondaryButton: PushButton(
-          controlSize: ControlSize.large,
+        secondaryButton: AppButton(
+          size: AppButtonSize.large,
           secondary: true,
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),

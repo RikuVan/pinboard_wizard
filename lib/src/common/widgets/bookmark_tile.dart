@@ -1,10 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
-import 'package:macos_ui/macos_ui.dart';
-import 'package:pinboard_wizard/src/common/extensions/theme_extensions.dart';
 import 'package:pinboard_wizard/src/common/widgets/dialogs.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class BookmarkTile extends StatelessWidget {
@@ -45,21 +44,30 @@ class BookmarkTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MacosTheme.brightnessOf(context);
+    final brightness = context.appBrightness;
     final backgroundColor = brightness == Brightness.dark
         ? const Color(0xFF2D2D30)
-        : const Color(0xFFFAFAFA);
+        : const Color(0xFFFFFFFF);
     final borderColor = brightness == Brightness.dark
-        ? const Color(0xFF464649)
-        : const Color(0xFFE5E5E5);
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.black.withValues(alpha: 0.06);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Container(
         decoration: BoxDecoration(
           color: backgroundColor,
-          border: Border.all(color: borderColor, width: 0.5),
-          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: borderColor, width: 1),
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(
+                alpha: brightness == Brightness.dark ? 0.28 : 0.06,
+              ),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -77,10 +85,10 @@ class BookmarkTile extends StatelessWidget {
                         _HoverableText(
                           text: post.description,
                           onTap: () => _launchUrl(context, post.href),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: CupertinoColors.activeBlue,
+                            color: AppColors.linkText.resolveFrom(context),
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -102,21 +110,18 @@ class BookmarkTile extends StatelessWidget {
                             spacing: 8,
                             runSpacing: 4,
                             children: post.tagList.map((tag) {
-                              final theme = MacosTheme.of(context);
                               return Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: theme.brightness == Brightness.dark
-                                      ? MacosColors
-                                            .controlBackgroundColor
-                                            .darkColor
-                                      : MacosColors.controlBackgroundColor,
+                                  color: brightness == Brightness.dark
+                                      ? AppColors.controlBackground.darkColor
+                                      : AppColors.controlBackground,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: MacosColors.separatorColor,
+                                    color: AppColors.separator,
                                     width: 0.5,
                                   ),
                                 ),
@@ -124,7 +129,7 @@ class BookmarkTile extends StatelessWidget {
                                   tag,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: theme.brightness == Brightness.dark
+                                    color: brightness == Brightness.dark
                                         ? Colors.white.withValues(alpha: 0.87)
                                         : Colors.black.withValues(alpha: 0.87),
                                     fontWeight: FontWeight.normal,
@@ -140,14 +145,15 @@ class BookmarkTile extends StatelessWidget {
                             style: {
                               "body": Style(
                                 fontSize: FontSize(13),
-                                color: MacosColors.secondaryLabelColor
-                                    .resolveFrom(context),
+                                color: AppColors.secondaryLabel.resolveFrom(
+                                  context,
+                                ),
                                 margin: Margins.zero,
                                 padding: HtmlPaddings.zero,
                               ),
                               "p": Style(margin: Margins.only(bottom: 8)),
                               "a": Style(
-                                color: CupertinoColors.activeBlue,
+                                color: AppColors.linkText.resolveFrom(context),
                                 textDecoration: TextDecoration.none,
                               ),
                               "blockquote": Style(
@@ -155,13 +161,13 @@ class BookmarkTile extends StatelessWidget {
                                 padding: HtmlPaddings.only(left: 12),
                                 border: Border(
                                   left: BorderSide(
-                                    color: MacosColors.tertiaryLabelColor
-                                        .resolveFrom(context),
+                                    color: AppColors.tertiaryLabel.resolveFrom(
+                                      context,
+                                    ),
                                     width: 3,
                                   ),
                                 ),
-                                backgroundColor: MacosColors
-                                    .controlBackgroundColor
+                                backgroundColor: AppColors.controlBackground
                                     .resolveFrom(context)
                                     .withValues(alpha: 0.3),
                               ),
@@ -178,9 +184,7 @@ class BookmarkTile extends StatelessWidget {
                           post.domain,
                           style: TextStyle(
                             fontSize: 11,
-                            color: MacosColors.tertiaryLabelColor.resolveFrom(
-                              context,
-                            ),
+                            color: AppColors.tertiaryLabel.resolveFrom(context),
                           ),
                         ),
                       ],
@@ -204,14 +208,15 @@ class BookmarkTile extends StatelessWidget {
                                 Icon(
                                   CupertinoIcons.pin_fill,
                                   size: 14,
-                                  color: MacosColors.secondaryLabelColor
-                                      .resolveFrom(context),
+                                  color: AppColors.secondaryLabel.resolveFrom(
+                                    context,
+                                  ),
                                 ),
                                 const SizedBox(width: 4),
-                                MacosSwitch(
+                                AppSwitch(
                                   value: post.isPinned,
                                   onChanged: (_) => onPin?.call(),
-                                  size: ControlSize.mini,
+                                  mini: true,
                                 ),
                               ],
                             ),
@@ -220,17 +225,18 @@ class BookmarkTile extends StatelessWidget {
                             Container(
                               decoration: BoxDecoration(
                                 border: Border.all(
-                                  color: MacosColors.separatorColor,
+                                  color: AppColors.separator,
                                   width: 1,
                                 ),
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: MacosIconButton(
-                                icon: MacosIcon(
+                              child: AppIconButton(
+                                icon: Icon(
                                   CupertinoIcons.pencil,
                                   size: 16,
-                                  color: MacosColors.secondaryLabelColor
-                                      .resolveFrom(context),
+                                  color: AppColors.secondaryLabel.resolveFrom(
+                                    context,
+                                  ),
                                 ),
                                 onPressed: onUpdate,
                               ),
@@ -239,12 +245,13 @@ class BookmarkTile extends StatelessWidget {
                           if (onDelete != null) ...[
                             if (onUpdate != null || onPin != null)
                               const SizedBox(width: 8),
-                            MacosIconButton(
-                              icon: MacosIcon(
+                            AppIconButton(
+                              icon: Icon(
                                 CupertinoIcons.trash,
                                 size: 16,
-                                color: MacosColors.secondaryLabelColor
-                                    .resolveFrom(context),
+                                color: AppColors.secondaryLabel.resolveFrom(
+                                  context,
+                                ),
                               ),
                               onPressed: () => _showDeleteConfirmation(context),
                             ),
@@ -266,18 +273,14 @@ class BookmarkTile extends StatelessWidget {
                       Icon(
                         CupertinoIcons.clock,
                         size: 14,
-                        color: MacosColors.secondaryLabelColor.resolveFrom(
-                          context,
-                        ),
+                        color: AppColors.secondaryLabel.resolveFrom(context),
                       ),
                     if (post.toread && !post.shared) const SizedBox(width: 4),
                     if (!post.shared)
                       Icon(
                         CupertinoIcons.lock_fill,
                         size: 14,
-                        color: MacosColors.secondaryLabelColor.resolveFrom(
-                          context,
-                        ),
+                        color: AppColors.secondaryLabel.resolveFrom(context),
                       ),
                   ],
                 ),
@@ -326,7 +329,9 @@ class _HoverableTextState extends State<_HoverableText> {
             decoration: isHovering
                 ? TextDecoration.underline
                 : TextDecoration.none,
-            color: isHovering ? CupertinoColors.activeBlue : widget.style.color,
+            color: isHovering
+                ? AppColors.linkText.resolveFrom(context)
+                : widget.style.color,
           ),
           maxLines: widget.maxLines,
           overflow: widget.overflow,

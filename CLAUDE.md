@@ -1,6 +1,6 @@
 # UI
 
-- By default use the mac_ui for flutter library for widgets, colors and fonts. You can find more information about the mac_ui in the [mac_ui repo summary](docs/macos_ui.txt) and the docs [mac_ui documentation](https://pub.dev/packages/macos_ui).
+- Use the local Liquid Glass facade at `lib/src/ui/` (barrel `package:pinboard_wizard/src/ui/ui.dart`) for widgets, colors, and typography. It wraps `liquid_glass_widgets` and provides local shims (window shell, sidebar, tabs, radio, checkbox, tooltip, alert dialog, sheet) for controls the library lacks. Glass is for chrome; content lists stay opaque.
 
 # State Management
 

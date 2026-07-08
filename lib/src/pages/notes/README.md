@@ -339,10 +339,10 @@ Error types:
 
 ### UI Theming
 
-The UI uses `macos_ui` components and respects system theme:
+The UI uses the Liquid Glass facade (`lib/src/ui/`) and respects system theme:
 
 ```dart
-final isDark = MacosTheme.of(context).brightness == Brightness.dark;
+final isDark = context.isDarkMode;
 ```
 
 All colors, fonts, and spacing use theme values.

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_cubit.dart';
 import 'package:pinboard_wizard/src/pages/bookmarks/state/bookmarks_state.dart';
 
@@ -14,9 +14,9 @@ class TagsPanel extends StatelessWidget {
       builder: (context, state) {
         return Container(
           decoration: BoxDecoration(
-            color: MacosTheme.of(context).canvasColor,
+            color: context.canvasColor,
             border: Border(
-              left: BorderSide(color: MacosColors.separatorColor, width: 0.5),
+              left: BorderSide(color: AppColors.separator, width: 0.5),
             ),
           ),
           child: Column(
@@ -38,7 +38,7 @@ class TagsPanel extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: MacosColors.separatorColor, width: 0.5),
+          bottom: BorderSide(color: AppColors.separator, width: 0.5),
         ),
       ),
       child: Row(
@@ -48,25 +48,24 @@ class TagsPanel extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: MacosTheme.of(context).brightness == Brightness.dark
+              color: context.appBrightness == Brightness.dark
                   ? Colors.white
                   : Colors.black,
             ),
           ),
           const Spacer(),
           if (state.hasTagsSelected)
-            MacosIconButton(
-              icon: const MacosIcon(CupertinoIcons.clear, size: 16),
+            AppIconButton(
+              icon: const Icon(CupertinoIcons.clear, size: 16),
               onPressed: () =>
                   context.read<BookmarksCubit>().clearSelectedTags(),
               backgroundColor: Colors.transparent,
-              padding: EdgeInsets.zero,
             ),
           Text(
             '${state.availableTags.length}',
             style: TextStyle(
               fontSize: 12,
-              color: MacosTheme.of(context).brightness == Brightness.dark
+              color: context.appBrightness == Brightness.dark
                   ? Colors.white70
                   : Colors.black54,
             ),
@@ -84,7 +83,7 @@ class TagsPanel extends StatelessWidget {
           child: Text(
             'No tags available',
             style: TextStyle(
-              color: MacosColors.secondaryLabelColor,
+              color: AppColors.secondaryLabel,
               fontSize: 13,
             ),
           ),
@@ -106,8 +105,6 @@ class TagsPanel extends StatelessWidget {
   }
 
   Widget _buildTagChip(BuildContext context, String tag, bool isSelected) {
-    final theme = MacosTheme.of(context);
-
     return GestureDetector(
       onTap: () => context.read<BookmarksCubit>().toggleTag(tag),
       child: Container(
@@ -117,15 +114,15 @@ class TagsPanel extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: isSelected
-              ? MacosColors.controlAccentColor
-              : (theme.brightness == Brightness.dark
-                    ? MacosColors.controlBackgroundColor.darkColor
-                    : MacosColors.controlBackgroundColor),
+              ? AppColors.accent
+              : (context.appBrightness == Brightness.dark
+                    ? AppColors.controlBackground.darkColor
+                    : AppColors.controlBackground),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
-                ? MacosColors.controlAccentColor
-                : MacosColors.separatorColor,
+                ? AppColors.accent
+                : AppColors.separator,
             width: 0.5,
           ),
         ),
@@ -139,7 +136,7 @@ class TagsPanel extends StatelessWidget {
                   fontSize: 12,
                   color: isSelected
                       ? Colors.white
-                      : (theme.brightness == Brightness.dark
+                      : (context.appBrightness == Brightness.dark
                             ? Colors.white.withValues(alpha: 0.87)
                             : Colors.black.withValues(alpha: 0.87)),
                   fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
@@ -163,7 +160,7 @@ class TagsPanel extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: MacosColors.separatorColor, width: 0.5),
+          top: BorderSide(color: AppColors.separator, width: 0.5),
         ),
       ),
       child: Column(
@@ -177,7 +174,7 @@ class TagsPanel extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: MacosTheme.of(context).brightness == Brightness.dark
+                  color: context.appBrightness == Brightness.dark
                       ? Colors.white70
                       : Colors.black54,
                 ),
@@ -187,7 +184,7 @@ class TagsPanel extends StatelessWidget {
                 '${state.selectedTags.length}',
                 style: TextStyle(
                   fontSize: 11,
-                  color: MacosTheme.of(context).brightness == Brightness.dark
+                  color: context.appBrightness == Brightness.dark
                       ? Colors.white54
                       : Colors.black45,
                 ),
@@ -202,7 +199,7 @@ class TagsPanel extends StatelessWidget {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: MacosColors.controlAccentColor.withValues(alpha: 0.8),
+                  color: AppColors.accent.withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(

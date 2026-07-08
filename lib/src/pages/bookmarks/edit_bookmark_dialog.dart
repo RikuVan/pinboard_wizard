@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:pinboard_wizard/src/ai/ai_bookmark_service.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
@@ -64,7 +64,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return MacosSheet(
+    return AppSheet(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: SizedBox(
@@ -82,17 +82,17 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                     child: Icon(
                       CupertinoIcons.pencil,
                       size: 24,
-                      color: MacosColors.controlAccentColor,
+                      color: AppColors.accent,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     'Edit Bookmark',
-                    style: MacosTheme.of(context).typography.largeTitle,
+                    style: context.appTypography.largeTitle,
                   ),
                   const Spacer(),
-                  MacosIconButton(
-                    icon: const MacosIcon(CupertinoIcons.xmark),
+                  AppIconButton(
+                    icon: const Icon(CupertinoIcons.xmark),
                     onPressed: () => _handleClose(),
                   ),
                 ],
@@ -142,14 +142,14 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
               // Bottom buttons
               Row(
                 children: [
-                  PushButton(
-                    controlSize: ControlSize.large,
+                  AppButton(
+                    size: AppButtonSize.large,
                     secondary: true,
                     onPressed: _isSubmitting ? null : _handleClear,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const MacosIcon(CupertinoIcons.clear),
+                        const Icon(CupertinoIcons.clear),
                         const SizedBox(width: 6),
                         const Text('Clear'),
                       ],
@@ -158,15 +158,15 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                   const Spacer(),
                   Row(
                     children: [
-                      PushButton(
-                        controlSize: ControlSize.large,
+                      AppButton(
+                        size: AppButtonSize.large,
                         secondary: true,
                         onPressed: _isSubmitting ? null : _handleClose,
                         child: const Text('Cancel'),
                       ),
                       const SizedBox(width: 12),
-                      PushButton(
-                        controlSize: ControlSize.large,
+                      AppButton(
+                        size: AppButtonSize.large,
                         onPressed: _isSubmitting ? null : _handleSubmit,
                         child: _isSubmitting
                             ? Row(
@@ -175,7 +175,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                                   const SizedBox(
                                     width: 16,
                                     height: 16,
-                                    child: ProgressCircle(),
+                                    child: AppProgress(),
                                   ),
                                   const SizedBox(width: 8),
                                   const Text('Updating...'),
@@ -205,7 +205,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
-                color: MacosTheme.of(context).brightness == Brightness.dark
+                color: context.appBrightness == Brightness.dark
                     ? Colors.white
                     : Colors.black,
               ),
@@ -213,7 +213,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
             Text(
               ' *',
               style: TextStyle(
-                color: MacosColors.systemRedColor,
+                color: AppColors.systemRed,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -223,7 +223,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
         Row(
           children: [
             Expanded(
-              child: MacosTextField(
+              child: AppTextField(
                 controller: _urlController,
                 placeholder: 'https://example.com',
                 onChanged: (_) {
@@ -235,8 +235,8 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
             ),
             if (_aiSettingsService.isEnabled) ...[
               const SizedBox(width: 12),
-              PushButton(
-                controlSize: ControlSize.regular,
+              AppButton(
+                size: AppButtonSize.regular,
                 onPressed: _canUseAiMagic ? _handleAiAnalysis : null,
                 child: _isAnalyzing
                     ? Row(
@@ -245,7 +245,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                           const SizedBox(
                             width: 16,
                             height: 16,
-                            child: ProgressCircle(),
+                            child: AppProgress(),
                           ),
                           const SizedBox(width: 8),
                           const Text('Analyzing...'),
@@ -254,15 +254,10 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             CupertinoIcons.sparkles,
                             size: 16,
-                            color: _canUseAiMagic
-                                ? MacosColors.controlAccentColor
-                                : MacosTheme.of(context).brightness ==
-                                      Brightness.dark
-                                ? Colors.white38
-                                : Colors.black38,
+                            color: Colors.white,
                           ),
                           const SizedBox(width: 6),
                           const Text('Complete with AI'),
@@ -277,10 +272,10 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: MacosColors.systemRedColor.withValues(alpha: 0.1),
+              color: AppColors.systemRed.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: MacosColors.systemRedColor.withValues(alpha: 0.3),
+                color: AppColors.systemRed.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
@@ -288,7 +283,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                 Icon(
                   CupertinoIcons.exclamationmark_triangle_fill,
                   size: 16,
-                  color: MacosColors.systemRedColor,
+                  color: AppColors.systemRed,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -296,7 +291,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                     _aiError!,
                     style: TextStyle(
                       fontSize: 12,
-                      color: MacosColors.systemRedColor,
+                      color: AppColors.systemRed,
                     ),
                   ),
                 ),
@@ -326,7 +321,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
-                color: MacosTheme.of(context).brightness == Brightness.dark
+                color: context.appBrightness == Brightness.dark
                     ? Colors.white
                     : Colors.black,
               ),
@@ -335,14 +330,14 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
               Text(
                 ' *',
                 style: TextStyle(
-                  color: MacosColors.systemRedColor,
+                  color: AppColors.systemRed,
                   fontWeight: FontWeight.w600,
                 ),
               ),
           ],
         ),
         const SizedBox(height: 6),
-        MacosTextField(
+        AppTextField(
           controller: controller,
           placeholder: placeholder,
           maxLines: maxLines,
@@ -353,7 +348,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
             helperText,
             style: TextStyle(
               fontSize: 12,
-              color: MacosTheme.of(context).brightness == Brightness.dark
+              color: context.appBrightness == Brightness.dark
                   ? Colors.white70
                   : Colors.black54,
             ),
@@ -372,7 +367,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
           style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 14,
-            color: MacosTheme.of(context).brightness == Brightness.dark
+            color: context.appBrightness == Brightness.dark
                 ? Colors.white
                 : Colors.black,
           ),
@@ -411,14 +406,14 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
   }) {
     return Row(
       children: [
-        MacosSwitch(value: value, onChanged: onChanged),
+        AppSwitch(value: value, onChanged: onChanged),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             label,
             style: TextStyle(
               fontSize: 13,
-              color: MacosTheme.of(context).brightness == Brightness.dark
+              color: context.appBrightness == Brightness.dark
                   ? Colors.white.withValues(alpha: 0.87)
                   : Colors.black.withValues(alpha: 0.87),
             ),
@@ -452,7 +447,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
   }
 
   Future<void> _handleSubmit() async {
-    // Validate manually since MacosTextField doesn't support validator
+    // Validate manually since AppTextField doesn't support validator
     if (_urlController.text.trim().isEmpty ||
         _titleController.text.trim().isEmpty) {
       _showErrorDialog('Please fill in all required fields');

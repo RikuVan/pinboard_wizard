@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
 import 'package:pinboard_wizard/src/database/notes_database.dart';
 
@@ -37,13 +37,13 @@ class ConflictResolutionDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = MacosTheme.of(context).brightness == Brightness.dark;
+    final isDark = context.appBrightness == Brightness.dark;
 
-    return MacosAlertDialog(
+    return AppAlertDialog(
       appIcon: const AppLogo.dialog(),
       title: Row(
         children: [
-          MacosIcon(
+          Icon(
             CupertinoIcons.exclamationmark_triangle,
             color: Colors.orange,
             size: 20,
@@ -78,16 +78,16 @@ class ConflictResolutionDialog extends StatelessWidget {
           ],
         ),
       ),
-      primaryButton: PushButton(
-        controlSize: ControlSize.large,
+      primaryButton: AppButton(
+        size: AppButtonSize.large,
         onPressed: () {
           Navigator.of(context).pop();
           onViewBoth();
         },
         child: const Text('View Both Files'),
       ),
-      secondaryButton: PushButton(
-        controlSize: ControlSize.large,
+      secondaryButton: AppButton(
+        size: AppButtonSize.large,
         secondary: true,
         onPressed: () {
           Navigator.of(context).pop();
@@ -95,8 +95,8 @@ class ConflictResolutionDialog extends StatelessWidget {
         },
         child: const Text('Keep Original'),
       ),
-      suppress: PushButton(
-        controlSize: ControlSize.large,
+      suppress: AppButton(
+        size: AppButtonSize.large,
         secondary: true,
         onPressed: () {
           Navigator.of(context).pop();
@@ -164,25 +164,25 @@ class ConflictResolutionDialog extends StatelessWidget {
   }
 
   void _showKeepOriginalConfirmation(BuildContext context) {
-    showMacosAlertDialog(
+    showAppAlertDialog(
       context: context,
-      builder: (_) => MacosAlertDialog(
+      builder: (_) => AppAlertDialog(
         appIcon: const AppLogo.dialog(),
         title: const Text('Discard Your Changes?'),
         message: const Text(
           'This will delete your local version and keep the version from GitHub. '
           'Your changes will be lost.',
         ),
-        primaryButton: PushButton(
-          controlSize: ControlSize.large,
+        primaryButton: AppButton(
+          size: AppButtonSize.large,
           onPressed: () {
             Navigator.of(context).pop();
             onKeepOriginal();
           },
           child: const Text('Discard My Changes'),
         ),
-        secondaryButton: PushButton(
-          controlSize: ControlSize.large,
+        secondaryButton: AppButton(
+          size: AppButtonSize.large,
           secondary: true,
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
@@ -192,25 +192,25 @@ class ConflictResolutionDialog extends StatelessWidget {
   }
 
   void _showKeepYoursConfirmation(BuildContext context) {
-    showMacosAlertDialog(
+    showAppAlertDialog(
       context: context,
-      builder: (_) => MacosAlertDialog(
+      builder: (_) => AppAlertDialog(
         appIcon: const AppLogo.dialog(),
         title: const Text('Replace Original?'),
         message: const Text(
           'This will replace the GitHub version with your local changes. '
           'The conflict file will be deleted and your version will be synced to GitHub.',
         ),
-        primaryButton: PushButton(
-          controlSize: ControlSize.large,
+        primaryButton: AppButton(
+          size: AppButtonSize.large,
           onPressed: () {
             Navigator.of(context).pop();
             onKeepYours();
           },
           child: const Text('Use My Version'),
         ),
-        secondaryButton: PushButton(
-          controlSize: ControlSize.large,
+        secondaryButton: AppButton(
+          size: AppButtonSize.large,
           secondary: true,
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),

@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
-import 'package:macos_ui/macos_ui.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
+import 'package:pinboard_wizard/src/ui/ui.dart';
 
 /// Common dialog utilities to eliminate duplicate dialog code throughout the app
 class CommonDialogs {
@@ -16,22 +16,22 @@ class CommonDialogs {
   }) async {
     if (!context.mounted) return;
 
-    return showMacosAlertDialog(
+    return showAppAlertDialog(
       context: context,
-      builder: (_) => MacosAlertDialog(
+      builder: (_) => AppAlertDialog(
         appIcon: SizedBox(
           width: 64,
           height: 64,
           child: Icon(
             CupertinoIcons.exclamationmark_triangle_fill,
             size: 64,
-            color: MacosColors.systemOrangeColor,
+            color: AppColors.systemOrange,
           ),
         ),
         title: Text(title),
         message: Text(message),
-        primaryButton: PushButton(
-          controlSize: ControlSize.large,
+        primaryButton: AppButton(
+          size: AppButtonSize.large,
           onPressed: onPressed ?? () => Navigator.of(context).pop(),
           child: Text(buttonText),
         ),
@@ -52,9 +52,9 @@ class CommonDialogs {
   }) async {
     if (!context.mounted) return false;
 
-    final result = await showMacosAlertDialog<bool>(
+    final result = await showAppAlertDialog<bool>(
       context: context,
-      builder: (_) => MacosAlertDialog(
+      builder: (_) => AppAlertDialog(
         appIcon: icon != null
             ? SizedBox(
                 width: 64,
@@ -62,19 +62,19 @@ class CommonDialogs {
                 child: Icon(
                   icon,
                   size: 64,
-                  color: iconColor ?? MacosColors.systemOrangeColor,
+                  color: iconColor ?? AppColors.systemOrange,
                 ),
               )
             : const AppLogo.dialog(),
         title: Text(title),
         message: Text(message),
-        primaryButton: PushButton(
-          controlSize: ControlSize.large,
+        primaryButton: AppButton(
+          size: AppButtonSize.large,
           onPressed: () => Navigator.of(context).pop(true),
           child: Text(confirmText),
         ),
-        secondaryButton: PushButton(
-          controlSize: ControlSize.large,
+        secondaryButton: AppButton(
+          size: AppButtonSize.large,
           secondary: true,
           onPressed: () => Navigator.of(context).pop(false),
           child: Text(cancelText),
@@ -102,7 +102,7 @@ class CommonDialogs {
       confirmText: 'Delete',
       cancelText: 'Cancel',
       icon: CupertinoIcons.trash_fill,
-      iconColor: MacosColors.systemRedColor,
+      iconColor: AppColors.systemRed,
       isDestructive: true,
     );
   }
@@ -117,14 +117,14 @@ class CommonDialogs {
   }) async {
     if (!context.mounted) return;
 
-    return showMacosAlertDialog(
+    return showAppAlertDialog(
       context: context,
-      builder: (_) => MacosAlertDialog(
+      builder: (_) => AppAlertDialog(
         appIcon: const AppLogo.dialog(),
         title: Text(title),
         message: Text(message),
-        primaryButton: PushButton(
-          controlSize: ControlSize.large,
+        primaryButton: AppButton(
+          size: AppButtonSize.large,
           onPressed: onPressed ?? () => Navigator.of(context).pop(),
           child: Text(buttonText),
         ),
@@ -142,22 +142,22 @@ class CommonDialogs {
   }) async {
     if (!context.mounted) return;
 
-    return showMacosAlertDialog(
+    return showAppAlertDialog(
       context: context,
-      builder: (_) => MacosAlertDialog(
+      builder: (_) => AppAlertDialog(
         appIcon: SizedBox(
           width: 64,
           height: 64,
           child: Icon(
             CupertinoIcons.check_mark_circled_solid,
             size: 64,
-            color: MacosColors.systemGreenColor,
+            color: AppColors.systemGreen,
           ),
         ),
         title: Text(title),
         message: Text(message),
-        primaryButton: PushButton(
-          controlSize: ControlSize.large,
+        primaryButton: AppButton(
+          size: AppButtonSize.large,
           onPressed: onPressed ?? () => Navigator.of(context).pop(),
           child: Text(buttonText),
         ),
