@@ -8,8 +8,15 @@ class AppSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.9;
     return Center(
-      child: GlassContainer(quality: GlassQuality.standard, child: child),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 640, maxHeight: maxHeight),
+        child: Material(
+          type: MaterialType.transparency,
+          child: GlassContainer(quality: GlassQuality.standard, child: child),
+        ),
+      ),
     );
   }
 }

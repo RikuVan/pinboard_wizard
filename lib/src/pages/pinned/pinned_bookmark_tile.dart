@@ -155,14 +155,14 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                           .map((tag) {
                             return Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
+                                horizontal: 8,
+                                vertical: 3,
                               ),
                               decoration: BoxDecoration(
                                 color: brightness == Brightness.dark
                                     ? AppColors.controlBackground.darkColor
                                     : AppColors.controlBackground,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: AppColors.separator.withValues(
                                     alpha: 0.3,
@@ -173,7 +173,7 @@ class _PinnedBookmarkTileState extends State<PinnedBookmarkTile> {
                               child: Text(
                                 tag,
                                 style: TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 11,
                                   color: AppColors.systemPurple,
                                   fontWeight: FontWeight.w500,
                                 ),

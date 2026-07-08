@@ -71,6 +71,7 @@ class _SidebarRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = AppColors.accent.resolveFrom(context);
     final labelColor = AppColors.label.resolveFrom(context);
+    final fg = selected ? Colors.white : labelColor;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Material(
@@ -79,20 +80,23 @@ class _SidebarRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
             decoration: BoxDecoration(
-              color: selected
-                  ? accent.withValues(alpha: 0.18)
-                  : Colors.transparent,
+              color: selected ? accent : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               children: [
-                Icon(item.icon,
-                    size: 18, color: selected ? accent : labelColor),
+                Icon(item.icon, size: 20, color: fg),
                 const SizedBox(width: 10),
-                Text(item.label,
-                    style: TextStyle(fontSize: 13, color: labelColor)),
+                Text(
+                  item.label,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    color: fg,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
               ],
             ),
           ),

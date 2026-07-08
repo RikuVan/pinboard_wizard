@@ -304,7 +304,7 @@ class _PinnedPageState extends State<PinnedPage> {
         for (final group in groups) {
           // Check if this index is the group header
           if (currentIndex == index) {
-            return _buildGroupHeader(group.categoryName);
+            return _buildGroupHeader(context, group.categoryName);
           }
           currentIndex++;
 
@@ -344,28 +344,33 @@ class _PinnedPageState extends State<PinnedPage> {
     return count;
   }
 
-  Widget _buildGroupHeader(String categoryName) {
+  Widget _buildGroupHeader(BuildContext context, String categoryName) {
+    final color = AppColors.secondaryLabel.resolveFrom(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 8),
       child: Row(
         children: [
           Icon(
             _getCategoryIcon(categoryName),
-            size: 16,
-            color: AppColors.accent,
+            size: 13,
+            color: color,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Text(
-            categoryName,
+            categoryName.toUpperCase(),
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: AppColors.accent,
+              letterSpacing: 0.5,
+              color: color,
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Container(height: 0.5, color: AppColors.separator),
+            child: Container(
+              height: 0.5,
+              color: AppColors.separator.resolveFrom(context),
+            ),
           ),
         ],
       ),
