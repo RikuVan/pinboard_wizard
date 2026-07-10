@@ -34,51 +34,55 @@ class _WallpaperStubBundle extends CachingAssetBundle {
 }
 
 Widget _host(Widget child) => DefaultAssetBundle(
-      bundle: _WallpaperStubBundle(),
-      child: LiquidGlassWidgets.wrap(
-        child: MaterialApp(
-          theme: appLightTheme(),
-          home: Scaffold(body: child),
-        ),
-      ),
-    );
+  bundle: _WallpaperStubBundle(),
+  child: LiquidGlassWidgets.wrap(
+    child: MaterialApp(
+      theme: appLightTheme(),
+      home: Scaffold(body: child),
+    ),
+  ),
+);
 
 void main() {
   testWidgets('facade controls build', (tester) async {
-    await tester.pumpWidget(_host(
-      Column(
-        children: [
-          AppButton(onPressed: () {}, child: const Text('Go')),
-          AppButton(onPressed: null, child: const Text('Off')),
-          AppIconButton(icon: const Icon(Icons.add), onPressed: () {}),
-          AppSwitch(value: true, onChanged: (_) {}),
-          AppCheckbox(value: true, onChanged: (_) {}),
-          AppRadio<int>(value: 1, groupValue: 1, onChanged: (_) {}),
-          const AppProgress(),
-          const AppTooltip(message: 'hi', child: Icon(Icons.info)),
-          const AppListTile(title: Text('Tile')),
-        ],
+    await tester.pumpWidget(
+      _host(
+        Column(
+          children: [
+            AppButton(onPressed: () {}, child: const Text('Go')),
+            AppButton(onPressed: null, child: const Text('Off')),
+            AppIconButton(icon: const Icon(Icons.add), onPressed: () {}),
+            AppSwitch(value: true, onChanged: (_) {}),
+            AppCheckbox(value: true, onChanged: (_) {}),
+            AppRadio<int>(value: 1, groupValue: 1, onChanged: (_) {}),
+            const AppProgress(),
+            const AppTooltip(message: 'hi', child: Icon(Icons.info)),
+            const AppListTile(title: Text('Tile')),
+          ],
+        ),
       ),
-    ));
+    );
     expect(find.text('Go'), findsOneWidget);
     expect(find.byType(AppSwitch), findsOneWidget);
     expect(find.byType(AppProgress), findsOneWidget);
   });
 
   testWidgets('window scaffold + sidebar build', (tester) async {
-    await tester.pumpWidget(_host(
-      GlassWindowScaffold(
-        sidebar: GlassSidebar(
-          items: const [
-            GlassSidebarItem(icon: Icons.star, label: 'A'),
-            GlassSidebarItem(icon: Icons.book, label: 'B'),
-          ],
-          selectedIndex: 0,
-          onSelected: (_) {},
+    await tester.pumpWidget(
+      _host(
+        GlassWindowScaffold(
+          sidebar: GlassSidebar(
+            items: const [
+              GlassSidebarItem(icon: Icons.star, label: 'A'),
+              GlassSidebarItem(icon: Icons.book, label: 'B'),
+            ],
+            selectedIndex: 0,
+            onSelected: (_) {},
+          ),
+          body: const Center(child: Text('content')),
         ),
-        body: const Center(child: Text('content')),
       ),
-    ));
+    );
     expect(find.text('content'), findsOneWidget);
     expect(find.text('A'), findsOneWidget);
   });

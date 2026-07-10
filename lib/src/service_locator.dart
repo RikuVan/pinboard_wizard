@@ -5,7 +5,9 @@ import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/ai/openai/openai_service.dart';
 import 'package:pinboard_wizard/src/ai/web_scraping/jina_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
+import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
 import 'package:pinboard_wizard/src/database/notes_database.dart';
+import 'package:pinboard_wizard/src/env_import/env_import_service.dart';
 import 'package:pinboard_wizard/src/github/github_auth_service.dart';
 import 'package:pinboard_wizard/src/github/github_client.dart';
 import 'package:pinboard_wizard/src/github/github_config_validator.dart';
@@ -26,6 +28,12 @@ Future<void> setup() async {
   final appDocDir = await getApplicationDocumentsDirectory();
   final notesDir = appDocDir;
 
+  // Central keychain access — must be initialized before any service reads
+  // credentials, because the sync flag decides which keychain set is active.
+  final appSecureStorage = AppSecureStorage();
+  await appSecureStorage.init();
+  locator.registerSingleton<AppSecureStorage>(appSecureStorage);
+
   locator
     ..registerLazySingleton<PinboardService>(
       () => PinboardService(secretStorage: locator.get<SecretStorage>()),
@@ -33,20 +41,36 @@ Future<void> setup() async {
     ..registerLazySingleton<CredentialsService>(
       () => CredentialsService(storage: locator.get<SecretStorage>()),
     )
-    ..registerLazySingleton<SecretStorage>(() => FlutterSecureSecretsStorage())
-    ..registerLazySingleton<AiSettingsService>(() => AiSettingsService())
+    ..registerLazySingleton<SecretStorage>(
+      () =>
+          FlutterSecureSecretsStorage(storage: locator.get<AppSecureStorage>()),
+    )
+    ..registerLazySingleton<AiSettingsService>(
+      () => AiSettingsService(storage: locator.get<AppSecureStorage>()),
+    )
     ..registerLazySingleton<OpenAiService>(() => OpenAiService())
     ..registerLazySingleton<JinaService>(() => JinaService())
     ..registerLazySingleton<AiBookmarkService>(() => AiBookmarkService())
-    ..registerLazySingleton<BackupService>(() => BackupService())
+    ..registerLazySingleton<BackupService>(
+      () => BackupService(storage: locator.get<AppSecureStorage>()),
+    )
     ..registerLazySingleton<GitHubCredentialsStorage>(
-      () => GitHubCredentialsStorage(),
+      () => GitHubCredentialsStorage(storage: locator.get<AppSecureStorage>()),
     )
     ..registerLazySingleton<GitHubAuthService>(
       () => GitHubAuthService(storage: locator.get<GitHubCredentialsStorage>()),
     )
     ..registerLazySingleton<GitHubConfigValidator>(
       () => GitHubConfigValidator(),
+    )
+    ..registerLazySingleton<EnvImportService>(
+      () => EnvImportService(
+        credentialsService: locator.get<CredentialsService>(),
+        aiSettingsService: locator.get<AiSettingsService>(),
+        backupService: locator.get<BackupService>(),
+        githubStorage: locator.get<GitHubCredentialsStorage>(),
+        githubAuthService: locator.get<GitHubAuthService>(),
+      ),
     )
     // Notes services
     ..registerLazySingleton<NotesDatabase>(() => NotesDatabase())

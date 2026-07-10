@@ -289,10 +289,7 @@ class _EditBookmarkDialogState extends State<EditBookmarkDialog> {
                 Expanded(
                   child: Text(
                     _aiError!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.systemRed,
-                    ),
+                    style: TextStyle(fontSize: 12, color: AppColors.systemRed),
                   ),
                 ),
               ],

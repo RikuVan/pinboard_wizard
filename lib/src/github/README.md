@@ -347,7 +347,9 @@ class ValidationResult {
 ### 1. Initialize Auth Service
 
 ```dart
-final authService = GitHubAuthService();
+final authService = GitHubAuthService(
+  storage: getIt<GitHubCredentialsStorage>(),
+);
 await authService.initialize();
 
 // Listen to auth state changes
@@ -528,7 +530,7 @@ void setupServiceLocator() {
   // ... existing services
 
   getIt.registerLazySingleton<GitHubCredentialsStorage>(
-    () => GitHubCredentialsStorage(),
+    () => GitHubCredentialsStorage(storage: getIt<AppSecureStorage>()),
   );
 
   getIt.registerLazySingleton<GitHubAuthService>(
@@ -744,7 +746,7 @@ void setupServiceLocator() {
 
   // Storage
   getIt.registerLazySingleton<GitHubCredentialsStorage>(
-    () => GitHubCredentialsStorage(),
+    () => GitHubCredentialsStorage(storage: getIt<AppSecureStorage>()),
   );
 
   // Auth service

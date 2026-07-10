@@ -372,6 +372,60 @@ User settings are stored in the macOS app container. The app handles:
 
 ![Backup Settings](docs/screenshots/backup-settings.png)
 
+## Syncing credentials across Macs (iCloud)
+
+Pinboard Wizard can sync all of its credentials — Pinboard API token, OpenAI
+and Jina keys, S3 backup configuration, and GitHub notes credentials — across
+your Macs using iCloud Keychain.
+
+- Open **Settings → Sync** and enable **Sync credentials across devices**.
+- Sync is **off by default** and must be enabled on **each Mac** that should
+  participate. It requires iCloud Keychain (System Settings → Apple ID →
+  iCloud → Passwords & Keychain).
+- When you enable sync on a Mac and a synced value already exists (from
+  another Mac), the synced value replaces the local one.
+- Disabling sync keeps a local snapshot of the current values and never
+  affects your other Macs.
+- Apple end-to-end encrypts iCloud Keychain data; no credential ever touches
+  a third-party server.
+
+## Importing credentials from a .env file
+
+Instead of typing each credential into Settings, you can import them once from
+a `.env` file via **Settings → Sync → Import from .env…**.
+
+Recognized variables:
+
+| Variable | Maps to |
+|---|---|
+| `PINBOARD_API_TOKEN` | Pinboard API token (`username:hex`) |
+| `OPENAI_API_KEY` | OpenAI API key |
+| `JINA_API_KEY` | Jina AI key |
+| `AWS_ACCESS_KEY_ID` | S3 backup access key |
+| `AWS_SECRET_ACCESS_KEY` | S3 backup secret key |
+| `AWS_REGION` | S3 backup region |
+| `S3_BUCKET` | S3 backup bucket name |
+| `S3_FILE_PATH` | S3 backup file path |
+| `GITHUB_PAT` | GitHub personal access token |
+| `GITHUB_OWNER` | GitHub repository owner |
+| `GITHUB_REPO` | GitHub repository name |
+| `GITHUB_BRANCH` | GitHub branch (default `main`) |
+| `GITHUB_NOTES_PATH` | Notes folder inside the repository |
+
+Rules:
+
+- Import is **one-time**: the app reads the file only when you click Import,
+  never at launch. You can delete the file afterwards.
+- Values from the file **replace** existing stored values ("env wins").
+  Variables not present in the file are left untouched.
+- Unrecognized variables and unparseable lines are ignored and reported.
+- Variables with empty values are ignored — an import never clears a stored
+  credential.
+- Standard `.env` syntax is supported: `KEY=VALUE`, optional `export `
+  prefix, `#` comments, single or double quotes. In unquoted values an
+  inline `#` preceded by whitespace starts a comment and is stripped;
+  quoted values keep `#` intact.
+
 ## Troubleshooting
 
 ### Common Issues

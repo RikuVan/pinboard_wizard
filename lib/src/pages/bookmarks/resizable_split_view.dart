@@ -104,9 +104,7 @@ class _ResizableSplitViewState extends State<ResizableSplitView> {
                 ? AppColors.accent.withValues(alpha: 0.3)
                 : AppColors.separator,
           ),
-          child: Center(
-            child: Container(width: 1, color: AppColors.separator),
-          ),
+          child: Center(child: Container(width: 1, color: AppColors.separator)),
         ),
       ),
     );

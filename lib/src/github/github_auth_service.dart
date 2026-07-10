@@ -10,8 +10,7 @@ class GitHubAuthService extends ChangeNotifier {
   TokenExpiryWarning? _currentWarning;
   bool _isAuthenticated = false;
 
-  GitHubAuthService({GitHubCredentialsStorage? storage})
-    : _storage = storage ?? GitHubCredentialsStorage();
+  GitHubAuthService({required this._storage});
 
   /// Current token expiry warning, if any
   TokenExpiryWarning? get currentWarning => _currentWarning;

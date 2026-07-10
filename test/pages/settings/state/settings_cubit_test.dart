@@ -6,13 +6,18 @@ import 'package:pinboard_wizard/src/ai/ai_settings.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
+import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
+import 'package:pinboard_wizard/src/env_import/env_import_service.dart';
 import 'package:pinboard_wizard/src/github/github_auth_service.dart';
+import 'package:pinboard_wizard/src/github/github_credentials_storage.dart';
 import 'package:pinboard_wizard/src/github/models/models.dart';
 import 'package:pinboard_wizard/src/pages/settings/state/settings_cubit.dart';
 import 'package:pinboard_wizard/src/pages/settings/state/settings_state.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/models/credentials.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
+
+import '../../../common/storage/fake_flutter_secure_storage.dart';
 
 class MockCredentialsService extends Mock implements CredentialsService {
   @override
@@ -296,12 +301,24 @@ void main() {
       when(mockGitHubAuthService.isAuthenticated).thenReturn(false);
       when(mockGitHubAuthService.currentWarning).thenReturn(null);
 
+      final appSecureStorage = AppSecureStorage(
+        storage: FakeFlutterSecureStorage(),
+      );
+
       settingsCubit = SettingsCubit(
         credentialsService: mockCredentialsService,
         pinboardService: mockPinboardService,
         aiSettingsService: mockAiSettingsService,
         backupService: mockBackupService,
         githubAuthService: mockGitHubAuthService,
+        appSecureStorage: appSecureStorage,
+        envImportService: EnvImportService(
+          credentialsService: mockCredentialsService,
+          aiSettingsService: mockAiSettingsService,
+          backupService: mockBackupService,
+          githubStorage: GitHubCredentialsStorage(storage: appSecureStorage),
+          githubAuthService: mockGitHubAuthService,
+        ),
       );
     });
 

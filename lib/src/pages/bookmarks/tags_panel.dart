@@ -82,10 +82,7 @@ class TagsPanel extends StatelessWidget {
           padding: EdgeInsets.all(16),
           child: Text(
             'No tags available',
-            style: TextStyle(
-              color: AppColors.secondaryLabel,
-              fontSize: 13,
-            ),
+            style: TextStyle(color: AppColors.secondaryLabel, fontSize: 13),
           ),
         ),
       );
@@ -120,9 +117,7 @@ class TagsPanel extends StatelessWidget {
                     : AppColors.controlBackground),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected
-                ? AppColors.accent
-                : AppColors.separator,
+            color: isSelected ? AppColors.accent : AppColors.separator,
             width: 0.5,
           ),
         ),
@@ -159,9 +154,7 @@ class TagsPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: AppColors.separator, width: 0.5),
-        ),
+        border: Border(top: BorderSide(color: AppColors.separator, width: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -15,7 +15,8 @@ class AppProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolved = color ??
+    final resolved =
+        color ??
         DefaultTextStyle.of(context).style.color ??
         AppColors.label.resolveFrom(context);
     return GlassProgressIndicator.circular(

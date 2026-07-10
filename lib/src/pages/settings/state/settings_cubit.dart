@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
+import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
+import 'package:pinboard_wizard/src/env_import/env_import_service.dart';
 import 'package:pinboard_wizard/src/github/github_auth_service.dart';
 import 'package:pinboard_wizard/src/github/github_config_validator.dart';
 import 'package:pinboard_wizard/src/github/models/models.dart';
@@ -19,6 +21,8 @@ class SettingsCubit extends Cubit<SettingsState> {
     required this._aiSettingsService,
     required this._backupService,
     required this._githubAuthService,
+    required this._appSecureStorage,
+    required this._envImportService,
     GitHubConfigValidator? githubConfigValidator,
   }) : _githubConfigValidator =
            githubConfigValidator ?? GitHubConfigValidator(),
@@ -39,6 +43,8 @@ class SettingsCubit extends Cubit<SettingsState> {
   final BackupService _backupService;
   final GitHubAuthService _githubAuthService;
   final GitHubConfigValidator _githubConfigValidator;
+  final AppSecureStorage _appSecureStorage;
+  final EnvImportService _envImportService;
   Timer? _debounceTimer;
 
   /// Safely emit a state, checking if the cubit is not closed
@@ -88,6 +94,7 @@ class SettingsCubit extends Cubit<SettingsState> {
           githubToken: githubToken ?? '',
           isGitHubAuthenticated: _githubAuthService.isAuthenticated,
           tokenExpiryWarning: _githubAuthService.currentWarning,
+          secretsSyncEnabled: _appSecureStorage.syncEnabled,
         ),
       );
 
@@ -911,6 +918,51 @@ class SettingsCubit extends Cubit<SettingsState> {
         tokenExpiryWarning: _githubAuthService.currentWarning,
       ),
     );
+  }
+
+  /// Enable or disable iCloud Keychain sync for all credentials.
+  Future<void> setSecretsSyncEnabled(bool enabled) async {
+    try {
+      await _appSecureStorage.setSyncEnabled(enabled);
+      _safeEmit(
+        state.copyWith(
+          secretsSyncEnabled: _appSecureStorage.syncEnabled,
+          syncErrorMessage: null,
+        ),
+      );
+      // Reload so values adopted from the synced set appear in the UI.
+      await loadSettings();
+    } catch (e) {
+      _safeEmit(
+        state.copyWith(
+          syncErrorMessage:
+              'Failed to ${enabled ? 'enable' : 'disable'} sync: $e',
+        ),
+      );
+    }
+  }
+
+  /// Parse .env contents into recognized/unrecognized variables.
+  EnvImportPreview previewEnvImport(String contents) =>
+      _envImportService.preview(contents);
+
+  /// Apply recognized env variables. Env values always win.
+  Future<void> importEnvVariables(Map<String, String> variables) async {
+    // Clear any banner left over from a previous import so a stale summary
+    // never shows next to the new import's outcome.
+    _safeEmit(state.copyWith(envImportMessage: null));
+    final result = await _envImportService.apply(variables);
+    final buffer = StringBuffer('Imported ${result.applied.length} value(s).');
+    if (result.failed.isNotEmpty) {
+      buffer.write(' Failed: ${result.failed.keys.join(', ')}.');
+    }
+    _safeEmit(state.copyWith(envImportMessage: buffer.toString()));
+    await loadSettings();
+  }
+
+  /// Dismiss the env import result banner.
+  void clearEnvImportMessage() {
+    _safeEmit(state.copyWith(envImportMessage: null));
   }
 
   @override

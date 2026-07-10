@@ -1,13 +1,17 @@
 import 'dart:async';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
+import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
+import 'package:pinboard_wizard/src/common/widgets/dialogs.dart';
 import 'package:pinboard_wizard/src/common/widgets/validated_secret_field.dart';
+import 'package:pinboard_wizard/src/env_import/env_import_service.dart';
 import 'package:pinboard_wizard/src/github/github_auth_service.dart';
 import 'package:pinboard_wizard/src/github/models/models.dart';
 import 'package:pinboard_wizard/src/pages/settings/state/settings_cubit.dart';
@@ -29,6 +33,8 @@ class SettingsPage extends StatelessWidget {
         aiSettingsService: locator.get<AiSettingsService>(),
         backupService: locator.get<BackupService>(),
         githubAuthService: locator.get<GitHubAuthService>(),
+        appSecureStorage: locator.get<AppSecureStorage>(),
+        envImportService: locator.get<EnvImportService>(),
       )..loadSettings(),
       child: const _SettingsPageView(),
     );
@@ -66,7 +72,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
   @override
   void initState() {
     super.initState();
-    _tabController = AppTabController(length: 4);
+    _tabController = AppTabController(length: 5);
     _apiKeyController.addListener(_onApiKeyChanged);
     _openaiKeyController.addListener(_onOpenAiKeyChanged);
     _jinaKeyController.addListener(_onJinaKeyChanged);
@@ -187,12 +193,14 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                     AppTab(label: 'AI Settings'),
                     AppTab(label: 'Backups'),
                     AppTab(label: 'GitHub Notes'),
+                    AppTab(label: 'Sync'),
                   ],
                   children: [
                     _buildPinboardTab(context, state),
                     _buildAiTab(context, state),
                     _buildBackupTab(context, state),
                     _buildGitHubTab(context, state),
+                    _buildSyncTab(context, state),
                   ],
                 ),
               ),
@@ -209,10 +217,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Pinboard Configuration',
-            style: context.appTypography.title1,
-          ),
+          Text('Pinboard Configuration', style: context.appTypography.title1),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -305,10 +310,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'AI Assistance',
-            style: context.appTypography.title1,
-          ),
+          Text('AI Assistance', style: context.appTypography.title1),
           const SizedBox(height: 12),
 
           // Enable AI Toggle
@@ -647,10 +649,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Backup Configuration',
-            style: context.appTypography.title1,
-          ),
+          Text('Backup Configuration', style: context.appTypography.title1),
           const SizedBox(height: 12),
           Text(
             'Securely backup your bookmarks to Amazon S3. All credentials are encrypted and stored locally.',
@@ -661,10 +660,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           // S3 Configuration Section
           Row(
             children: [
-              Text(
-                'Amazon S3 Settings',
-                style: context.appTypography.headline,
-              ),
+              Text('Amazon S3 Settings', style: context.appTypography.headline),
               const SizedBox(width: 8),
               AppIconButton(
                 icon: const Icon(CupertinoIcons.link, size: 14),
@@ -737,10 +733,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           const SizedBox(height: 16),
 
           // File Path (optional)
-          Text(
-            'File Path (Optional)',
-            style: context.appTypography.body,
-          ),
+          Text('File Path (Optional)', style: context.appTypography.body),
           const SizedBox(height: 4),
           AppTextField(
             controller: _s3FilePathController,
@@ -906,10 +899,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           const SizedBox(height: 32),
 
           // Backup Section
-          Text(
-            'Backup Operations',
-            style: context.appTypography.headline,
-          ),
+          Text('Backup Operations', style: context.appTypography.headline),
           const SizedBox(height: 8),
           Text(
             'Create a JSON backup of all your bookmarks including titles, descriptions, tags, and metadata.',
@@ -1093,16 +1083,10 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           ],
 
           // Repository Configuration
-          Text(
-            'Repository Settings',
-            style: context.appTypography.headline,
-          ),
+          Text('Repository Settings', style: context.appTypography.headline),
           const SizedBox(height: 8),
 
-          Text(
-            'GitHub Owner/Organization',
-            style: context.appTypography.body,
-          ),
+          Text('GitHub Owner/Organization', style: context.appTypography.body),
           const SizedBox(height: 4),
           AppTextField(
             controller: _githubOwnerController,
@@ -1110,10 +1094,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           ),
           const SizedBox(height: 12),
 
-          Text(
-            'Repository Name',
-            style: context.appTypography.body,
-          ),
+          Text('Repository Name', style: context.appTypography.body),
           const SizedBox(height: 4),
           AppTextField(
             controller: _githubRepoController,
@@ -1121,10 +1102,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           ),
           const SizedBox(height: 12),
 
-          Text(
-            'Branch (Optional)',
-            style: context.appTypography.body,
-          ),
+          Text('Branch (Optional)', style: context.appTypography.body),
           const SizedBox(height: 4),
           AppTextField(
             controller: _githubBranchController,
@@ -1132,10 +1110,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           ),
           const SizedBox(height: 12),
 
-          Text(
-            'Notes Path (Optional)',
-            style: context.appTypography.body,
-          ),
+          Text('Notes Path (Optional)', style: context.appTypography.body),
           const SizedBox(height: 8),
           AppTextField(
             controller: _githubNotesPathController,
@@ -1326,10 +1301,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           // Help Section
           Container(height: 1, color: AppColors.separator),
           const SizedBox(height: 16),
-          Text(
-            'Setup Instructions',
-            style: context.appTypography.headline,
-          ),
+          Text('Setup Instructions', style: context.appTypography.headline),
           const SizedBox(height: 8),
           Text(
             '1. Create a private repository on GitHub for your notes\n'
@@ -1417,6 +1389,167 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
     if (!await launchUrl(uri)) {
       // Handle error - could show a dialog or copy to clipboard as fallback
       debugPrint('Could not launch $url');
+    }
+  }
+
+  Widget _buildSyncTab(BuildContext context, SettingsState state) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('iCloud Sync', style: context.appTypography.headline),
+          const SizedBox(height: 8),
+          Text(
+            'Sync your Pinboard, AI, backup, and GitHub credentials across '
+            'your Macs using iCloud Keychain. Requires iCloud Keychain to be '
+            'enabled in System Settings, and must be switched on separately '
+            'on each Mac.',
+            style: context.appTypography.body,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              AppSwitch(
+                value: state.secretsSyncEnabled,
+                onChanged: (value) => _onSyncToggleChanged(context, value),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Sync credentials across devices',
+                style: context.appTypography.body,
+              ),
+            ],
+          ),
+          if (state.syncErrorMessage != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              state.syncErrorMessage!,
+              style: const TextStyle(color: AppColors.systemRed),
+            ),
+          ],
+          const SizedBox(height: 24),
+          Container(height: 1, color: AppColors.separator),
+          const SizedBox(height: 16),
+          Text('Import from .env', style: context.appTypography.headline),
+          const SizedBox(height: 8),
+          Text(
+            'Import credentials from a .env file instead of entering them '
+            'manually. Values in the file replace existing ones; anything '
+            'not in the file is left unchanged. The file is read once — you '
+            'can delete it afterwards.',
+            style: context.appTypography.body,
+          ),
+          const SizedBox(height: 12),
+          AppButton(
+            size: AppButtonSize.large,
+            onPressed: () => _importEnvFile(context),
+            child: const Text('Import from .env…'),
+          ),
+          if (state.envImportMessage != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    state.envImportMessage!,
+                    style: context.appTypography.body,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                AppIconButton(
+                  icon: const Icon(CupertinoIcons.xmark, size: 14),
+                  onPressed: () =>
+                      context.read<SettingsCubit>().clearEnvImportMessage(),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _onSyncToggleChanged(BuildContext context, bool value) async {
+    final cubit = context.read<SettingsCubit>();
+    if (!value) {
+      await cubit.setSecretsSyncEnabled(false);
+      return;
+    }
+    final confirmed = await CommonDialogs.showConfirmation(
+      context,
+      'Your credentials will sync across Macs signed into the same '
+      'iCloud account. Where a synced value already exists, it replaces '
+      'this Mac\'s value.',
+      title: 'Enable iCloud sync?',
+      confirmText: 'Enable',
+    );
+    if (confirmed == true) {
+      await cubit.setSecretsSyncEnabled(true);
+    }
+  }
+
+  String _maskSecret(String value) {
+    if (value.length <= 12) return '••••';
+    return '${value.substring(0, 4)}…${value.substring(value.length - 4)}';
+  }
+
+  Future<void> _importEnvFile(BuildContext context) async {
+    final cubit = context.read<SettingsCubit>();
+    final file = await openFile(
+      acceptedTypeGroups: const [XTypeGroup(label: 'env files')],
+    );
+    if (file == null) return;
+
+    final String contents;
+    try {
+      contents = await file.readAsString();
+    } catch (e) {
+      if (!mounted) return;
+      await CommonDialogs.showError(
+        // ignore: use_build_context_synchronously
+        context,
+        '$e',
+        title: 'Could not read file',
+      );
+      return;
+    }
+
+    final preview = cubit.previewEnvImport(contents);
+    if (!mounted) return;
+
+    if (preview.isEmpty) {
+      await CommonDialogs.showInfo(
+        // ignore: use_build_context_synchronously
+        context,
+        'No recognized variables found.'
+        '${preview.unrecognized.isNotEmpty ? ' Unrecognized: ${preview.unrecognized.join(', ')}.' : ''}',
+        title: 'Nothing to import',
+      );
+      return;
+    }
+
+    final lines = preview.recognized.entries
+        .map((e) => '${e.key} = ${_maskSecret(e.value)}')
+        .join('\n');
+    final extra = <String>[
+      if (preview.unrecognized.isNotEmpty)
+        '${preview.unrecognized.length} unrecognized variable(s) ignored.',
+      if (preview.ignoredLines > 0)
+        '${preview.ignoredLines} unparseable line(s) ignored.',
+    ].join(' ');
+
+    final confirmed = await CommonDialogs.showConfirmation(
+      // ignore: use_build_context_synchronously
+      context,
+      'The following values will be imported and will REPLACE any '
+      'existing values:\n\n$lines${extra.isNotEmpty ? '\n\n$extra' : ''}',
+      title: 'Import credentials?',
+      confirmText: 'Import',
+    );
+
+    if (confirmed == true) {
+      await cubit.importEnvVariables(preview.recognized);
     }
   }
 }

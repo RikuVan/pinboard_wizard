@@ -95,10 +95,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    'Add Bookmark',
-                    style: context.appTypography.largeTitle,
-                  ),
+                  Text('Add Bookmark', style: context.appTypography.largeTitle),
                   const Spacer(),
                   AppIconButton(
                     icon: const Icon(CupertinoIcons.xmark),
@@ -300,10 +297,7 @@ class _AddBookmarkDialogState extends State<AddBookmarkDialog> {
                 Expanded(
                   child: Text(
                     _aiError!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.systemRed,
-                    ),
+                    style: TextStyle(fontSize: 12, color: AppColors.systemRed),
                   ),
                 ),
               ],

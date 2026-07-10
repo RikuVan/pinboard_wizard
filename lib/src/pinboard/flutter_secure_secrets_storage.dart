@@ -1,17 +1,20 @@
 import 'dart:convert';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
+import 'package:pinboard_wizard/src/common/storage/credential_keys.dart';
 import 'package:pinboard_wizard/src/pinboard/models/credentials.dart';
 import 'package:pinboard_wizard/src/pinboard/secrets_storage.dart';
 
 class FlutterSecureSecretsStorage implements SecretStorage {
-  static const String _credentialsKey = 'pinboard_credentials';
+  static const String _credentialsKey = CredentialKeys.pinboardCredentials;
 
-  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  final AppSecureStorage _storage;
+
+  FlutterSecureSecretsStorage({required this._storage});
 
   @override
   Future<Credentials?> read() async {
     try {
-      final credentialsJson = await _secureStorage.read(key: _credentialsKey);
+      final credentialsJson = await _storage.read(_credentialsKey);
 
       if (credentialsJson == null || credentialsJson.isEmpty) {
         return null;
@@ -30,7 +33,7 @@ class FlutterSecureSecretsStorage implements SecretStorage {
   Future<void> save(Credentials credentials) async {
     try {
       final credentialsJson = json.encode(credentials.toJson());
-      await _secureStorage.write(key: _credentialsKey, value: credentialsJson);
+      await _storage.write(_credentialsKey, credentialsJson);
     } catch (e) {
       throw SecureStorageException('Failed to save credentials: $e');
     }
@@ -39,7 +42,7 @@ class FlutterSecureSecretsStorage implements SecretStorage {
   @override
   Future<void> clear() async {
     try {
-      await _secureStorage.delete(key: _credentialsKey);
+      await _storage.delete(_credentialsKey);
     } catch (e) {
       throw SecureStorageException('Failed to clear credentials: $e');
     }
@@ -47,26 +50,10 @@ class FlutterSecureSecretsStorage implements SecretStorage {
 
   Future<bool> hasCredentials() async {
     try {
-      final credentialsJson = await _secureStorage.read(key: _credentialsKey);
+      final credentialsJson = await _storage.read(_credentialsKey);
       return credentialsJson != null && credentialsJson.isNotEmpty;
     } catch (e) {
       return false;
-    }
-  }
-
-  Future<void> clearAll() async {
-    try {
-      await _secureStorage.deleteAll();
-    } catch (e) {
-      throw SecureStorageException('Failed to clear all data: $e');
-    }
-  }
-
-  Future<Map<String, String>> readAll() async {
-    try {
-      return await _secureStorage.readAll();
-    } catch (e) {
-      return {};
     }
   }
 }

@@ -37,8 +37,10 @@ class AppAlertDialog extends StatelessWidget {
                 if (appIcon != null) ...[appIcon!, const SizedBox(height: 12)],
                 DefaultTextStyle.merge(
                   textAlign: TextAlign.center,
-                  style:
-                      const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                   child: title,
                 ),
                 if (message != null) ...[
@@ -55,10 +57,7 @@ class AppAlertDialog extends StatelessWidget {
                   const SizedBox(height: 8),
                   secondaryButton!,
                 ],
-                if (suppress != null) ...[
-                  const SizedBox(height: 8),
-                  suppress!,
-                ],
+                if (suppress != null) ...[const SizedBox(height: 8), suppress!],
               ],
             ),
           ),

@@ -5,7 +5,7 @@ import '../tokens/app_colors.dart';
 /// Tab controller. Replaces macos_ui `MacosTabController`.
 class AppTabController extends ChangeNotifier {
   AppTabController({required this.length, int initialIndex = 0})
-      : _index = initialIndex;
+    : _index = initialIndex;
   final int length;
   int _index;
   int get index => _index;
@@ -57,7 +57,9 @@ class AppTabView extends StatelessWidget {
                       onTap: () => controller.index = i,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
                         margin: const EdgeInsets.symmetric(horizontal: 2),
                         decoration: BoxDecoration(
                           color: controller.index == i
@@ -69,9 +71,7 @@ class AppTabView extends StatelessWidget {
                           tabs[i].label,
                           style: TextStyle(
                             fontSize: 13,
-                            color: controller.index == i
-                                ? Colors.white
-                                : label,
+                            color: controller.index == i ? Colors.white : label,
                           ),
                         ),
                       ),

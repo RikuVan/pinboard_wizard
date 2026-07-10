@@ -116,14 +116,10 @@ class _PinCategoryDialogState extends State<PinCategoryDialog> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.accent.withValues(
-                            alpha: 0.1,
-                          ),
+                          color: AppColors.accent.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: AppColors.accent.withValues(
-                              alpha: 0.3,
-                            ),
+                            color: AppColors.accent.withValues(alpha: 0.3),
                             width: 0.5,
                           ),
                         ),

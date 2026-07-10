@@ -1,21 +1,25 @@
 import 'dart:convert';
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
+import 'package:pinboard_wizard/src/common/storage/credential_keys.dart';
 import 'package:pinboard_wizard/src/github/models/github_notes_config.dart';
 
 /// Service for securely storing and retrieving GitHub credentials and configuration
 class GitHubCredentialsStorage {
-  static const String _configKey = 'github_notes_config';
-  static const String _tokenKey = 'github_pat_token';
+  static const String _configKey = CredentialKeys.githubNotesConfig;
+  static const String _tokenKey = CredentialKeys.githubPatToken;
 
-  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  final AppSecureStorage _secureStorage;
+
+  GitHubCredentialsStorage({required AppSecureStorage storage})
+    : _secureStorage = storage;
 
   /// Read the GitHub notes configuration (without token)
   ///
   /// Applies migration: converts legacy default 'notes/' to empty string
   Future<GitHubNotesConfig?> readConfig() async {
     try {
-      final configJson = await _secureStorage.read(key: _configKey);
+      final configJson = await _secureStorage.read(_configKey);
 
       if (configJson == null || configJson.isEmpty) {
         return null;
@@ -33,7 +37,7 @@ class GitHubCredentialsStorage {
   /// Read the Personal Access Token
   Future<String?> readToken() async {
     try {
-      return await _secureStorage.read(key: _tokenKey);
+      return await _secureStorage.read(_tokenKey);
     } catch (e) {
       return null;
     }
@@ -43,7 +47,7 @@ class GitHubCredentialsStorage {
   Future<void> saveConfig(GitHubNotesConfig config) async {
     try {
       final configJson = json.encode(config.toJson());
-      await _secureStorage.write(key: _configKey, value: configJson);
+      await _secureStorage.write(_configKey, configJson);
     } catch (e) {
       throw GitHubStorageException('Failed to save configuration: $e');
     }
@@ -52,7 +56,7 @@ class GitHubCredentialsStorage {
   /// Save the Personal Access Token
   Future<void> saveToken(String token) async {
     try {
-      await _secureStorage.write(key: _tokenKey, value: token);
+      await _secureStorage.write(_tokenKey, token);
     } catch (e) {
       throw GitHubStorageException('Failed to save token: $e');
     }
@@ -88,7 +92,7 @@ class GitHubCredentialsStorage {
   /// Clear the GitHub notes configuration
   Future<void> clearConfig() async {
     try {
-      await _secureStorage.delete(key: _configKey);
+      await _secureStorage.delete(_configKey);
     } catch (e) {
       throw GitHubStorageException('Failed to clear configuration: $e');
     }
@@ -97,7 +101,7 @@ class GitHubCredentialsStorage {
   /// Clear the Personal Access Token
   Future<void> clearToken() async {
     try {
-      await _secureStorage.delete(key: _tokenKey);
+      await _secureStorage.delete(_tokenKey);
     } catch (e) {
       throw GitHubStorageException('Failed to clear token: $e');
     }
