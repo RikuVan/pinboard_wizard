@@ -57,15 +57,15 @@ class EnvFileParser {
   String _unquote(String value) =>
       _isQuoteWrapped(value) ? value.substring(1, value.length - 1) : value;
 
-  /// Cuts an unquoted value at the first `#` that follows whitespace:
-  /// `abc # comment` → `abc`, but `abc#def` is kept whole.
+  /// Cuts an unquoted value at the first `#` that starts the value or
+  /// follows whitespace: `abc # comment` → `abc`, `# comment` → empty,
+  /// but `abc#def` is kept whole.
   String _stripInlineComment(String value) {
-    for (var i = 1; i < value.length; i++) {
+    for (var i = 0; i < value.length; i++) {
       if (value[i] != '#') {
         continue;
       }
-      final previous = value[i - 1];
-      if (previous == ' ' || previous == '\t') {
+      if (i == 0 || value[i - 1] == ' ' || value[i - 1] == '\t') {
         return value.substring(0, i).trimRight();
       }
     }

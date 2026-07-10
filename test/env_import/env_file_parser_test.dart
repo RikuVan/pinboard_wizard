@@ -66,6 +66,11 @@ void main() {
     expect(result.variables['KEY'], 'abc#def');
   });
 
+  test('treats a value that is only a comment as empty', () {
+    final result = parser.parse('KEY= # comment');
+    expect(result.variables['KEY'], '');
+  });
+
   test('trims whitespace around key and value', () {
     final result = parser.parse('  KEY  =  value  ');
     expect(result.variables, {'KEY': 'value'});
