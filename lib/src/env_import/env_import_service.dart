@@ -158,7 +158,17 @@ class EnvImportService {
           filePath: variables['S3_FILE_PATH'],
         );
         await _backupService.saveConfiguration(merged);
-        applied.addAll(s3Keys);
+        // saveConfiguration swallows storage errors into status/lastError
+        // instead of throwing, so check the status explicitly.
+        if (_backupService.status == BackupStatus.error) {
+          final message =
+              _backupService.lastError ?? 'Failed to save S3 configuration';
+          for (final key in s3Keys) {
+            failed[key] = message;
+          }
+        } else {
+          applied.addAll(s3Keys);
+        }
       } catch (e) {
         for (final key in s3Keys) {
           failed[key] = '$e';

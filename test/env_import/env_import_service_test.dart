@@ -1,3 +1,4 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
@@ -158,5 +159,59 @@ void main() {
       expect(result.applied, contains('OPENAI_API_KEY'));
       expect(aiSettingsService.openaiSettings.apiKey, 'sk-abc');
     });
+
+    test('S3 save failure is reported as failed, not applied', () async {
+      // BackupService.saveConfiguration swallows storage errors into
+      // status/lastError instead of throwing; apply() must still report them.
+      final throwingFake = _ThrowingBackupStorage();
+      final throwingAppStorage = AppSecureStorage(storage: throwingFake);
+      await throwingAppStorage.init();
+      final failingBackupService = BackupService(storage: throwingAppStorage);
+      final failingService = EnvImportService(
+        credentialsService: credentialsService,
+        aiSettingsService: aiSettingsService,
+        backupService: failingBackupService,
+        githubStorage: githubStorage,
+        githubAuthService: githubAuthService,
+      );
+
+      final result = await failingService.apply({
+        'AWS_SECRET_ACCESS_KEY': 'X',
+        'OPENAI_API_KEY': 'sk-ok',
+      });
+
+      expect(result.failed.keys, contains('AWS_SECRET_ACCESS_KEY'));
+      expect(result.applied, isNot(contains('AWS_SECRET_ACCESS_KEY')));
+      expect(result.applied, contains('OPENAI_API_KEY'));
+    });
   });
+}
+
+/// Fails writes of the S3 backup config key; everything else behaves normally.
+class _ThrowingBackupStorage extends FakeFlutterSecureStorage {
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (key == 'backup_s3_config') {
+      throw Exception('keychain write denied');
+    }
+    return super.write(
+      key: key,
+      value: value,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
 }
