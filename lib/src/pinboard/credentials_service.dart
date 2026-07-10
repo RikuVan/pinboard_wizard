@@ -8,8 +8,7 @@ class CredentialsService {
   // Emits true when a valid API key is present, false otherwise
   final ValueNotifier<bool> isAuthenticatedNotifier = ValueNotifier(false);
 
-  CredentialsService({SecretStorage? storage})
-    : _storage = storage ?? FlutterSecureSecretsStorage() {
+  CredentialsService({required SecretStorage storage}) : _storage = storage {
     _loadInitial();
   }
 

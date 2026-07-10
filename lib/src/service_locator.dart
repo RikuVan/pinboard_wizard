@@ -5,6 +5,7 @@ import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/ai/openai/openai_service.dart';
 import 'package:pinboard_wizard/src/ai/web_scraping/jina_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
+import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
 import 'package:pinboard_wizard/src/database/notes_database.dart';
 import 'package:pinboard_wizard/src/github/github_auth_service.dart';
 import 'package:pinboard_wizard/src/github/github_client.dart';
@@ -26,6 +27,12 @@ Future<void> setup() async {
   final appDocDir = await getApplicationDocumentsDirectory();
   final notesDir = appDocDir;
 
+  // Central keychain access — must be initialized before any service reads
+  // credentials, because the sync flag decides which keychain set is active.
+  final appSecureStorage = AppSecureStorage();
+  await appSecureStorage.init();
+  locator.registerSingleton<AppSecureStorage>(appSecureStorage);
+
   locator
     ..registerLazySingleton<PinboardService>(
       () => PinboardService(secretStorage: locator.get<SecretStorage>()),
@@ -33,7 +40,11 @@ Future<void> setup() async {
     ..registerLazySingleton<CredentialsService>(
       () => CredentialsService(storage: locator.get<SecretStorage>()),
     )
-    ..registerLazySingleton<SecretStorage>(() => FlutterSecureSecretsStorage())
+    ..registerLazySingleton<SecretStorage>(
+      () => FlutterSecureSecretsStorage(
+        storage: locator.get<AppSecureStorage>(),
+      ),
+    )
     ..registerLazySingleton<AiSettingsService>(() => AiSettingsService())
     ..registerLazySingleton<OpenAiService>(() => OpenAiService())
     ..registerLazySingleton<JinaService>(() => JinaService())
