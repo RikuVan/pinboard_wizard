@@ -1517,7 +1517,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
   }
 
   String _maskSecret(String value) {
-    if (value.length <= 8) return '••••';
+    if (value.length <= 12) return '••••';
     return '${value.substring(0, 4)}…${value.substring(value.length - 4)}';
   }
 
@@ -1559,8 +1559,8 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
         builder: (dialogContext) => AppAlertDialog(
           title: const Text('Nothing to import'),
           message: Text(
-            'No recognized variables found. '
-            '${preview.unrecognized.isNotEmpty ? 'Unrecognized: ${preview.unrecognized.join(', ')}.' : ''}',
+            'No recognized variables found.'
+            '${preview.unrecognized.isNotEmpty ? ' Unrecognized: ${preview.unrecognized.join(', ')}.' : ''}',
           ),
           primaryButton: AppButton(
             size: AppButtonSize.large,
