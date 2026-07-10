@@ -54,9 +54,8 @@ class EnvFileParser {
     return (first == '"' && last == '"') || (first == "'" && last == "'");
   }
 
-  String _unquote(String value) => _isQuoteWrapped(value)
-      ? value.substring(1, value.length - 1)
-      : value;
+  String _unquote(String value) =>
+      _isQuoteWrapped(value) ? value.substring(1, value.length - 1) : value;
 
   /// Cuts an unquoted value at the first `#` that follows whitespace:
   /// `abc # comment` → `abc`, but `abc#def` is kept whole.
