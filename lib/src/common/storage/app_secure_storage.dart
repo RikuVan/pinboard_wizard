@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Central keychain access for all credential storage.
@@ -40,7 +41,10 @@ class AppSecureStorage {
     try {
       final value = await _storage.read(key: syncFlagKey, mOptions: _localOptions);
       _syncEnabled = value == 'true';
-    } catch (_) {
+    } catch (e) {
+      debugPrint(
+        'AppSecureStorage: failed to read sync flag, defaulting to local-only: $e',
+      );
       _syncEnabled = false;
     }
   }
