@@ -948,6 +948,9 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   /// Apply recognized env variables. Env values always win.
   Future<void> importEnvVariables(Map<String, String> variables) async {
+    // Clear any banner left over from a previous import so a stale summary
+    // never shows next to the new import's outcome.
+    _safeEmit(state.copyWith(envImportMessage: null));
     final result = await _envImportService.apply(variables);
     final buffer = StringBuffer('Imported ${result.applied.length} value(s).');
     if (result.failed.isNotEmpty) {
@@ -955,6 +958,11 @@ class SettingsCubit extends Cubit<SettingsState> {
     }
     _safeEmit(state.copyWith(envImportMessage: buffer.toString()));
     await loadSettings();
+  }
+
+  /// Dismiss the env import result banner.
+  void clearEnvImportMessage() {
+    _safeEmit(state.copyWith(envImportMessage: null));
   }
 
   @override

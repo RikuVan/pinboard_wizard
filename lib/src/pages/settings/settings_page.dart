@@ -1447,7 +1447,22 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           ),
           if (state.envImportMessage != null) ...[
             const SizedBox(height: 12),
-            Text(state.envImportMessage!, style: context.appTypography.body),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    state.envImportMessage!,
+                    style: context.appTypography.body,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                AppIconButton(
+                  icon: const Icon(CupertinoIcons.xmark, size: 14),
+                  onPressed: () =>
+                      context.read<SettingsCubit>().clearEnvImportMessage(),
+                ),
+              ],
+            ),
           ],
         ],
       ),

@@ -111,6 +111,34 @@ void main() {
       expect(aiSettingsService.openaiSettings.apiKey, 'sk-1');
     },
   );
+
+  test(
+    'importEnvVariables clears the stale message before a new import',
+    () async {
+      await cubit.importEnvVariables({'OPENAI_API_KEY': 'sk-1'});
+      expect(cubit.state.envImportMessage, isNotNull);
+
+      final messages = <String?>[];
+      final subscription = cubit.stream.listen(
+        (state) => messages.add(state.envImportMessage),
+      );
+      await cubit.importEnvVariables({'JINA_API_KEY': 'jina-1'});
+      await subscription.cancel();
+
+      // The very first emission of the second import clears the old banner.
+      expect(messages.first, isNull);
+      expect(cubit.state.envImportMessage, contains('1'));
+    },
+  );
+
+  test('clearEnvImportMessage dismisses the banner', () async {
+    await cubit.importEnvVariables({'OPENAI_API_KEY': 'sk-1'});
+    expect(cubit.state.envImportMessage, isNotNull);
+
+    cubit.clearEnvImportMessage();
+
+    expect(cubit.state.envImportMessage, isNull);
+  });
 }
 
 /// Throws on writes of one configurable key; everything else behaves normally.
