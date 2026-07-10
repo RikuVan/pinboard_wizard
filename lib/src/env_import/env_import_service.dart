@@ -116,14 +116,20 @@ class EnvImportService {
     final applied = <String>[];
     final failed = <String, String>{};
 
-    // Pinboard
+    // Pinboard — reject malformed tokens up front; a save would otherwise
+    // persist a credential that can never authenticate.
     final pinboardToken = variables['PINBOARD_API_TOKEN'];
     if (pinboardToken != null) {
-      try {
-        await _credentialsService.saveCredentials(pinboardToken);
-        applied.add('PINBOARD_API_TOKEN');
-      } catch (e) {
-        failed['PINBOARD_API_TOKEN'] = '$e';
+      if (!_credentialsService.isValidApiKey(pinboardToken)) {
+        failed['PINBOARD_API_TOKEN'] =
+            'Invalid Pinboard token format (expected username:hexstring)';
+      } else {
+        try {
+          await _credentialsService.saveCredentials(pinboardToken);
+          applied.add('PINBOARD_API_TOKEN');
+        } catch (e) {
+          failed['PINBOARD_API_TOKEN'] = '$e';
+        }
       }
     }
 

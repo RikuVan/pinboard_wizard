@@ -84,6 +84,18 @@ void main() {
       expect(creds?.apiKey, 'new:1111111111');
     });
 
+    test('rejects a malformed pinboard token without saving it', () async {
+      final result = await service.apply({'PINBOARD_API_TOKEN': 'not-a-token'});
+
+      expect(
+        result.failed['PINBOARD_API_TOKEN'],
+        'Invalid Pinboard token format (expected username:hexstring)',
+      );
+      expect(result.applied, isNot(contains('PINBOARD_API_TOKEN')));
+      expect(await credentialsService.getCredentials(), isNull);
+      expect(credentialsService.isAuthenticatedNotifier.value, isFalse);
+    });
+
     test('imports AI keys', () async {
       final result = await service.apply({
         'OPENAI_API_KEY': 'sk-abc',
