@@ -7,6 +7,7 @@ import 'package:pinboard_wizard/src/ai/web_scraping/jina_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
 import 'package:pinboard_wizard/src/database/notes_database.dart';
+import 'package:pinboard_wizard/src/env_import/env_import_service.dart';
 import 'package:pinboard_wizard/src/github/github_auth_service.dart';
 import 'package:pinboard_wizard/src/github/github_client.dart';
 import 'package:pinboard_wizard/src/github/github_config_validator.dart';
@@ -62,6 +63,15 @@ Future<void> setup() async {
     )
     ..registerLazySingleton<GitHubConfigValidator>(
       () => GitHubConfigValidator(),
+    )
+    ..registerLazySingleton<EnvImportService>(
+      () => EnvImportService(
+        credentialsService: locator.get<CredentialsService>(),
+        aiSettingsService: locator.get<AiSettingsService>(),
+        backupService: locator.get<BackupService>(),
+        githubStorage: locator.get<GitHubCredentialsStorage>(),
+        githubAuthService: locator.get<GitHubAuthService>(),
+      ),
     )
     // Notes services
     ..registerLazySingleton<NotesDatabase>(() => NotesDatabase())
