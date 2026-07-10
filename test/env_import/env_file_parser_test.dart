@@ -51,6 +51,21 @@ void main() {
     expect(result.variables['TOKEN'], 'abc=def==');
   });
 
+  test('strips unquoted inline comments preceded by whitespace', () {
+    final result = parser.parse('KEY=sk-abc123 # my key');
+    expect(result.variables['KEY'], 'sk-abc123');
+  });
+
+  test('keeps # inside quoted values', () {
+    final result = parser.parse('KEY="value # keep"');
+    expect(result.variables['KEY'], 'value # keep');
+  });
+
+  test('keeps # not preceded by whitespace in unquoted values', () {
+    final result = parser.parse('KEY=abc#def');
+    expect(result.variables['KEY'], 'abc#def');
+  });
+
   test('trims whitespace around key and value', () {
     final result = parser.parse('  KEY  =  value  ');
     expect(result.variables, {'KEY': 'value'});

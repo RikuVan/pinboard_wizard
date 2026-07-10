@@ -422,7 +422,9 @@ Rules:
 - Variables with empty values are ignored — an import never clears a stored
   credential.
 - Standard `.env` syntax is supported: `KEY=VALUE`, optional `export `
-  prefix, `#` comments, single or double quotes.
+  prefix, `#` comments, single or double quotes. In unquoted values an
+  inline `#` preceded by whitespace starts a comment and is stripped;
+  quoted values keep `#` intact.
 
 ## Troubleshooting
 
