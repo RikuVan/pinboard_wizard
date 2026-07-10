@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:aws_s3_upload_lite/aws_s3_upload_lite.dart';
 import 'package:aws_s3_upload_lite/enum/acl.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
@@ -19,7 +19,10 @@ enum S3VerificationMethod {
 
 class BackupService extends ChangeNotifier {
   static const String _s3ConfigKey = 'backup_s3_config';
-  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+
+  final AppSecureStorage _secureStorage;
+
+  BackupService({required AppSecureStorage storage}) : _secureStorage = storage;
 
   S3Config _s3Config = const S3Config();
   BackupStatus _status = BackupStatus.idle;
@@ -38,7 +41,7 @@ class BackupService extends ChangeNotifier {
   /// Load S3 configuration from secure storage
   Future<void> loadConfiguration() async {
     try {
-      final configJson = await _secureStorage.read(key: _s3ConfigKey);
+      final configJson = await _secureStorage.read(_s3ConfigKey);
       if (configJson != null && configJson.isNotEmpty) {
         final Map<String, dynamic> configMap = json.decode(configJson);
         _s3Config = S3Config.fromJson(configMap);
@@ -59,7 +62,7 @@ class BackupService extends ChangeNotifier {
       notifyListeners();
 
       final configJson = json.encode(config.toJson());
-      await _secureStorage.write(key: _s3ConfigKey, value: configJson);
+      await _secureStorage.write(_s3ConfigKey, configJson);
 
       _s3Config = config;
       _status = BackupStatus.idle;
@@ -279,7 +282,7 @@ class BackupService extends ChangeNotifier {
   /// Clear all stored configuration
   Future<void> clearConfiguration() async {
     try {
-      await _secureStorage.delete(key: _s3ConfigKey);
+      await _secureStorage.delete(_s3ConfigKey);
       _s3Config = const S3Config();
       _status = BackupStatus.idle;
       _lastError = null;

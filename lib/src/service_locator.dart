@@ -51,7 +51,9 @@ Future<void> setup() async {
     ..registerLazySingleton<OpenAiService>(() => OpenAiService())
     ..registerLazySingleton<JinaService>(() => JinaService())
     ..registerLazySingleton<AiBookmarkService>(() => AiBookmarkService())
-    ..registerLazySingleton<BackupService>(() => BackupService())
+    ..registerLazySingleton<BackupService>(
+      () => BackupService(storage: locator.get<AppSecureStorage>()),
+    )
     ..registerLazySingleton<GitHubCredentialsStorage>(
       () => GitHubCredentialsStorage(),
     )
