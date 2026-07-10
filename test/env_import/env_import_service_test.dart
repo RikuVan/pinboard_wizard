@@ -242,6 +242,33 @@ void main() {
       expect(throwingFake.synced.containsKey('backup_s3_config'), isFalse);
     });
 
+    test('a stale backup error does not fail a later S3 import', () async {
+      final flakyFake = _ThrowingBackupStorage();
+      final flakyAppStorage = AppSecureStorage(storage: flakyFake);
+      await flakyAppStorage.init();
+      final flakyBackupService = BackupService(storage: flakyAppStorage);
+      // Drive the service into an error state with a failed save…
+      await flakyBackupService.saveConfiguration(const S3Config());
+      expect(flakyBackupService.status, BackupStatus.error);
+
+      // …then let the storage work again: apply() must not mistake the
+      // stale error for a load failure.
+      flakyFake.throwing = false;
+      final workingService = EnvImportService(
+        credentialsService: credentialsService,
+        aiSettingsService: aiSettingsService,
+        backupService: flakyBackupService,
+        githubStorage: githubStorage,
+        githubAuthService: githubAuthService,
+      );
+
+      final result = await workingService.apply({'AWS_REGION': 'eu-west-1'});
+
+      expect(result.applied, ['AWS_REGION']);
+      expect(result.failed, isEmpty);
+      expect(flakyBackupService.s3Config.region, 'eu-west-1');
+    });
+
     test(
       'GitHub token save failure fails only GITHUB_PAT; config persists',
       () async {
@@ -276,8 +303,10 @@ void main() {
   });
 }
 
-/// Fails writes of the S3 backup config key; everything else behaves normally.
+/// Fails writes of the S3 backup config key while [throwing] is set;
+/// everything else behaves normally.
 class _ThrowingBackupStorage extends FakeFlutterSecureStorage {
+  bool throwing = true;
   @override
   Future<void> write({
     required String key,
@@ -289,7 +318,7 @@ class _ThrowingBackupStorage extends FakeFlutterSecureStorage {
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
-    if (key == 'backup_s3_config') {
+    if (throwing && key == 'backup_s3_config') {
       throw Exception('keychain write denied');
     }
     return super.write(

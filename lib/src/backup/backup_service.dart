@@ -41,6 +41,10 @@ class BackupService extends ChangeNotifier {
   /// Load S3 configuration from secure storage
   Future<void> loadConfiguration() async {
     try {
+      // Clear any stale error from a prior operation so callers can rely on
+      // the post-load status reflecting THIS load.
+      _status = BackupStatus.idle;
+      _lastError = null;
       final configJson = await _secureStorage.read(_s3ConfigKey);
       if (configJson != null && configJson.isNotEmpty) {
         final Map<String, dynamic> configMap = json.decode(configJson);
