@@ -73,14 +73,17 @@ void main() {
       expect(await storage.read('pinboard_credentials'), 'from-other-mac');
     });
 
-    test('persists the flag local-only and flips reads to synced set', () async {
-      await storage.setSyncEnabled(true);
-      expect(storage.syncEnabled, isTrue);
-      expect(fake.local['secrets_sync_enabled'], 'true');
-      expect(fake.synced.containsKey('secrets_sync_enabled'), isFalse);
-      await storage.write('ai_settings', 'x');
-      expect(fake.synced['ai_settings'], 'x');
-    });
+    test(
+      'persists the flag local-only and flips reads to synced set',
+      () async {
+        await storage.setSyncEnabled(true);
+        expect(storage.syncEnabled, isTrue);
+        expect(fake.local['secrets_sync_enabled'], 'true');
+        expect(fake.synced.containsKey('secrets_sync_enabled'), isFalse);
+        await storage.write('ai_settings', 'x');
+        expect(fake.synced['ai_settings'], 'x');
+      },
+    );
 
     test('migrates every known key', () async {
       for (final key in AppSecureStorage.syncedKeys) {
@@ -100,23 +103,29 @@ void main() {
       await storage.setSyncEnabled(true);
     });
 
-    test('snapshots synced values to local WITHOUT deleting synced items', () async {
-      fake.synced['pinboard_credentials'] = 'shared';
-      await storage.setSyncEnabled(false);
-      expect(storage.syncEnabled, isFalse);
-      expect(fake.local['pinboard_credentials'], 'shared');
-      // CRITICAL: synced item must survive — deletion would propagate to
-      // every other Mac via iCloud.
-      expect(fake.synced['pinboard_credentials'], 'shared');
-    });
+    test(
+      'snapshots synced values to local WITHOUT deleting synced items',
+      () async {
+        fake.synced['pinboard_credentials'] = 'shared';
+        await storage.setSyncEnabled(false);
+        expect(storage.syncEnabled, isFalse);
+        expect(fake.local['pinboard_credentials'], 'shared');
+        // CRITICAL: synced item must survive — deletion would propagate to
+        // every other Mac via iCloud.
+        expect(fake.synced['pinboard_credentials'], 'shared');
+      },
+    );
 
-    test('subsequent writes stay local and do not touch the synced set', () async {
-      fake.synced['pinboard_credentials'] = 'shared';
-      await storage.setSyncEnabled(false);
-      await storage.write('pinboard_credentials', 'local-edit');
-      expect(fake.local['pinboard_credentials'], 'local-edit');
-      expect(fake.synced['pinboard_credentials'], 'shared');
-    });
+    test(
+      'subsequent writes stay local and do not touch the synced set',
+      () async {
+        fake.synced['pinboard_credentials'] = 'shared';
+        await storage.setSyncEnabled(false);
+        await storage.write('pinboard_credentials', 'local-edit');
+        expect(fake.local['pinboard_credentials'], 'local-edit');
+        expect(fake.synced['pinboard_credentials'], 'shared');
+      },
+    );
   });
 
   test('setSyncEnabled is a no-op when state already matches', () async {

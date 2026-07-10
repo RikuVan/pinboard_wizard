@@ -38,12 +38,14 @@ void main() {
   });
 
   test('loadConfiguration restores a stored config', () async {
-    fake.local['backup_s3_config'] = json.encode(const S3Config(
-      accessKey: 'AKIA123',
-      secretKey: 'shhh',
-      region: 'eu-west-1',
-      bucketName: 'my-bucket',
-    ).toJson());
+    fake.local['backup_s3_config'] = json.encode(
+      const S3Config(
+        accessKey: 'AKIA123',
+        secretKey: 'shhh',
+        region: 'eu-west-1',
+        bucketName: 'my-bucket',
+      ).toJson(),
+    );
 
     await service.loadConfiguration();
     expect(service.s3Config.accessKey, 'AKIA123');
@@ -51,12 +53,14 @@ void main() {
   });
 
   test('clearConfiguration deletes the stored entry', () async {
-    fake.local['backup_s3_config'] = json.encode(const S3Config(
-      accessKey: 'AKIA123',
-      secretKey: 'shhh',
-      region: 'eu-west-1',
-      bucketName: 'my-bucket',
-    ).toJson());
+    fake.local['backup_s3_config'] = json.encode(
+      const S3Config(
+        accessKey: 'AKIA123',
+        secretKey: 'shhh',
+        region: 'eu-west-1',
+        bucketName: 'my-bucket',
+      ).toJson(),
+    );
 
     await service.clearConfiguration();
     expect(fake.local.containsKey('backup_s3_config'), isFalse);

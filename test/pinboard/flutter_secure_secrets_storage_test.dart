@@ -21,7 +21,10 @@ void main() {
     await storage.save(const Credentials(apiKey: 'user:abcdef0123456789'));
     final result = await storage.read();
     expect(result, const Credentials(apiKey: 'user:abcdef0123456789'));
-    expect(fake.local['pinboard_credentials'], contains('user:abcdef0123456789'));
+    expect(
+      fake.local['pinboard_credentials'],
+      contains('user:abcdef0123456789'),
+    );
   });
 
   test('read returns null when nothing stored', () async {
@@ -46,10 +49,16 @@ void main() {
     expect(await storage.hasCredentials(), isTrue);
   });
 
-  test('credentials written while synced are read back through synced set', () async {
-    await appStorage.setSyncEnabled(true);
-    await storage.save(const Credentials(apiKey: 'user:abcdef0123456789'));
-    expect(fake.synced.containsKey('pinboard_credentials'), isTrue);
-    expect(await storage.read(), const Credentials(apiKey: 'user:abcdef0123456789'));
-  });
+  test(
+    'credentials written while synced are read back through synced set',
+    () async {
+      await appStorage.setSyncEnabled(true);
+      await storage.save(const Credentials(apiKey: 'user:abcdef0123456789'));
+      expect(fake.synced.containsKey('pinboard_credentials'), isTrue);
+      expect(
+        await storage.read(),
+        const Credentials(apiKey: 'user:abcdef0123456789'),
+      );
+    },
+  );
 }

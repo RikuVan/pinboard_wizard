@@ -72,11 +72,7 @@ class _PinnedPageState extends State<PinnedPage> {
         children: [
           Row(
             children: [
-              Icon(
-                CupertinoIcons.pin_fill,
-                size: 24,
-                color: AppColors.accent,
-              ),
+              Icon(CupertinoIcons.pin_fill, size: 24, color: AppColors.accent),
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,8 +82,7 @@ class _PinnedPageState extends State<PinnedPage> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color:
-                          context.appBrightness == Brightness.dark
+                      color: context.appBrightness == Brightness.dark
                           ? Colors.white
                           : Colors.black,
                     ),
@@ -96,9 +91,7 @@ class _PinnedPageState extends State<PinnedPage> {
                     'Quick access to your favorite links',
                     style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.secondaryLabel.resolveFrom(
-                        context,
-                      ),
+                      color: AppColors.secondaryLabel.resolveFrom(context),
                     ),
                   ),
                 ],
@@ -246,9 +239,7 @@ class _PinnedPageState extends State<PinnedPage> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.canvas.resolveFrom(context),
-        border: Border(
-          top: BorderSide(color: AppColors.separator, width: 0.5),
-        ),
+        border: Border(top: BorderSide(color: AppColors.separator, width: 0.5)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
@@ -350,11 +341,7 @@ class _PinnedPageState extends State<PinnedPage> {
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 8),
       child: Row(
         children: [
-          Icon(
-            _getCategoryIcon(categoryName),
-            size: 13,
-            color: color,
-          ),
+          Icon(_getCategoryIcon(categoryName), size: 13, color: color),
           const SizedBox(width: 6),
           Text(
             categoryName.toUpperCase(),

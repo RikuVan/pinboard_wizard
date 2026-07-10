@@ -56,7 +56,9 @@ void main() {
 
   group('apply', () {
     test('imports pinboard token and authenticates', () async {
-      final result = await service.apply({'PINBOARD_API_TOKEN': 'user:abc123def'});
+      final result = await service.apply({
+        'PINBOARD_API_TOKEN': 'user:abc123def',
+      });
 
       expect(result.applied, contains('PINBOARD_API_TOKEN'));
       expect(result.failed, isEmpty);
@@ -83,12 +85,14 @@ void main() {
     });
 
     test('partial S3 import merges with the existing config', () async {
-      await backupService.saveConfiguration(const S3Config(
-        accessKey: 'OLD_ACCESS',
-        secretKey: 'OLD_SECRET',
-        region: 'us-east-1',
-        bucketName: 'old-bucket',
-      ));
+      await backupService.saveConfiguration(
+        const S3Config(
+          accessKey: 'OLD_ACCESS',
+          secretKey: 'OLD_SECRET',
+          region: 'us-east-1',
+          bucketName: 'old-bucket',
+        ),
+      );
 
       await service.apply({'AWS_SECRET_ACCESS_KEY': 'NEW_SECRET'});
 
@@ -97,22 +101,25 @@ void main() {
       expect(backupService.s3Config.bucketName, 'old-bucket');
     });
 
-    test('creates a GitHub config with generated deviceId when none exists', () async {
-      final result = await service.apply({
-        'GITHUB_PAT': 'ghp_secret123',
-        'GITHUB_OWNER': 'octocat',
-        'GITHUB_REPO': 'notes',
-      });
+    test(
+      'creates a GitHub config with generated deviceId when none exists',
+      () async {
+        final result = await service.apply({
+          'GITHUB_PAT': 'ghp_secret123',
+          'GITHUB_OWNER': 'octocat',
+          'GITHUB_REPO': 'notes',
+        });
 
-      expect(result.failed, isEmpty);
-      final config = await githubStorage.readConfig();
-      expect(config?.owner, 'octocat');
-      expect(config?.repo, 'notes');
-      expect(config?.branch, 'main');
-      expect(config?.deviceId, isNotEmpty);
-      expect(config?.isConfigured, isTrue);
-      expect(await githubStorage.readToken(), 'ghp_secret123');
-    });
+        expect(result.failed, isEmpty);
+        final config = await githubStorage.readConfig();
+        expect(config?.owner, 'octocat');
+        expect(config?.repo, 'notes');
+        expect(config?.branch, 'main');
+        expect(config?.deviceId, isNotEmpty);
+        expect(config?.isConfigured, isTrue);
+        expect(await githubStorage.readToken(), 'ghp_secret123');
+      },
+    );
 
     test('merges GitHub fields into an existing config', () async {
       await githubStorage.saveAll(
@@ -134,13 +141,19 @@ void main() {
       expect(await githubStorage.readToken(), 'ghp_old');
     });
 
-    test('GitHub config without token is saved but not marked configured', () async {
-      await service.apply({'GITHUB_OWNER': 'octocat', 'GITHUB_REPO': 'notes'});
+    test(
+      'GitHub config without token is saved but not marked configured',
+      () async {
+        await service.apply({
+          'GITHUB_OWNER': 'octocat',
+          'GITHUB_REPO': 'notes',
+        });
 
-      final config = await githubStorage.readConfig();
-      expect(config?.owner, 'octocat');
-      expect(config?.isConfigured, isFalse);
-    });
+        final config = await githubStorage.readConfig();
+        expect(config?.owner, 'octocat');
+        expect(config?.isConfigured, isFalse);
+      },
+    );
 
     test('unknown variables are not applied', () async {
       final result = await service.apply({'TOTALLY_UNKNOWN': 'x'});

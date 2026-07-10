@@ -42,9 +42,8 @@ Future<void> setup() async {
       () => CredentialsService(storage: locator.get<SecretStorage>()),
     )
     ..registerLazySingleton<SecretStorage>(
-      () => FlutterSecureSecretsStorage(
-        storage: locator.get<AppSecureStorage>(),
-      ),
+      () =>
+          FlutterSecureSecretsStorage(storage: locator.get<AppSecureStorage>()),
     )
     ..registerLazySingleton<AiSettingsService>(
       () => AiSettingsService(storage: locator.get<AppSecureStorage>()),

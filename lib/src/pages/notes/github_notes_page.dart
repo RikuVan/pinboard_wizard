@@ -252,11 +252,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              CupertinoIcons.doc_text,
-              size: 64,
-              color: Colors.grey,
-            ),
+            const Icon(CupertinoIcons.doc_text, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
             const Text(
               'No notes yet',
@@ -439,11 +435,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              CupertinoIcons.search,
-              size: 48,
-              color: Colors.grey,
-            ),
+            const Icon(CupertinoIcons.search, size: 48, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
               'No notes found',
@@ -510,9 +502,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
               'Select a note to view',
               style: TextStyle(
                 fontSize: 16,
-                color: isDark
-                    ? Colors.white60
-                    : AppColors.secondaryLabel,
+                color: isDark ? Colors.white60 : AppColors.secondaryLabel,
               ),
             ),
           ],
@@ -780,9 +770,7 @@ class _GitHubNotesPageState extends State<GitHubNotesPage> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.canvas.resolveFrom(context),
-        border: Border(
-          top: BorderSide(color: AppColors.separator, width: 0.5),
-        ),
+        border: Border(top: BorderSide(color: AppColors.separator, width: 0.5)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(

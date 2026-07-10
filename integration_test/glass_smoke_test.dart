@@ -85,13 +85,13 @@ class _GlassHarnessState extends State<_GlassHarness> {
 }
 
 Widget _app() => LiquidGlassWidgets.wrap(
-      theme: appGlassTheme(),
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: appLightTheme(),
-        home: const _GlassHarness(),
-      ),
-    );
+  theme: appGlassTheme(),
+  child: MaterialApp(
+    debugShowCheckedModeBanner: false,
+    theme: appLightTheme(),
+    home: const _GlassHarness(),
+  ),
+);
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

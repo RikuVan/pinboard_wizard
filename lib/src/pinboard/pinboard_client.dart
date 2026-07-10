@@ -38,10 +38,8 @@ class PinboardClient {
   final SecretStorage _secretStorage;
   final http.Client _httpClient;
 
-  PinboardClient({
-    required this._secretStorage,
-    http.Client? httpClient,
-  }) : _httpClient = httpClient ?? http.Client();
+  PinboardClient({required this._secretStorage, http.Client? httpClient})
+    : _httpClient = httpClient ?? http.Client();
   Future<Credentials?> _getCredentials() async {
     try {
       return await _secretStorage.read();

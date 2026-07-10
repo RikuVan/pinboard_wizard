@@ -20,7 +20,8 @@ void main() {
     final service = AiSettingsService(storage: appStorage);
     await service.setOpenAiApiKey('sk-test-key');
 
-    final stored = json.decode(fake.local['ai_settings']!) as Map<String, dynamic>;
+    final stored =
+        json.decode(fake.local['ai_settings']!) as Map<String, dynamic>;
     expect((stored['openai'] as Map<String, dynamic>)['apiKey'], 'sk-test-key');
     expect(service.openaiSettings.apiKey, 'sk-test-key');
   });
@@ -29,7 +30,8 @@ void main() {
     final service = AiSettingsService(storage: appStorage);
     await service.setJinaApiKey('jina-test-key-123');
 
-    final stored = json.decode(fake.local['ai_settings']!) as Map<String, dynamic>;
+    final stored =
+        json.decode(fake.local['ai_settings']!) as Map<String, dynamic>;
     expect(
       (stored['webScraping'] as Map<String, dynamic>)['jinaApiKey'],
       'jina-test-key-123',
@@ -39,7 +41,11 @@ void main() {
   test('loads previously stored settings on construction', () async {
     fake.local['ai_settings'] = json.encode({
       'isEnabled': true,
-      'openai': {'apiKey': 'sk-existing', 'descriptionMaxLength': 80, 'maxTags': 3},
+      'openai': {
+        'apiKey': 'sk-existing',
+        'descriptionMaxLength': 80,
+        'maxTags': 3,
+      },
       'webScraping': {'jinaApiKey': null},
     });
 

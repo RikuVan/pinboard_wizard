@@ -75,10 +75,13 @@ void main() {
     expect(preview.unrecognized, ['RANDOM']);
   });
 
-  test('importEnvVariables applies values and sets a summary message', () async {
-    await cubit.importEnvVariables({'OPENAI_API_KEY': 'sk-1'});
+  test(
+    'importEnvVariables applies values and sets a summary message',
+    () async {
+      await cubit.importEnvVariables({'OPENAI_API_KEY': 'sk-1'});
 
-    expect(cubit.state.envImportMessage, contains('1'));
-    expect(aiSettingsService.openaiSettings.apiKey, 'sk-1');
-  });
+      expect(cubit.state.envImportMessage, contains('1'));
+      expect(aiSettingsService.openaiSettings.apiKey, 'sk-1');
+    },
+  );
 }

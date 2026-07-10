@@ -4,8 +4,7 @@ import 'package:pinboard_wizard/src/pinboard/models/post.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
 
 class PinnedCubit extends Cubit<PinnedState> {
-  PinnedCubit({required this._pinboardService})
-    : super(const PinnedState());
+  PinnedCubit({required this._pinboardService}) : super(const PinnedState());
 
   final PinboardService _pinboardService;
 

@@ -368,10 +368,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
       return const Center(
         child: Text(
           'No bookmarks found',
-          style: TextStyle(
-            color: AppColors.secondaryLabel,
-            fontSize: 13,
-          ),
+          style: TextStyle(color: AppColors.secondaryLabel, fontSize: 13),
         ),
       );
     }
@@ -418,9 +415,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
     return Container(
       decoration: BoxDecoration(
         color: context.canvasColor,
-        border: Border(
-          top: BorderSide(color: AppColors.separator, width: 0.5),
-        ),
+        border: Border(top: BorderSide(color: AppColors.separator, width: 0.5)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(

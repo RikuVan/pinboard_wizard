@@ -37,7 +37,9 @@ class GlassSidebar extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 28), // clear transparent titlebar/traffic lights
+            const SizedBox(
+              height: 28,
+            ), // clear transparent titlebar/traffic lights
             Expanded(
               child: ListView.builder(
                 itemCount: items.length,

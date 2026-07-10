@@ -216,10 +216,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Pinboard Configuration',
-            style: context.appTypography.title1,
-          ),
+          Text('Pinboard Configuration', style: context.appTypography.title1),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -312,10 +309,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'AI Assistance',
-            style: context.appTypography.title1,
-          ),
+          Text('AI Assistance', style: context.appTypography.title1),
           const SizedBox(height: 12),
 
           // Enable AI Toggle
@@ -654,10 +648,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Backup Configuration',
-            style: context.appTypography.title1,
-          ),
+          Text('Backup Configuration', style: context.appTypography.title1),
           const SizedBox(height: 12),
           Text(
             'Securely backup your bookmarks to Amazon S3. All credentials are encrypted and stored locally.',
@@ -668,10 +659,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           // S3 Configuration Section
           Row(
             children: [
-              Text(
-                'Amazon S3 Settings',
-                style: context.appTypography.headline,
-              ),
+              Text('Amazon S3 Settings', style: context.appTypography.headline),
               const SizedBox(width: 8),
               AppIconButton(
                 icon: const Icon(CupertinoIcons.link, size: 14),
@@ -744,10 +732,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           const SizedBox(height: 16),
 
           // File Path (optional)
-          Text(
-            'File Path (Optional)',
-            style: context.appTypography.body,
-          ),
+          Text('File Path (Optional)', style: context.appTypography.body),
           const SizedBox(height: 4),
           AppTextField(
             controller: _s3FilePathController,
@@ -913,10 +898,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           const SizedBox(height: 32),
 
           // Backup Section
-          Text(
-            'Backup Operations',
-            style: context.appTypography.headline,
-          ),
+          Text('Backup Operations', style: context.appTypography.headline),
           const SizedBox(height: 8),
           Text(
             'Create a JSON backup of all your bookmarks including titles, descriptions, tags, and metadata.',
@@ -1100,16 +1082,10 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           ],
 
           // Repository Configuration
-          Text(
-            'Repository Settings',
-            style: context.appTypography.headline,
-          ),
+          Text('Repository Settings', style: context.appTypography.headline),
           const SizedBox(height: 8),
 
-          Text(
-            'GitHub Owner/Organization',
-            style: context.appTypography.body,
-          ),
+          Text('GitHub Owner/Organization', style: context.appTypography.body),
           const SizedBox(height: 4),
           AppTextField(
             controller: _githubOwnerController,
@@ -1117,10 +1093,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           ),
           const SizedBox(height: 12),
 
-          Text(
-            'Repository Name',
-            style: context.appTypography.body,
-          ),
+          Text('Repository Name', style: context.appTypography.body),
           const SizedBox(height: 4),
           AppTextField(
             controller: _githubRepoController,
@@ -1128,10 +1101,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           ),
           const SizedBox(height: 12),
 
-          Text(
-            'Branch (Optional)',
-            style: context.appTypography.body,
-          ),
+          Text('Branch (Optional)', style: context.appTypography.body),
           const SizedBox(height: 4),
           AppTextField(
             controller: _githubBranchController,
@@ -1139,10 +1109,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           ),
           const SizedBox(height: 12),
 
-          Text(
-            'Notes Path (Optional)',
-            style: context.appTypography.body,
-          ),
+          Text('Notes Path (Optional)', style: context.appTypography.body),
           const SizedBox(height: 8),
           AppTextField(
             controller: _githubNotesPathController,
@@ -1333,10 +1300,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
           // Help Section
           Container(height: 1, color: AppColors.separator),
           const SizedBox(height: 16),
-          Text(
-            'Setup Instructions',
-            style: context.appTypography.headline,
-          ),
+          Text('Setup Instructions', style: context.appTypography.headline),
           const SizedBox(height: 8),
           Text(
             '1. Create a private repository on GitHub for your notes\n'

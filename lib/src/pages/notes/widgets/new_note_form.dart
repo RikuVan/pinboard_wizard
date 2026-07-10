@@ -86,10 +86,7 @@ class _NewNoteFormState extends State<NewNoteForm> {
                 color: isDark ? Colors.white70 : Colors.black87,
               ),
               const SizedBox(width: 12),
-              Text(
-                'Create New Note',
-                style: context.appTypography.title2,
-              ),
+              Text('Create New Note', style: context.appTypography.title2),
             ],
           ),
           const SizedBox(height: 24),
@@ -107,10 +104,7 @@ class _NewNoteFormState extends State<NewNoteForm> {
           const SizedBox(height: 24),
 
           // Content field
-          Text(
-            'Content (Optional)',
-            style: context.appTypography.headline,
-          ),
+          Text('Content (Optional)', style: context.appTypography.headline),
           const SizedBox(height: 8),
           Text(
             'You can leave this empty and add content after creation',
