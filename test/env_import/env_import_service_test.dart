@@ -309,6 +309,9 @@ void main() {
         final config = await failingGithubStorage.readConfig();
         expect(config?.owner, 'octocat');
         expect(config?.repo, 'notes');
+        // The token never persisted, so the saved config must not claim to
+        // be configured.
+        expect(config?.isConfigured, isFalse);
         expect(await failingGithubStorage.readToken(), isNull);
       },
     );

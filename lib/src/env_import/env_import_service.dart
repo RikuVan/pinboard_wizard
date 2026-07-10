@@ -204,9 +204,25 @@ class EnvImportService {
           .toList();
       final importedToken = variables['GITHUB_PAT'];
 
+      // Write the token BEFORE the config: isConfigured is derived from the
+      // token that is actually persisted, so a failed token write must not
+      // leave a saved config claiming to be configured without one.
+      var tokenPersisted = false;
+      if (importedToken != null) {
+        try {
+          await _githubStorage.saveToken(importedToken);
+          applied.add('GITHUB_PAT');
+          tokenPersisted = true;
+        } catch (e) {
+          failed['GITHUB_PAT'] = '$e';
+        }
+      }
+
       try {
         final existing = await _githubStorage.readConfig();
-        final token = importedToken ?? await _githubStorage.readToken();
+        final token = tokenPersisted
+            ? importedToken
+            : await _githubStorage.readToken();
 
         final base =
             existing ??
@@ -229,15 +245,6 @@ class EnvImportService {
       } catch (e) {
         for (final key in configKeys) {
           failed[key] = '$e';
-        }
-      }
-
-      if (importedToken != null) {
-        try {
-          await _githubStorage.saveToken(importedToken);
-          applied.add('GITHUB_PAT');
-        } catch (e) {
-          failed['GITHUB_PAT'] = '$e';
         }
       }
 
