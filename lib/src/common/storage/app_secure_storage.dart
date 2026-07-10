@@ -65,29 +65,32 @@ class AppSecureStorage {
 
   /// Enables or disables iCloud sync, migrating all [syncedKeys].
   ///
-  /// Enabling runs in two phases: first every local-only value missing from
-  /// the synced set is pushed up (an existing synced value from another Mac
-  /// wins), then — only after every write succeeded — the local copies are
-  /// deleted (safe: local deletes never propagate). The order matters: if a
-  /// write fails partway through, no local copy has been deleted yet, so
-  /// there is no window where a migrated credential is invisible in both
-  /// sets.
+  /// Enabling is ordered around a single commit point:
   ///
-  /// Disabling: synced values are snapshotted into local-only items. The
-  /// synchronizable originals are LEFT UNTOUCHED — deleting a synchronizable
-  /// item propagates the deletion to every other Mac.
+  /// 1. Every local-only value missing from the synced set is pushed up (an
+  ///    existing synced value from another Mac wins).
+  /// 2. COMMIT POINT: the sync flag is persisted and [syncEnabled] flips.
+  ///    Any failure up to and including this write throws, leaves the flag
+  ///    off and every local copy intact — the migration is idempotent, so
+  ///    retry is safe.
+  /// 3. The migrated local copies are deleted as best-effort cleanup. The
+  ///    flag and the synced set are already consistent, so a failure here is
+  ///    only logged, never thrown: a leftover local copy is dormant (all
+  ///    reads and writes now target the synced set) and local deletes never
+  ///    propagate.
   ///
-  /// The flag flips only after every key migrates; the migration is
-  /// idempotent, so a partial failure leaves the toggle unchanged and retry
-  /// is safe.
+  /// Disabling: synced values are snapshotted into local-only items, then
+  /// the flag is persisted. The synchronizable originals are LEFT UNTOUCHED
+  /// — deleting a synchronizable item propagates the deletion to every
+  /// other Mac.
   Future<void> setSyncEnabled(bool enabled) async {
     if (enabled == _syncEnabled) {
       return;
     }
+    final localKeys = <String>[];
     try {
       if (enabled) {
         // Phase 1: push every local-only value missing from the synced set.
-        final localKeys = <String>[];
         for (final key in syncedKeys) {
           final local = await _storage.read(key: key, mOptions: _localOptions);
           if (local == null) {
@@ -106,10 +109,6 @@ class AppSecureStorage {
             );
           }
         }
-        // Phase 2: delete local copies only now that every write succeeded.
-        for (final key in localKeys) {
-          await _storage.delete(key: key, mOptions: _localOptions);
-        }
       } else {
         for (final key in syncedKeys) {
           final synced = await _storage.read(
@@ -125,6 +124,7 @@ class AppSecureStorage {
           }
         }
       }
+      // Commit point: nothing before this line changed observable state.
       await _storage.write(
         key: syncFlagKey,
         value: enabled ? 'true' : 'false',
@@ -135,6 +135,20 @@ class AppSecureStorage {
       throw AppSecureStorageException(
         'Failed to ${enabled ? 'enable' : 'disable'} credential sync: $e',
       );
+    }
+    if (enabled) {
+      // Phase 2: best-effort cleanup of the migrated local copies. The
+      // enable already committed, so a failure here must not throw.
+      try {
+        for (final key in localKeys) {
+          await _storage.delete(key: key, mOptions: _localOptions);
+        }
+      } catch (e) {
+        debugPrint(
+          'AppSecureStorage: failed to delete local copies after enabling '
+          'sync (leftover copies are dormant): $e',
+        );
+      }
     }
   }
 }

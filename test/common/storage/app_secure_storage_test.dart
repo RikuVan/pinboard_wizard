@@ -131,6 +131,63 @@ void main() {
         expect(throwing.local.containsKey('ai_settings'), isFalse);
       },
     );
+
+    test(
+      'a failed flag write throws and leaves every local copy intact',
+      () async {
+        final throwing = _ThrowingSecureStorage(
+          throwOnWriteOf: AppSecureStorage.syncFlagKey,
+        );
+        final failingStorage = AppSecureStorage(storage: throwing);
+        await failingStorage.init();
+        throwing.local['pinboard_credentials'] = 'creds';
+        throwing.local['ai_settings'] = 'ai';
+
+        await expectLater(
+          failingStorage.setSyncEnabled(true),
+          throwsA(isA<AppSecureStorageException>()),
+        );
+
+        // The flag write is the commit point: nothing may flip and no local
+        // copy may be deleted when it fails — that is the safe retry state.
+        expect(failingStorage.syncEnabled, isFalse);
+        expect(throwing.local.containsKey('secrets_sync_enabled'), isFalse);
+        expect(throwing.local['pinboard_credentials'], 'creds');
+        expect(throwing.local['ai_settings'], 'ai');
+
+        // Retry once the keychain cooperates completes the migration.
+        throwing.throwOnWriteOf = null;
+        await failingStorage.setSyncEnabled(true);
+        expect(failingStorage.syncEnabled, isTrue);
+        expect(throwing.synced['pinboard_credentials'], 'creds');
+        expect(throwing.synced['ai_settings'], 'ai');
+      },
+    );
+
+    test(
+      'a failed local delete does not fail the enable (best-effort cleanup)',
+      () async {
+        final throwing = _ThrowingSecureStorage(
+          throwOnDeleteOf: 'pinboard_credentials',
+        );
+        final failingStorage = AppSecureStorage(storage: throwing);
+        await failingStorage.init();
+        throwing.local['pinboard_credentials'] = 'creds';
+        throwing.local['ai_settings'] = 'ai';
+
+        // Must NOT throw: flag and synced set are already consistent.
+        await failingStorage.setSyncEnabled(true);
+
+        expect(failingStorage.syncEnabled, isTrue);
+        expect(throwing.local['secrets_sync_enabled'], 'true');
+        expect(throwing.synced['pinboard_credentials'], 'creds');
+        expect(throwing.synced['ai_settings'], 'ai');
+        // The leftover local copy is tolerated — it is dormant because all
+        // reads and writes now target the synced set.
+        expect(throwing.local['pinboard_credentials'], 'creds');
+        expect(await failingStorage.read('pinboard_credentials'), 'creds');
+      },
+    );
   });
 
   group('disabling sync', () {
@@ -173,11 +230,13 @@ void main() {
   });
 }
 
-/// Throws on writes of one configurable key; everything else behaves normally.
+/// Throws on writes and/or deletes of one configurable key; everything else
+/// behaves normally.
 class _ThrowingSecureStorage extends FakeFlutterSecureStorage {
-  _ThrowingSecureStorage({required this.throwOnWriteOf});
+  _ThrowingSecureStorage({this.throwOnWriteOf, this.throwOnDeleteOf});
 
   String? throwOnWriteOf;
+  String? throwOnDeleteOf;
 
   @override
   Future<void> write({
@@ -196,6 +255,30 @@ class _ThrowingSecureStorage extends FakeFlutterSecureStorage {
     return super.write(
       key: key,
       value: value,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
+
+  @override
+  Future<void> delete({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (key == throwOnDeleteOf) {
+      throw Exception('keychain delete denied');
+    }
+    return super.delete(
+      key: key,
       iOptions: iOptions,
       aOptions: aOptions,
       lOptions: lOptions,
