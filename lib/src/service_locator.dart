@@ -55,7 +55,7 @@ Future<void> setup() async {
       () => BackupService(storage: locator.get<AppSecureStorage>()),
     )
     ..registerLazySingleton<GitHubCredentialsStorage>(
-      () => GitHubCredentialsStorage(),
+      () => GitHubCredentialsStorage(storage: locator.get<AppSecureStorage>()),
     )
     ..registerLazySingleton<GitHubAuthService>(
       () => GitHubAuthService(storage: locator.get<GitHubCredentialsStorage>()),
