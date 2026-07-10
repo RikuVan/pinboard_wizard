@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings.dart';
 import 'package:pinboard_wizard/src/ai/openai/openai_service.dart';
 import 'package:pinboard_wizard/src/ai/web_scraping/jina_service.dart';
@@ -8,7 +8,8 @@ import 'package:pinboard_wizard/src/service_locator.dart';
 
 class AiSettingsService extends ChangeNotifier {
   static const String _aiSettingsKey = 'ai_settings';
-  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+
+  final AppSecureStorage _secureStorage;
 
   AiSettings _settings = const AiSettings();
 
@@ -19,13 +20,14 @@ class AiSettingsService extends ChangeNotifier {
   OpenAiSettings get openaiSettings => _settings.openai;
   WebScrapingSettings get webScrapingSettings => _settings.webScraping;
 
-  AiSettingsService() {
+  AiSettingsService({required AppSecureStorage storage})
+    : _secureStorage = storage {
     _loadSettings();
   }
 
   Future<void> _loadSettings() async {
     try {
-      final settingsJson = await _secureStorage.read(key: _aiSettingsKey);
+      final settingsJson = await _secureStorage.read(_aiSettingsKey);
       if (settingsJson != null && settingsJson.isNotEmpty) {
         final Map<String, dynamic> settingsMap = json.decode(settingsJson);
         _settings = AiSettings.fromJson(settingsMap);
@@ -40,7 +42,7 @@ class AiSettingsService extends ChangeNotifier {
   Future<void> _saveSettings() async {
     try {
       final settingsJson = json.encode(_settings.toJson());
-      await _secureStorage.write(key: _aiSettingsKey, value: settingsJson);
+      await _secureStorage.write(_aiSettingsKey, settingsJson);
     } catch (e) {
       throw AiSettingsException('Failed to save AI settings: $e');
     }
@@ -109,7 +111,7 @@ class AiSettingsService extends ChangeNotifier {
   Future<void> clearAllAiSettings() async {
     _settings = const AiSettings();
     try {
-      await _secureStorage.delete(key: _aiSettingsKey);
+      await _secureStorage.delete(_aiSettingsKey);
     } catch (e) {
       throw AiSettingsException('Failed to clear AI settings: $e');
     }

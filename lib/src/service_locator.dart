@@ -45,7 +45,9 @@ Future<void> setup() async {
         storage: locator.get<AppSecureStorage>(),
       ),
     )
-    ..registerLazySingleton<AiSettingsService>(() => AiSettingsService())
+    ..registerLazySingleton<AiSettingsService>(
+      () => AiSettingsService(storage: locator.get<AppSecureStorage>()),
+    )
     ..registerLazySingleton<OpenAiService>(() => OpenAiService())
     ..registerLazySingleton<JinaService>(() => JinaService())
     ..registerLazySingleton<AiBookmarkService>(() => AiBookmarkService())
