@@ -419,6 +419,8 @@ Rules:
 - Values from the file **replace** existing stored values ("env wins").
   Variables not present in the file are left untouched.
 - Unrecognized variables and unparseable lines are ignored and reported.
+- Variables with empty values are ignored — an import never clears a stored
+  credential.
 - Standard `.env` syntax is supported: `KEY=VALUE`, optional `export `
   prefix, `#` comments, single or double quotes.
 

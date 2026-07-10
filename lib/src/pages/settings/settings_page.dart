@@ -1420,6 +1420,13 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
               ),
             ],
           ),
+          if (state.syncErrorMessage != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              state.syncErrorMessage!,
+              style: const TextStyle(color: AppColors.systemRed),
+            ),
+          ],
           const SizedBox(height: 24),
           Container(height: 1, color: AppColors.separator),
           const SizedBox(height: 16),

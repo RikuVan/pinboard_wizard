@@ -52,6 +52,17 @@ void main() {
       expect(preview.unrecognized, ['APPLE_ID']);
       expect(preview.ignoredLines, 1);
     });
+
+    test('skips recognized variables with empty values', () {
+      final preview = service.preview(
+        'OPENAI_API_KEY=\nPINBOARD_API_TOKEN=user:abc\n',
+      );
+      expect(preview.recognized, {'PINBOARD_API_TOKEN': 'user:abc'});
+      expect(preview.unrecognized, isEmpty);
+      // The empty assignment counts as an ignored line — importing it
+      // would clear the stored credential.
+      expect(preview.ignoredLines, 1);
+    });
   });
 
   group('apply', () {
@@ -197,6 +208,71 @@ void main() {
       expect(result.applied, isNot(contains('AWS_SECRET_ACCESS_KEY')));
       expect(result.applied, contains('OPENAI_API_KEY'));
     });
+
+    test('S3 load failure fails the S3 keys and skips the save', () async {
+      // A failed load must not be merged into (and overwrite) whatever the
+      // real stored config is.
+      final throwingFake = _ThrowingReadBackupStorage();
+      final throwingAppStorage = AppSecureStorage(storage: throwingFake);
+      await throwingAppStorage.init();
+      final failingBackupService = BackupService(storage: throwingAppStorage);
+      final failingService = EnvImportService(
+        credentialsService: credentialsService,
+        aiSettingsService: aiSettingsService,
+        backupService: failingBackupService,
+        githubStorage: githubStorage,
+        githubAuthService: githubAuthService,
+      );
+
+      final result = await failingService.apply({
+        'AWS_ACCESS_KEY_ID': 'AKIA123',
+        'AWS_SECRET_ACCESS_KEY': 'X',
+        'OPENAI_API_KEY': 'sk-ok',
+      });
+
+      expect(
+        result.failed.keys,
+        containsAll(['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY']),
+      );
+      expect(result.applied, isNot(contains('AWS_ACCESS_KEY_ID')));
+      expect(result.applied, isNot(contains('AWS_SECRET_ACCESS_KEY')));
+      expect(result.applied, contains('OPENAI_API_KEY'));
+      // Nothing was saved.
+      expect(throwingFake.local.containsKey('backup_s3_config'), isFalse);
+      expect(throwingFake.synced.containsKey('backup_s3_config'), isFalse);
+    });
+
+    test(
+      'GitHub token save failure fails only GITHUB_PAT; config persists',
+      () async {
+        final throwingFake = _ThrowingTokenStorage();
+        final throwingAppStorage = AppSecureStorage(storage: throwingFake);
+        await throwingAppStorage.init();
+        final failingGithubStorage = GitHubCredentialsStorage(
+          storage: throwingAppStorage,
+        );
+        final failingService = EnvImportService(
+          credentialsService: credentialsService,
+          aiSettingsService: aiSettingsService,
+          backupService: backupService,
+          githubStorage: failingGithubStorage,
+          githubAuthService: GitHubAuthService(storage: failingGithubStorage),
+        );
+
+        final result = await failingService.apply({
+          'GITHUB_OWNER': 'octocat',
+          'GITHUB_REPO': 'notes',
+          'GITHUB_PAT': 'ghp_secret123',
+        });
+
+        expect(result.applied, containsAll(['GITHUB_OWNER', 'GITHUB_REPO']));
+        expect(result.failed.keys, ['GITHUB_PAT']);
+        final config = await failingGithubStorage.readConfig();
+        expect(config?.owner, 'octocat');
+        expect(config?.repo, 'notes');
+        expect(await failingGithubStorage.readToken(), isNull);
+      },
+    );
   });
 }
 
@@ -214,6 +290,62 @@ class _ThrowingBackupStorage extends FakeFlutterSecureStorage {
     WindowsOptions? wOptions,
   }) async {
     if (key == 'backup_s3_config') {
+      throw Exception('keychain write denied');
+    }
+    return super.write(
+      key: key,
+      value: value,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
+}
+
+/// Fails reads of the S3 backup config key; everything else behaves normally.
+class _ThrowingReadBackupStorage extends FakeFlutterSecureStorage {
+  @override
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (key == 'backup_s3_config') {
+      throw Exception('keychain read denied');
+    }
+    return super.read(
+      key: key,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
+}
+
+/// Fails writes of the GitHub PAT key; everything else behaves normally.
+class _ThrowingTokenStorage extends FakeFlutterSecureStorage {
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (key == 'github_pat_token') {
       throw Exception('keychain write denied');
     }
     return super.write(

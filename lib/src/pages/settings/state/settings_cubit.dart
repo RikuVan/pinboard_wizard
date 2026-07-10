@@ -925,14 +925,18 @@ class SettingsCubit extends Cubit<SettingsState> {
     try {
       await _appSecureStorage.setSyncEnabled(enabled);
       _safeEmit(
-        state.copyWith(secretsSyncEnabled: _appSecureStorage.syncEnabled),
+        state.copyWith(
+          secretsSyncEnabled: _appSecureStorage.syncEnabled,
+          syncErrorMessage: null,
+        ),
       );
       // Reload so values adopted from the synced set appear in the UI.
       await loadSettings();
     } catch (e) {
       _safeEmit(
         state.copyWith(
-          errorMessage: 'Failed to ${enabled ? 'enable' : 'disable'} sync: $e',
+          syncErrorMessage:
+              'Failed to ${enabled ? 'enable' : 'disable'} sync: $e',
         ),
       );
     }

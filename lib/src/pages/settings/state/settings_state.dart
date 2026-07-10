@@ -43,6 +43,7 @@ class SettingsState extends Equatable {
     // Credential sync & import
     this.secretsSyncEnabled = false,
     this.envImportMessage,
+    this.syncErrorMessage,
   });
 
   final SettingsStatus status;
@@ -84,6 +85,7 @@ class SettingsState extends Equatable {
   // Credential sync & import
   final bool secretsSyncEnabled;
   final String? envImportMessage;
+  final String? syncErrorMessage;
 
   SettingsState copyWith({
     SettingsStatus? status,
@@ -115,6 +117,7 @@ class SettingsState extends Equatable {
     Object? tokenExpiryWarning = _sentinel,
     bool? secretsSyncEnabled,
     Object? envImportMessage = _sentinel,
+    Object? syncErrorMessage = _sentinel,
   }) {
     return SettingsState(
       status: status ?? this.status,
@@ -172,6 +175,9 @@ class SettingsState extends Equatable {
       envImportMessage: envImportMessage == _sentinel
           ? this.envImportMessage
           : envImportMessage as String?,
+      syncErrorMessage: syncErrorMessage == _sentinel
+          ? this.syncErrorMessage
+          : syncErrorMessage as String?,
     );
   }
 
@@ -246,5 +252,6 @@ class SettingsState extends Equatable {
     tokenExpiryWarning,
     secretsSyncEnabled,
     envImportMessage,
+    syncErrorMessage,
   ];
 }

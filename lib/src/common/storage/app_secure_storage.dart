@@ -65,9 +65,13 @@ class AppSecureStorage {
 
   /// Enables or disables iCloud sync, migrating all [syncedKeys].
   ///
-  /// Enabling: an existing synced value (from another Mac) wins over the
-  /// local one; otherwise the local value is pushed up. Local-only copies are
-  /// deleted afterwards (safe: local deletes never propagate).
+  /// Enabling runs in two phases: first every local-only value missing from
+  /// the synced set is pushed up (an existing synced value from another Mac
+  /// wins), then — only after every write succeeded — the local copies are
+  /// deleted (safe: local deletes never propagate). The order matters: if a
+  /// write fails partway through, no local copy has been deleted yet, so
+  /// there is no window where a migrated credential is invisible in both
+  /// sets.
   ///
   /// Disabling: synced values are snapshotted into local-only items. The
   /// synchronizable originals are LEFT UNTOUCHED — deleting a synchronizable
@@ -82,22 +86,29 @@ class AppSecureStorage {
     }
     try {
       if (enabled) {
+        // Phase 1: push every local-only value missing from the synced set.
+        final localKeys = <String>[];
         for (final key in syncedKeys) {
+          final local = await _storage.read(key: key, mOptions: _localOptions);
+          if (local == null) {
+            continue;
+          }
+          localKeys.add(key);
           final synced = await _storage.read(
             key: key,
             mOptions: _syncedOptions,
           );
-          final local = await _storage.read(key: key, mOptions: _localOptions);
-          if (synced == null && local != null) {
+          if (synced == null) {
             await _storage.write(
               key: key,
               value: local,
               mOptions: _syncedOptions,
             );
           }
-          if (local != null) {
-            await _storage.delete(key: key, mOptions: _localOptions);
-          }
+        }
+        // Phase 2: delete local copies only now that every write succeeded.
+        for (final key in localKeys) {
+          await _storage.delete(key: key, mOptions: _localOptions);
         }
       } else {
         for (final key in syncedKeys) {

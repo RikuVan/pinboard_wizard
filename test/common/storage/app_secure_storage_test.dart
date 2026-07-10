@@ -1,3 +1,4 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
 
@@ -95,6 +96,41 @@ void main() {
         expect(fake.local.containsKey(key), isFalse);
       }
     });
+
+    test(
+      'a failed write leaves every local copy intact (two-phase migration)',
+      () async {
+        // 'ai_settings' migrates after 'pinboard_credentials' in
+        // AppSecureStorage.syncedKeys, so the failure hits the SECOND write.
+        final throwing = _ThrowingSecureStorage(throwOnWriteOf: 'ai_settings');
+        final failingStorage = AppSecureStorage(storage: throwing);
+        await failingStorage.init();
+        throwing.local['pinboard_credentials'] = 'creds';
+        throwing.local['ai_settings'] = 'ai';
+
+        await expectLater(
+          failingStorage.setSyncEnabled(true),
+          throwsA(isA<AppSecureStorageException>()),
+        );
+
+        expect(failingStorage.syncEnabled, isFalse);
+        // No local copy may be deleted before every write succeeded —
+        // otherwise a partial failure leaves a credential invisible in
+        // both sets.
+        expect(throwing.local['pinboard_credentials'], 'creds');
+        expect(throwing.local['ai_settings'], 'ai');
+
+        // The migration is idempotent: a retry once the keychain cooperates
+        // completes the migration.
+        throwing.throwOnWriteOf = null;
+        await failingStorage.setSyncEnabled(true);
+        expect(failingStorage.syncEnabled, isTrue);
+        expect(throwing.synced['pinboard_credentials'], 'creds');
+        expect(throwing.synced['ai_settings'], 'ai');
+        expect(throwing.local.containsKey('pinboard_credentials'), isFalse);
+        expect(throwing.local.containsKey('ai_settings'), isFalse);
+      },
+    );
   });
 
   group('disabling sync', () {
@@ -135,4 +171,37 @@ void main() {
     expect(fake.local['pinboard_credentials'], 'mine');
     expect(fake.synced, isEmpty);
   });
+}
+
+/// Throws on writes of one configurable key; everything else behaves normally.
+class _ThrowingSecureStorage extends FakeFlutterSecureStorage {
+  _ThrowingSecureStorage({required this.throwOnWriteOf});
+
+  String? throwOnWriteOf;
+
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (key == throwOnWriteOf) {
+      throw Exception('keychain write denied');
+    }
+    return super.write(
+      key: key,
+      value: value,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
 }

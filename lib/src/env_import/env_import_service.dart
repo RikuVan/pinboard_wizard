@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/env_import/env_file_parser.dart';
@@ -90,18 +91,23 @@ class EnvImportService {
     final parsed = _parser.parse(contents);
     final recognized = <String, String>{};
     final unrecognized = <String>[];
+    var emptyValueLines = 0;
 
     for (final entry in parsed.variables.entries) {
-      if (recognizedVariables.contains(entry.key)) {
-        recognized[entry.key] = entry.value;
-      } else {
+      if (!recognizedVariables.contains(entry.key)) {
         unrecognized.add(entry.key);
+      } else if (entry.value.isEmpty) {
+        // An empty value would clear a stored credential on import; treat
+        // the line as ignored instead so imports never erase secrets.
+        emptyValueLines++;
+      } else {
+        recognized[entry.key] = entry.value;
       }
     }
 
     return EnvImportPreview(
       recognized: recognized,
-      ignoredLines: parsed.ignoredLines,
+      ignoredLines: parsed.ignoredLines + emptyValueLines,
       unrecognized: unrecognized,
     );
   }
@@ -146,24 +152,36 @@ class EnvImportService {
     if (s3Keys.isNotEmpty) {
       try {
         await _backupService.loadConfiguration();
-        final merged = _backupService.s3Config.copyWith(
-          accessKey: variables['AWS_ACCESS_KEY_ID'],
-          secretKey: variables['AWS_SECRET_ACCESS_KEY'],
-          region: variables['AWS_REGION'],
-          bucketName: variables['S3_BUCKET'],
-          filePath: variables['S3_FILE_PATH'],
-        );
-        await _backupService.saveConfiguration(merged);
-        // saveConfiguration swallows storage errors into status/lastError
-        // instead of throwing, so check the status explicitly.
+        // loadConfiguration swallows storage errors into status/lastError;
+        // merging into a config that failed to load could clobber the real
+        // one, so skip the merge/save entirely when the load failed.
         if (_backupService.status == BackupStatus.error) {
           final message =
-              _backupService.lastError ?? 'Failed to save S3 configuration';
+              _backupService.lastError ??
+              'Failed to load existing S3 configuration';
           for (final key in s3Keys) {
             failed[key] = message;
           }
         } else {
-          applied.addAll(s3Keys);
+          final merged = _backupService.s3Config.copyWith(
+            accessKey: variables['AWS_ACCESS_KEY_ID'],
+            secretKey: variables['AWS_SECRET_ACCESS_KEY'],
+            region: variables['AWS_REGION'],
+            bucketName: variables['S3_BUCKET'],
+            filePath: variables['S3_FILE_PATH'],
+          );
+          await _backupService.saveConfiguration(merged);
+          // saveConfiguration swallows storage errors into status/lastError
+          // instead of throwing, so check the status explicitly.
+          if (_backupService.status == BackupStatus.error) {
+            final message =
+                _backupService.lastError ?? 'Failed to save S3 configuration';
+            for (final key in s3Keys) {
+              failed[key] = message;
+            }
+          } else {
+            applied.addAll(s3Keys);
+          }
         }
       } catch (e) {
         for (final key in s3Keys) {
@@ -175,10 +193,14 @@ class EnvImportService {
     // GitHub — merge into the existing config, or create one.
     final githubKeys = variables.keys.where(_githubVariables.contains).toList();
     if (githubKeys.isNotEmpty) {
+      final configKeys = githubKeys
+          .where((key) => key != 'GITHUB_PAT')
+          .toList();
+      final importedToken = variables['GITHUB_PAT'];
+
       try {
         final existing = await _githubStorage.readConfig();
-        final token =
-            variables['GITHUB_PAT'] ?? await _githubStorage.readToken();
+        final token = importedToken ?? await _githubStorage.readToken();
 
         final base =
             existing ??
@@ -197,16 +219,28 @@ class EnvImportService {
         );
 
         await _githubStorage.saveConfig(merged);
-        final importedToken = variables['GITHUB_PAT'];
-        if (importedToken != null) {
-          await _githubStorage.saveToken(importedToken);
-        }
-        await _githubAuthService.initialize();
-        applied.addAll(githubKeys);
+        applied.addAll(configKeys);
       } catch (e) {
-        for (final key in githubKeys) {
+        for (final key in configKeys) {
           failed[key] = '$e';
         }
+      }
+
+      if (importedToken != null) {
+        try {
+          await _githubStorage.saveToken(importedToken);
+          applied.add('GITHUB_PAT');
+        } catch (e) {
+          failed['GITHUB_PAT'] = '$e';
+        }
+      }
+
+      // Refresh auth state; a failure here is not an import failure — the
+      // credentials were already persisted above.
+      try {
+        await _githubAuthService.initialize();
+      } catch (e) {
+        debugPrint('EnvImportService: GitHub auth refresh failed: $e');
       }
     }
 

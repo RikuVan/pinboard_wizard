@@ -51,6 +51,9 @@ class BackupService extends ChangeNotifier {
       if (kDebugMode) {
         print('Failed to load S3 configuration: $e');
       }
+      _status = BackupStatus.error;
+      _lastError = 'Failed to load configuration: $e';
+      notifyListeners();
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
@@ -24,8 +25,8 @@ void main() {
   late GitHubCredentialsStorage githubStorage;
   late GitHubAuthService githubAuthService;
 
-  setUp(() async {
-    fake = FakeFlutterSecureStorage();
+  Future<void> initWith(FakeFlutterSecureStorage storageFake) async {
+    fake = storageFake;
     appStorage = AppSecureStorage(storage: fake);
     await appStorage.init();
     secretStorage = FlutterSecureSecretsStorage(storage: appStorage);
@@ -49,7 +50,9 @@ void main() {
         githubAuthService: githubAuthService,
       ),
     );
-  });
+  }
+
+  setUp(() => initWith(FakeFlutterSecureStorage()));
 
   tearDown(() => cubit.close());
 
@@ -69,6 +72,30 @@ void main() {
     expect(fake.synced['pinboard_credentials'], '{"apiKey":"user:abc"}');
   });
 
+  test(
+    'setSecretsSyncEnabled failure keeps the flag off and surfaces the error',
+    () async {
+      await cubit.close();
+      final throwing = _ThrowingSyncStorage(
+        throwOnWriteOf: 'pinboard_credentials',
+      );
+      await initWith(throwing);
+      throwing.local['pinboard_credentials'] = '{"apiKey":"user:abc"}';
+
+      await cubit.setSecretsSyncEnabled(true);
+
+      expect(cubit.state.secretsSyncEnabled, isFalse);
+      expect(cubit.state.syncErrorMessage, isNotNull);
+      expect(cubit.state.syncErrorMessage, contains('enable'));
+
+      // Retry once the keychain cooperates: succeeds and clears the error.
+      throwing.throwOnWriteOf = null;
+      await cubit.setSecretsSyncEnabled(true);
+      expect(cubit.state.secretsSyncEnabled, isTrue);
+      expect(cubit.state.syncErrorMessage, isNull);
+    },
+  );
+
   test('previewEnvImport reports recognized variables', () {
     final preview = cubit.previewEnvImport('OPENAI_API_KEY=sk-1\nRANDOM=2\n');
     expect(preview.recognized.keys, ['OPENAI_API_KEY']);
@@ -84,4 +111,37 @@ void main() {
       expect(aiSettingsService.openaiSettings.apiKey, 'sk-1');
     },
   );
+}
+
+/// Throws on writes of one configurable key; everything else behaves normally.
+class _ThrowingSyncStorage extends FakeFlutterSecureStorage {
+  _ThrowingSyncStorage({required this.throwOnWriteOf});
+
+  String? throwOnWriteOf;
+
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (key == throwOnWriteOf) {
+      throw Exception('keychain write denied');
+    }
+    return super.write(
+      key: key,
+      value: value,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
 }
