@@ -112,7 +112,9 @@ Added to Settings Page (`lib/src/pages/settings_page.dart`):
 
 Registered in `service_locator.dart`:
 ```dart
-..registerLazySingleton<AiSettingsService>(() => AiSettingsService());
+..registerLazySingleton<AiSettingsService>(
+  () => AiSettingsService(storage: locator.get<AppSecureStorage>()),
+)
 ```
 
 ## Dependencies Added

@@ -79,16 +79,12 @@ class EnvImportService {
   final Uuid _uuid = const Uuid();
 
   EnvImportService({
-    required CredentialsService credentialsService,
-    required AiSettingsService aiSettingsService,
-    required BackupService backupService,
-    required GitHubCredentialsStorage githubStorage,
-    required GitHubAuthService githubAuthService,
-  }) : _credentialsService = credentialsService,
-       _aiSettingsService = aiSettingsService,
-       _backupService = backupService,
-       _githubStorage = githubStorage,
-       _githubAuthService = githubAuthService;
+    required this._credentialsService,
+    required this._aiSettingsService,
+    required this._backupService,
+    required this._githubStorage,
+    required this._githubAuthService,
+  });
 
   EnvImportPreview preview(String contents) {
     final parsed = _parser.parse(contents);
@@ -181,14 +177,12 @@ class EnvImportService {
     if (githubKeys.isNotEmpty) {
       try {
         final existing = await _githubStorage.readConfig();
-        final token = variables['GITHUB_PAT'] ?? await _githubStorage.readToken();
+        final token =
+            variables['GITHUB_PAT'] ?? await _githubStorage.readToken();
 
-        final base = existing ??
-            GitHubNotesConfig(
-              owner: '',
-              repo: '',
-              deviceId: _uuid.v4(),
-            );
+        final base =
+            existing ??
+            GitHubNotesConfig(owner: '', repo: '', deviceId: _uuid.v4());
         final owner = variables['GITHUB_OWNER'] ?? base.owner;
         final repo = variables['GITHUB_REPO'] ?? base.repo;
         final merged = base.copyWith(
@@ -197,7 +191,9 @@ class EnvImportService {
           branch: variables['GITHUB_BRANCH'] ?? base.branch,
           notesPath: variables['GITHUB_NOTES_PATH'] ?? base.notesPath,
           isConfigured:
-              owner.isNotEmpty && repo.isNotEmpty && (token?.isNotEmpty ?? false),
+              owner.isNotEmpty &&
+              repo.isNotEmpty &&
+              (token?.isNotEmpty ?? false),
         );
 
         await _githubStorage.saveConfig(merged);

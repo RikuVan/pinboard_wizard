@@ -8,8 +8,7 @@ class FlutterSecureSecretsStorage implements SecretStorage {
 
   final AppSecureStorage _storage;
 
-  FlutterSecureSecretsStorage({required AppSecureStorage storage})
-    : _storage = storage;
+  FlutterSecureSecretsStorage({required this._storage});
 
   @override
   Future<Credentials?> read() async {

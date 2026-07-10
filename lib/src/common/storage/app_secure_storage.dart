@@ -27,8 +27,7 @@ class AppSecureStorage {
   final FlutterSecureStorage _storage;
   bool _syncEnabled = false;
 
-  AppSecureStorage({FlutterSecureStorage storage = const FlutterSecureStorage()})
-    : _storage = storage;
+  AppSecureStorage({this._storage = const FlutterSecureStorage()});
 
   /// Whether credentials are read from / written to the iCloud-synced set.
   bool get syncEnabled => _syncEnabled;
@@ -39,7 +38,10 @@ class AppSecureStorage {
   /// any dependent service reads credentials.
   Future<void> init() async {
     try {
-      final value = await _storage.read(key: syncFlagKey, mOptions: _localOptions);
+      final value = await _storage.read(
+        key: syncFlagKey,
+        mOptions: _localOptions,
+      );
       _syncEnabled = value == 'true';
     } catch (e) {
       debugPrint(
@@ -49,12 +51,14 @@ class AppSecureStorage {
     }
   }
 
-  Future<String?> read(String key) => _storage.read(key: key, mOptions: _current);
+  Future<String?> read(String key) =>
+      _storage.read(key: key, mOptions: _current);
 
   Future<void> write(String key, String value) =>
       _storage.write(key: key, value: value, mOptions: _current);
 
-  Future<void> delete(String key) => _storage.delete(key: key, mOptions: _current);
+  Future<void> delete(String key) =>
+      _storage.delete(key: key, mOptions: _current);
 
   Future<bool> containsKey(String key) =>
       _storage.containsKey(key: key, mOptions: _current);
@@ -79,10 +83,17 @@ class AppSecureStorage {
     try {
       if (enabled) {
         for (final key in syncedKeys) {
-          final synced = await _storage.read(key: key, mOptions: _syncedOptions);
+          final synced = await _storage.read(
+            key: key,
+            mOptions: _syncedOptions,
+          );
           final local = await _storage.read(key: key, mOptions: _localOptions);
           if (synced == null && local != null) {
-            await _storage.write(key: key, value: local, mOptions: _syncedOptions);
+            await _storage.write(
+              key: key,
+              value: local,
+              mOptions: _syncedOptions,
+            );
           }
           if (local != null) {
             await _storage.delete(key: key, mOptions: _localOptions);
@@ -90,9 +101,16 @@ class AppSecureStorage {
         }
       } else {
         for (final key in syncedKeys) {
-          final synced = await _storage.read(key: key, mOptions: _syncedOptions);
+          final synced = await _storage.read(
+            key: key,
+            mOptions: _syncedOptions,
+          );
           if (synced != null) {
-            await _storage.write(key: key, value: synced, mOptions: _localOptions);
+            await _storage.write(
+              key: key,
+              value: synced,
+              mOptions: _localOptions,
+            );
           }
         }
       }

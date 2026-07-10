@@ -8,7 +8,7 @@ class CredentialsService {
   // Emits true when a valid API key is present, false otherwise
   final ValueNotifier<bool> isAuthenticatedNotifier = ValueNotifier(false);
 
-  CredentialsService({required SecretStorage storage}) : _storage = storage {
+  CredentialsService({required this._storage}) {
     _loadInitial();
   }
 
