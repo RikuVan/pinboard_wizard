@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pinboard_wizard/src/ui/ui.dart';
@@ -70,7 +71,7 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
   @override
   void initState() {
     super.initState();
-    _tabController = AppTabController(length: 4);
+    _tabController = AppTabController(length: 5);
     _apiKeyController.addListener(_onApiKeyChanged);
     _openaiKeyController.addListener(_onOpenAiKeyChanged);
     _jinaKeyController.addListener(_onJinaKeyChanged);
@@ -191,12 +192,14 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
                     AppTab(label: 'AI Settings'),
                     AppTab(label: 'Backups'),
                     AppTab(label: 'GitHub Notes'),
+                    AppTab(label: 'Sync'),
                   ],
                   children: [
                     _buildPinboardTab(context, state),
                     _buildAiTab(context, state),
                     _buildBackupTab(context, state),
                     _buildGitHubTab(context, state),
+                    _buildSyncTab(context, state),
                   ],
                 ),
               ),
@@ -1421,6 +1424,189 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
     if (!await launchUrl(uri)) {
       // Handle error - could show a dialog or copy to clipboard as fallback
       debugPrint('Could not launch $url');
+    }
+  }
+
+  Widget _buildSyncTab(BuildContext context, SettingsState state) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('iCloud Sync', style: context.appTypography.headline),
+          const SizedBox(height: 8),
+          Text(
+            'Sync your Pinboard, AI, backup, and GitHub credentials across '
+            'your Macs using iCloud Keychain. Requires iCloud Keychain to be '
+            'enabled in System Settings, and must be switched on separately '
+            'on each Mac.',
+            style: context.appTypography.body,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              AppSwitch(
+                value: state.secretsSyncEnabled,
+                onChanged: (value) => _onSyncToggleChanged(context, value),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Sync credentials across devices',
+                style: context.appTypography.body,
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Container(height: 1, color: AppColors.separator),
+          const SizedBox(height: 16),
+          Text('Import from .env', style: context.appTypography.headline),
+          const SizedBox(height: 8),
+          Text(
+            'Import credentials from a .env file instead of entering them '
+            'manually. Values in the file replace existing ones; anything '
+            'not in the file is left unchanged. The file is read once — you '
+            'can delete it afterwards.',
+            style: context.appTypography.body,
+          ),
+          const SizedBox(height: 12),
+          AppButton(
+            size: AppButtonSize.large,
+            onPressed: () => _importEnvFile(context),
+            child: const Text('Import from .env…'),
+          ),
+          if (state.envImportMessage != null) ...[
+            const SizedBox(height: 12),
+            Text(state.envImportMessage!, style: context.appTypography.body),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _onSyncToggleChanged(BuildContext context, bool value) async {
+    final cubit = context.read<SettingsCubit>();
+    if (!value) {
+      await cubit.setSecretsSyncEnabled(false);
+      return;
+    }
+    final confirmed = await showAppAlertDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AppAlertDialog(
+        title: const Text('Enable iCloud sync?'),
+        message: const Text(
+          'Your credentials will sync across Macs signed into the same '
+          'iCloud account. Where a synced value already exists, it replaces '
+          'this Mac\'s value.',
+        ),
+        primaryButton: AppButton(
+          size: AppButtonSize.large,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('Enable'),
+        ),
+        secondaryButton: AppButton(
+          size: AppButtonSize.large,
+          secondary: true,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Cancel'),
+        ),
+      ),
+    );
+    if (confirmed == true) {
+      await cubit.setSecretsSyncEnabled(true);
+    }
+  }
+
+  String _maskSecret(String value) {
+    if (value.length <= 8) return '••••';
+    return '${value.substring(0, 4)}…${value.substring(value.length - 4)}';
+  }
+
+  Future<void> _importEnvFile(BuildContext context) async {
+    final cubit = context.read<SettingsCubit>();
+    final file = await openFile(
+      acceptedTypeGroups: const [XTypeGroup(label: 'env files')],
+    );
+    if (file == null) return;
+
+    final String contents;
+    try {
+      contents = await file.readAsString();
+    } catch (e) {
+      if (!mounted) return;
+      await showAppAlertDialog<void>(
+        // ignore: use_build_context_synchronously
+        context: context,
+        builder: (dialogContext) => AppAlertDialog(
+          title: const Text('Could not read file'),
+          message: Text('$e'),
+          primaryButton: AppButton(
+            size: AppButtonSize.large,
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('OK'),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final preview = cubit.previewEnvImport(contents);
+    if (!mounted) return;
+
+    if (preview.isEmpty) {
+      await showAppAlertDialog<void>(
+        // ignore: use_build_context_synchronously
+        context: context,
+        builder: (dialogContext) => AppAlertDialog(
+          title: const Text('Nothing to import'),
+          message: Text(
+            'No recognized variables found. '
+            '${preview.unrecognized.isNotEmpty ? 'Unrecognized: ${preview.unrecognized.join(', ')}.' : ''}',
+          ),
+          primaryButton: AppButton(
+            size: AppButtonSize.large,
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('OK'),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final lines = preview.recognized.entries
+        .map((e) => '${e.key} = ${_maskSecret(e.value)}')
+        .join('\n');
+    final extra = <String>[
+      if (preview.unrecognized.isNotEmpty)
+        '${preview.unrecognized.length} unrecognized variable(s) ignored.',
+      if (preview.ignoredLines > 0)
+        '${preview.ignoredLines} unparseable line(s) ignored.',
+    ].join(' ');
+
+    final confirmed = await showAppAlertDialog<bool>(
+      // ignore: use_build_context_synchronously
+      context: context,
+      builder: (dialogContext) => AppAlertDialog(
+        title: const Text('Import credentials?'),
+        message: Text(
+          'The following values will be imported and will REPLACE any '
+          'existing values:\n\n$lines${extra.isNotEmpty ? '\n\n$extra' : ''}',
+        ),
+        primaryButton: AppButton(
+          size: AppButtonSize.large,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('Import'),
+        ),
+        secondaryButton: AppButton(
+          size: AppButtonSize.large,
+          secondary: true,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Cancel'),
+        ),
+      ),
+    );
+
+    if (confirmed == true) {
+      await cubit.importEnvVariables(preview.recognized);
     }
   }
 }
