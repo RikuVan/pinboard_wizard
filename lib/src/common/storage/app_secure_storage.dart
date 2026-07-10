@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:pinboard_wizard/src/common/storage/credential_keys.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Central keychain access for all credential storage.
@@ -14,11 +15,11 @@ class AppSecureStorage {
   /// Every keychain key that participates in iCloud sync migration.
   /// Add new credential keys here when introducing new secret types.
   static const List<String> syncedKeys = [
-    'pinboard_credentials',
-    'ai_settings',
-    'backup_s3_config',
-    'github_notes_config',
-    'github_pat_token',
+    CredentialKeys.pinboardCredentials,
+    CredentialKeys.aiSettings,
+    CredentialKeys.backupS3Config,
+    CredentialKeys.githubNotesConfig,
+    CredentialKeys.githubPatToken,
   ];
 
   static const MacOsOptions _localOptions = MacOsOptions();

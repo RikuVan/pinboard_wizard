@@ -4,6 +4,7 @@ import 'package:aws_s3_upload_lite/aws_s3_upload_lite.dart';
 import 'package:aws_s3_upload_lite/enum/acl.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
+import 'package:pinboard_wizard/src/common/storage/credential_keys.dart';
 import 'package:intl/intl.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
@@ -18,7 +19,7 @@ enum S3VerificationMethod {
 }
 
 class BackupService extends ChangeNotifier {
-  static const String _s3ConfigKey = 'backup_s3_config';
+  static const String _s3ConfigKey = CredentialKeys.backupS3Config;
 
   final AppSecureStorage _secureStorage;
 

@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
+import 'package:pinboard_wizard/src/common/storage/credential_keys.dart';
 import 'package:pinboard_wizard/src/pinboard/models/credentials.dart';
 import 'package:pinboard_wizard/src/pinboard/secrets_storage.dart';
 
 class FlutterSecureSecretsStorage implements SecretStorage {
-  static const String _credentialsKey = 'pinboard_credentials';
+  static const String _credentialsKey = CredentialKeys.pinboardCredentials;
 
   final AppSecureStorage _storage;
 

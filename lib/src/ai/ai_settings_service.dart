@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
+import 'package:pinboard_wizard/src/common/storage/credential_keys.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings.dart';
 import 'package:pinboard_wizard/src/ai/openai/openai_service.dart';
 import 'package:pinboard_wizard/src/ai/web_scraping/jina_service.dart';
 import 'package:pinboard_wizard/src/service_locator.dart';
 
 class AiSettingsService extends ChangeNotifier {
-  static const String _aiSettingsKey = 'ai_settings';
+  static const String _aiSettingsKey = CredentialKeys.aiSettings;
 
   final AppSecureStorage _secureStorage;
 

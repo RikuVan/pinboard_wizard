@@ -1,12 +1,13 @@
 import 'dart:convert';
 
 import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
+import 'package:pinboard_wizard/src/common/storage/credential_keys.dart';
 import 'package:pinboard_wizard/src/github/models/github_notes_config.dart';
 
 /// Service for securely storing and retrieving GitHub credentials and configuration
 class GitHubCredentialsStorage {
-  static const String _configKey = 'github_notes_config';
-  static const String _tokenKey = 'github_pat_token';
+  static const String _configKey = CredentialKeys.githubNotesConfig;
+  static const String _tokenKey = CredentialKeys.githubPatToken;
 
   final AppSecureStorage _secureStorage;
 
