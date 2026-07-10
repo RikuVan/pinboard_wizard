@@ -40,6 +40,9 @@ class SettingsState extends Equatable {
     this.githubValidationStatus = ValidationStatus.initial,
     this.githubValidationMessage,
     this.tokenExpiryWarning,
+    // Credential sync & import
+    this.secretsSyncEnabled = false,
+    this.envImportMessage,
   });
 
   final SettingsStatus status;
@@ -78,6 +81,10 @@ class SettingsState extends Equatable {
   final String? githubValidationMessage;
   final TokenExpiryWarning? tokenExpiryWarning;
 
+  // Credential sync & import
+  final bool secretsSyncEnabled;
+  final String? envImportMessage;
+
   SettingsState copyWith({
     SettingsStatus? status,
     Object? errorMessage = _sentinel,
@@ -106,6 +113,8 @@ class SettingsState extends Equatable {
     ValidationStatus? githubValidationStatus,
     Object? githubValidationMessage = _sentinel,
     Object? tokenExpiryWarning = _sentinel,
+    bool? secretsSyncEnabled,
+    Object? envImportMessage = _sentinel,
   }) {
     return SettingsState(
       status: status ?? this.status,
@@ -159,6 +168,10 @@ class SettingsState extends Equatable {
       tokenExpiryWarning: tokenExpiryWarning == _sentinel
           ? this.tokenExpiryWarning
           : tokenExpiryWarning as TokenExpiryWarning?,
+      secretsSyncEnabled: secretsSyncEnabled ?? this.secretsSyncEnabled,
+      envImportMessage: envImportMessage == _sentinel
+          ? this.envImportMessage
+          : envImportMessage as String?,
     );
   }
 
@@ -231,5 +244,7 @@ class SettingsState extends Equatable {
     githubValidationStatus,
     githubValidationMessage,
     tokenExpiryWarning,
+    secretsSyncEnabled,
+    envImportMessage,
   ];
 }

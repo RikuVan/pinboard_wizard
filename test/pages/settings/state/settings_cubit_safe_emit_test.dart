@@ -6,11 +6,15 @@ import 'package:pinboard_wizard/src/ai/ai_settings.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
+import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
+import 'package:pinboard_wizard/src/env_import/env_import_service.dart';
 import 'package:pinboard_wizard/src/github/github_auth_service.dart';
+import 'package:pinboard_wizard/src/github/github_credentials_storage.dart';
 import 'package:pinboard_wizard/src/pages/settings/state/settings_cubit.dart';
 import 'package:pinboard_wizard/src/pinboard/credentials_service.dart';
 import 'package:pinboard_wizard/src/pinboard/pinboard_service.dart';
 
+import '../../../common/storage/fake_flutter_secure_storage.dart';
 import 'settings_cubit_safe_emit_test.mocks.dart';
 
 @GenerateMocks([
@@ -27,6 +31,8 @@ void main() {
     late MockAiSettingsService mockAiSettingsService;
     late MockBackupService mockBackupService;
     late MockGitHubAuthService mockGitHubAuthService;
+    late AppSecureStorage appSecureStorage;
+    late EnvImportService envImportService;
     late SettingsCubit settingsCubit;
 
     setUp(() {
@@ -35,6 +41,14 @@ void main() {
       mockAiSettingsService = MockAiSettingsService();
       mockBackupService = MockBackupService();
       mockGitHubAuthService = MockGitHubAuthService();
+      appSecureStorage = AppSecureStorage(storage: FakeFlutterSecureStorage());
+      envImportService = EnvImportService(
+        credentialsService: mockCredentialsService,
+        aiSettingsService: mockAiSettingsService,
+        backupService: mockBackupService,
+        githubStorage: GitHubCredentialsStorage(storage: appSecureStorage),
+        githubAuthService: mockGitHubAuthService,
+      );
 
       // Setup default mock behaviors
       when(
@@ -56,6 +70,8 @@ void main() {
         aiSettingsService: mockAiSettingsService,
         backupService: mockBackupService,
         githubAuthService: mockGitHubAuthService,
+        appSecureStorage: appSecureStorage,
+        envImportService: envImportService,
       );
     });
 
@@ -140,6 +156,8 @@ void main() {
           aiSettingsService: mockAiSettingsService,
           backupService: mockBackupService,
           githubAuthService: mockGitHubAuthService,
+          appSecureStorage: appSecureStorage,
+          envImportService: envImportService,
         );
 
         // Close the cubit

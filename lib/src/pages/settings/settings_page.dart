@@ -6,8 +6,10 @@ import 'package:pinboard_wizard/src/ui/ui.dart';
 import 'package:pinboard_wizard/src/ai/ai_settings_service.dart';
 import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
+import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
 import 'package:pinboard_wizard/src/common/widgets/validated_secret_field.dart';
+import 'package:pinboard_wizard/src/env_import/env_import_service.dart';
 import 'package:pinboard_wizard/src/github/github_auth_service.dart';
 import 'package:pinboard_wizard/src/github/models/models.dart';
 import 'package:pinboard_wizard/src/pages/settings/state/settings_cubit.dart';
@@ -29,6 +31,8 @@ class SettingsPage extends StatelessWidget {
         aiSettingsService: locator.get<AiSettingsService>(),
         backupService: locator.get<BackupService>(),
         githubAuthService: locator.get<GitHubAuthService>(),
+        appSecureStorage: locator.get<AppSecureStorage>(),
+        envImportService: locator.get<EnvImportService>(),
       )..loadSettings(),
       child: const _SettingsPageView(),
     );
