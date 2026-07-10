@@ -9,6 +9,7 @@ import 'package:pinboard_wizard/src/backup/backup_service.dart';
 import 'package:pinboard_wizard/src/backup/models/s3_config.dart';
 import 'package:pinboard_wizard/src/common/storage/app_secure_storage.dart';
 import 'package:pinboard_wizard/src/common/widgets/app_logo.dart';
+import 'package:pinboard_wizard/src/common/widgets/dialogs.dart';
 import 'package:pinboard_wizard/src/common/widgets/validated_secret_field.dart';
 import 'package:pinboard_wizard/src/env_import/env_import_service.dart';
 import 'package:pinboard_wizard/src/github/github_auth_service.dart';
@@ -1475,27 +1476,13 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
       await cubit.setSecretsSyncEnabled(false);
       return;
     }
-    final confirmed = await showAppAlertDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AppAlertDialog(
-        title: const Text('Enable iCloud sync?'),
-        message: const Text(
-          'Your credentials will sync across Macs signed into the same '
-          'iCloud account. Where a synced value already exists, it replaces '
-          'this Mac\'s value.',
-        ),
-        primaryButton: AppButton(
-          size: AppButtonSize.large,
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: const Text('Enable'),
-        ),
-        secondaryButton: AppButton(
-          size: AppButtonSize.large,
-          secondary: true,
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: const Text('Cancel'),
-        ),
-      ),
+    final confirmed = await CommonDialogs.showConfirmation(
+      context,
+      'Your credentials will sync across Macs signed into the same '
+      'iCloud account. Where a synced value already exists, it replaces '
+      'this Mac\'s value.',
+      title: 'Enable iCloud sync?',
+      confirmText: 'Enable',
     );
     if (confirmed == true) {
       await cubit.setSecretsSyncEnabled(true);
@@ -1519,18 +1506,11 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
       contents = await file.readAsString();
     } catch (e) {
       if (!mounted) return;
-      await showAppAlertDialog<void>(
+      await CommonDialogs.showError(
         // ignore: use_build_context_synchronously
-        context: context,
-        builder: (dialogContext) => AppAlertDialog(
-          title: const Text('Could not read file'),
-          message: Text('$e'),
-          primaryButton: AppButton(
-            size: AppButtonSize.large,
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('OK'),
-          ),
-        ),
+        context,
+        '$e',
+        title: 'Could not read file',
       );
       return;
     }
@@ -1539,21 +1519,12 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
     if (!mounted) return;
 
     if (preview.isEmpty) {
-      await showAppAlertDialog<void>(
+      await CommonDialogs.showInfo(
         // ignore: use_build_context_synchronously
-        context: context,
-        builder: (dialogContext) => AppAlertDialog(
-          title: const Text('Nothing to import'),
-          message: Text(
-            'No recognized variables found.'
-            '${preview.unrecognized.isNotEmpty ? ' Unrecognized: ${preview.unrecognized.join(', ')}.' : ''}',
-          ),
-          primaryButton: AppButton(
-            size: AppButtonSize.large,
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('OK'),
-          ),
-        ),
+        context,
+        'No recognized variables found.'
+        '${preview.unrecognized.isNotEmpty ? ' Unrecognized: ${preview.unrecognized.join(', ')}.' : ''}',
+        title: 'Nothing to import',
       );
       return;
     }
@@ -1568,27 +1539,13 @@ class _SettingsPageViewState extends State<_SettingsPageView> {
         '${preview.ignoredLines} unparseable line(s) ignored.',
     ].join(' ');
 
-    final confirmed = await showAppAlertDialog<bool>(
+    final confirmed = await CommonDialogs.showConfirmation(
       // ignore: use_build_context_synchronously
-      context: context,
-      builder: (dialogContext) => AppAlertDialog(
-        title: const Text('Import credentials?'),
-        message: Text(
-          'The following values will be imported and will REPLACE any '
-          'existing values:\n\n$lines${extra.isNotEmpty ? '\n\n$extra' : ''}',
-        ),
-        primaryButton: AppButton(
-          size: AppButtonSize.large,
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: const Text('Import'),
-        ),
-        secondaryButton: AppButton(
-          size: AppButtonSize.large,
-          secondary: true,
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: const Text('Cancel'),
-        ),
-      ),
+      context,
+      'The following values will be imported and will REPLACE any '
+      'existing values:\n\n$lines${extra.isNotEmpty ? '\n\n$extra' : ''}',
+      title: 'Import credentials?',
+      confirmText: 'Import',
     );
 
     if (confirmed == true) {
